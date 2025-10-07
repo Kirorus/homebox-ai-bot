@@ -75,11 +75,11 @@ def log_user_action(action: str, user_id: int, details: dict = None):
     logger.info(f"User action: {action} by user {user_id}", extra=action_info)
 
 def is_admin(user_id: int) -> bool:
-    """Проверяет, является ли пользователь администратором"""
+    """Check if user is administrator"""
     return user_id in config.ALLOWED_USER_IDS
 
 async def get_uptime() -> str:
-    """Возвращает время работы бота в читаемом формате"""
+    """Return bot uptime in readable format"""
     stats = await db.get_bot_stats()
     start_time_str = stats.get('start_time', datetime.now().isoformat())
     start_time = datetime.fromisoformat(start_time_str)
@@ -97,7 +97,7 @@ async def get_uptime() -> str:
         return f"{minutes}м {seconds}с"
 
 async def cleanup_temp_files():
-    """Очищает временные файлы"""
+    """Clean up temporary files"""
     temp_files = [f for f in os.listdir('.') if f.startswith('temp_')]
     removed_count = 0
     
@@ -114,14 +114,14 @@ async def cleanup_temp_files():
     return removed_count
 
 def create_progress_bar(step: int, total: int = 5, bot_lang: str = 'ru') -> str:
-    """Создает визуальный прогресс-бар"""
+    """Create a visual progress bar with emoji indicators"""
     progress_chars = ['⬜', '🟨', '🟧', '🟩', '✅']
     filled = min(step, total)
     bar = ''.join([progress_chars[min(i, len(progress_chars)-1)] for i in range(total)])
     return f"{bar} {filled}/{total}"
 
 async def update_progress_message(message: Message, progress_msg: Message, step: str, bot_lang: str, step_num: int = 1):
-    """Обновляет сообщение о прогрессе с визуальным индикатором"""
+    """Update progress message with visual indicator"""
     progress_bar = create_progress_bar(step_num)
     progress_text = f"{progress_bar}\n\n{t(bot_lang, f'progress.{step}')}"
     
@@ -248,7 +248,7 @@ async def analyze_image(image_path: str, locations: list, lang: str = 'ru', mode
         }
 
 def bot_lang_keyboard(current_lang: str) -> InlineKeyboardMarkup:
-    """Клавиатура выбора языка интерфейса бота"""
+    """Create bot interface language selection keyboard"""
     builder = InlineKeyboardBuilder()
     ru_label = t(current_lang, 'settings.lang.ru') + (" ✓" if current_lang == 'ru' else "")
     en_label = t(current_lang, 'settings.lang.en') + (" ✓" if current_lang == 'en' else "")
@@ -257,7 +257,7 @@ def bot_lang_keyboard(current_lang: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 def gen_lang_keyboard(current_lang: str) -> InlineKeyboardMarkup:
-    """Клавиатура выбора языка генерации"""
+    """Create generation language selection keyboard"""
     builder = InlineKeyboardBuilder()
     ru_label = t(current_lang, 'settings.lang.ru') + (" ✓" if current_lang == 'ru' else "")
     en_label = t(current_lang, 'settings.lang.en') + (" ✓" if current_lang == 'en' else "")
@@ -266,21 +266,21 @@ def gen_lang_keyboard(current_lang: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 def settings_main_keyboard(bot_lang: str) -> InlineKeyboardMarkup:
-    """Главная клавиатура настроек с улучшенным дизайном"""
+    """Create main settings keyboard with improved design"""
     builder = InlineKeyboardBuilder()
     
-    # Первый ряд - языки
+    # First row - languages
     builder.row(
         InlineKeyboardButton(text=t(bot_lang, 'settings.bot_lang.title'), callback_data="settings_bot_lang"),
         InlineKeyboardButton(text=t(bot_lang, 'settings.gen_lang.title'), callback_data="settings_gen_lang")
     )
     
-    # Второй ряд - модель
+    # Second row - model
     builder.row(
         InlineKeyboardButton(text=t(bot_lang, 'settings.choose_model'), callback_data="settings_model")
     )
     
-    # Третий ряд - быстрые действия
+    # Third row - quick actions
     builder.row(
         InlineKeyboardButton(text="📊 Статистика", callback_data="quick_stats"),
         InlineKeyboardButton(text="🔄 Перезапуск", callback_data="quick_restart")
@@ -305,14 +305,14 @@ async def cmd_settings(message: Message):
 
 @router.message(Command(commands=["myid", "id"]))
 async def cmd_myid(message: Message):
-    """Отправить пользователю его Telegram ID (доступно всем)."""
+    """Send user their Telegram ID (available to everyone)."""
     user_settings = await db.get_user_settings(message.from_user.id)
     bot_lang = user_settings.get('bot_lang', 'ru')
     await message.answer(t(bot_lang, 'cmd.myid', user_id=message.from_user.id))
 
 @router.message(Command("stats"))
 async def cmd_stats(message: Message):
-    """Показать статистику бота (только для администраторов)."""
+    """Show bot statistics (admin only)."""
     if not is_admin(message.from_user.id):
         user_settings = await db.get_user_settings(message.from_user.id)
         bot_lang = user_settings.get('bot_lang', 'ru')
@@ -336,7 +336,7 @@ async def cmd_stats(message: Message):
 
 @router.message(Command("cleanup"))
 async def cmd_cleanup(message: Message):
-    """Очистить временные файлы (только для администраторов)."""
+    """Clean up temporary files (admin only)."""
     if not is_admin(message.from_user.id):
         user_settings = await db.get_user_settings(message.from_user.id)
         bot_lang = user_settings.get('bot_lang', 'ru')
@@ -356,7 +356,7 @@ async def cmd_cleanup(message: Message):
 
 @router.message(Command("testupload"))
 async def cmd_test_upload(message: Message):
-    """Тестирование методов загрузки фотографий (только для администраторов)."""
+    """Test photo upload methods (admin only)."""
     if not is_admin(message.from_user.id):
         user_settings = await db.get_user_settings(message.from_user.id)
         bot_lang = user_settings.get('bot_lang', 'ru')
@@ -431,7 +431,7 @@ async def cmd_test_upload(message: Message):
 
 @router.message(Command("checkapi"))
 async def cmd_check_api(message: Message):
-    """Проверка возможностей API HomeBox (только для администраторов)."""
+    """Check HomeBox API capabilities (admin only)."""
     if not is_admin(message.from_user.id):
         user_settings = await db.get_user_settings(message.from_user.id)
         bot_lang = user_settings.get('bot_lang', 'ru')
@@ -473,7 +473,7 @@ async def cmd_check_api(message: Message):
 
 @router.message(Command("quicktest"))
 async def cmd_quick_test(message: Message):
-    """Быстрый тест загрузки фотографий (только для администраторов)."""
+    """Quick photo upload test (admin only)."""
     if not is_admin(message.from_user.id):
         user_settings = await db.get_user_settings(message.from_user.id)
         bot_lang = user_settings.get('bot_lang', 'ru')
@@ -682,25 +682,25 @@ async def cb_set_model(callback: CallbackQuery):
     await callback.answer(f"🧠 Модель: {model}", show_alert=True)
 
 def create_confirmation_keyboard(locations: list, current_location: str, bot_lang: str = 'ru') -> InlineKeyboardMarkup:
-    """Создание клавиатуры для подтверждения с улучшенным дизайном"""
+    """Create confirmation keyboard with improved design"""
     builder = InlineKeyboardBuilder()
     
-    # Первый ряд - изменить название
+    # First row - edit name
     builder.row(
         InlineKeyboardButton(text=t(bot_lang, 'btn.edit.name'), callback_data="edit_name")
     )
     
-    # Второй ряд - изменить описание
+    # Second row - edit description
     builder.row(
         InlineKeyboardButton(text=t(bot_lang, 'btn.edit.description'), callback_data="edit_description")
     )
     
-    # Третий ряд - изменить локацию
+    # Third row - edit location
     builder.row(
         InlineKeyboardButton(text=t(bot_lang, 'btn.edit.location'), callback_data="edit_location")
     )
     
-    # Четвертый ряд - основные действия
+    # Fourth row - main actions
     builder.row(
         InlineKeyboardButton(text=t(bot_lang, 'btn.confirm'), callback_data="confirm"),
         InlineKeyboardButton(text=t(bot_lang, 'btn.cancel'), callback_data="cancel")
@@ -709,10 +709,10 @@ def create_confirmation_keyboard(locations: list, current_location: str, bot_lan
     return builder.as_markup()
 
 def create_locations_keyboard(locations: list, bot_lang: str = 'ru') -> InlineKeyboardMarkup:
-    """Создание клавиатуры выбора локации с улучшенным дизайном"""
+    """Create location selection keyboard with improved design"""
     builder = InlineKeyboardBuilder()
     
-    # Добавляем локации по 2 в ряд для компактности
+    # Add locations 2 per row for compactness
     for i in range(0, len(locations), 2):
         row_buttons = []
         for j in range(2):
@@ -727,7 +727,7 @@ def create_locations_keyboard(locations: list, bot_lang: str = 'ru') -> InlineKe
         if row_buttons:
             builder.row(*row_buttons)
     
-    # Кнопка назад
+    # Back button
     builder.row(
         InlineKeyboardButton(text=t(bot_lang, 'back'), callback_data="back_to_confirm")
     )
@@ -736,7 +736,7 @@ def create_locations_keyboard(locations: list, bot_lang: str = 'ru') -> InlineKe
 
 @router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
-    """Обработчик команды /start"""
+    """Handle /start command"""
     try:
         log_user_action("start_command", message.from_user.id, {
             "username": message.from_user.username,
@@ -777,7 +777,7 @@ async def cmd_start(message: Message, state: FSMContext):
 
 @router.message(ItemStates.waiting_for_photo, F.photo)
 async def handle_photo(message: Message, state: FSMContext):
-    """Обработчик получения фотографии"""
+    """Handle photo upload"""
     try:
         log_user_action("photo_received", message.from_user.id, {
             "caption": message.caption,
@@ -956,7 +956,7 @@ async def edit_name(callback: CallbackQuery, state: FSMContext):
 
 @router.message(ItemStates.editing_name)
 async def save_new_name(message: Message, state: FSMContext):
-    """Сохранение нового названия"""
+    """Save new item name"""
     user_data = items_data.get(message.from_user.id)
     if user_data:
         user_data['name'] = message.text
@@ -1000,7 +1000,7 @@ async def edit_description(callback: CallbackQuery, state: FSMContext):
 
 @router.message(ItemStates.editing_description)
 async def save_new_description(message: Message, state: FSMContext):
-    """Сохранение нового описания"""
+    """Save new item description"""
     user_data = items_data.get(message.from_user.id)
     if user_data:
         user_data['description'] = message.text
@@ -1220,7 +1220,7 @@ async def cancel_operation(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data == "quick_stats")
 async def quick_stats(callback: CallbackQuery):
-    """Быстрая статистика для пользователя"""
+    """Quick statistics for user"""
     user_settings = await db.get_user_settings(callback.from_user.id)
     bot_lang = user_settings.get('bot_lang', 'ru')
     
@@ -1240,11 +1240,11 @@ async def quick_stats(callback: CallbackQuery):
 
 @router.callback_query(F.data == "quick_restart")
 async def quick_restart(callback: CallbackQuery, state: FSMContext):
-    """Быстрый перезапуск сессии"""
+    """Quick session restart"""
     user_settings = await db.get_user_settings(callback.from_user.id)
     bot_lang = user_settings.get('bot_lang', 'ru')
     
-    # Очищаем текущую сессию
+    # Clear current session
     if callback.from_user.id in items_data:
         user_data = items_data[callback.from_user.id]
         if os.path.exists(user_data.get('photo_path', '')):
