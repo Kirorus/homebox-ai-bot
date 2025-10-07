@@ -116,7 +116,8 @@ class HomeboxAPI:
             item_data = {
                 'name': name,
                 'description': description,
-                'location_id': location_id
+                'locationId': location_id,
+                'quantity': 1
             }
             
             async with session.post(
