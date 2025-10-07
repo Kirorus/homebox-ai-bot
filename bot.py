@@ -359,8 +359,11 @@ async def cmd_test_upload(message: Message):
             temp_path = temp_file.name
         
         try:
-            # Тестируем методы загрузки
-            results = await homebox_api.test_upload_methods(test_item_id, temp_path)
+        # Тестируем единственный метод загрузки
+        success = await homebox_api.upload_photo(test_item_id, temp_path)
+        results = {'upload_photo': success}
+        if not success:
+            results['upload_photo_error'] = homebox_api.last_error
             
             # Форматируем результаты
             results_text = ""
@@ -473,8 +476,8 @@ async def cmd_quick_test(message: Message):
             temp_path = temp_file.name
         
         try:
-            # Тестируем Raw HTTP метод (который показал прогресс)
-            success = await homebox_api.upload_photo_raw_http(test_item_id, temp_path)
+            # Тестируем единственный метод загрузки
+            success = await homebox_api.upload_photo(test_item_id, temp_path)
             
             if success:
                 await message.answer(t(lang, 'admin.quick_test.success'))
