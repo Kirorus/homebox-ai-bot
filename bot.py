@@ -849,9 +849,13 @@ def create_confirmation_keyboard(locations: list, current_location: str, bot_lan
         InlineKeyboardButton(text=t(bot_lang, 'btn.edit.location'), callback_data="edit_location")
     )
     
-    # Fourth row - main actions
+    # Fourth row - confirm action
     builder.row(
-        InlineKeyboardButton(text=t(bot_lang, 'btn.confirm'), callback_data="confirm"),
+        InlineKeyboardButton(text=t(bot_lang, 'btn.confirm'), callback_data="confirm")
+    )
+    
+    # Fifth row - cancel action
+    builder.row(
         InlineKeyboardButton(text=t(bot_lang, 'btn.cancel'), callback_data="cancel")
     )
     
