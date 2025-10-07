@@ -67,9 +67,9 @@ def format_file_size(size_bytes: int) -> str:
 def sanitize_filename(filename: str) -> str:
     """Очищает имя файла от недопустимых символов"""
     import re
-    # Удаляем недопустимые символы для файловых систем
+    # Remove invalid characters for file systems
     sanitized = re.sub(r'[<>:"/\\|?*]', '_', filename)
-    # Ограничиваем длину
+    # Limit length
     if len(sanitized) > 100:
         name, ext = sanitized.rsplit('.', 1) if '.' in sanitized else (sanitized, '')
         sanitized = name[:95] + ('.' + ext if ext else '')
@@ -90,22 +90,22 @@ class RateLimiter:
         async with self._lock:
             now = asyncio.get_event_loop().time()
             
-            # Удаляем старые запросы
+            # Remove old requests
             self.requests = [req_time for req_time in self.requests 
                            if now - req_time < self.time_window]
             
-            # Если достигли лимита, ждем
+            # If limit reached, wait
             if len(self.requests) >= self.max_requests:
                 sleep_time = self.time_window - (now - self.requests[0])
                 if sleep_time > 0:
                     logger.info(f"Rate limit reached, sleeping for {sleep_time:.2f}s")
                     await asyncio.sleep(sleep_time)
-                    # Обновляем список после ожидания
+                    # Update list after waiting
                     now = asyncio.get_event_loop().time()
                     self.requests = [req_time for req_time in self.requests 
                                    if now - req_time < self.time_window]
             
-            # Добавляем текущий запрос
+            # Add current request
             self.requests.append(now)
 
 def validate_image_file(file_path: str) -> tuple[bool, str]:
@@ -118,27 +118,27 @@ def validate_image_file(file_path: str) -> tuple[bool, str]:
     import os
     from PIL import Image
     
-    # Проверяем существование файла
+    # Check file existence
     if not os.path.exists(file_path):
         return False, "File does not exist"
     
-    # Проверяем размер файла (максимум 20MB)
+    # Check file size (maximum 20MB)
     file_size = os.path.getsize(file_path)
     if file_size > 20 * 1024 * 1024:
         return False, f"File too large: {format_file_size(file_size)}"
     
     try:
-        # Пытаемся открыть как изображение
+        # Try to open as image
         with Image.open(file_path) as img:
-            # Проверяем формат
+            # Check format
             if img.format not in ['JPEG', 'PNG', 'WEBP']:
                 return False, f"Unsupported image format: {img.format}"
             
-            # Проверяем размеры
+            # Check dimensions
             if img.width > 4096 or img.height > 4096:
                 return False, f"Image too large: {img.width}x{img.height}"
             
-            # Проверяем, что изображение можно прочитать
+            # Check that image can be read
             img.verify()
             
         return True, ""

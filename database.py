@@ -62,7 +62,8 @@ class SimpleDatabase:
     async def get_user_settings(self, user_id: int) -> Dict[str, Any]:
         """Получает настройки пользователя"""
         return self._cache.get('user_settings', {}).get(str(user_id), {
-            'lang': 'ru',
+            'bot_lang': 'ru',  # Bot interface language
+            'gen_lang': 'ru',  # Item generation language
             'model': 'gpt-4o'
         })
     
@@ -114,8 +115,8 @@ class SimpleDatabase:
     
     async def cleanup_old_data(self, days: int = 30):
         """Очищает старые данные (не используется в текущей реализации)"""
-        # Здесь можно добавить логику очистки старых данных
+        # Here you can add logic to clean up old data
         pass
 
-# Глобальный экземпляр базы данных
+# Global database instance
 db = SimpleDatabase()

@@ -144,12 +144,12 @@ class HomeboxAPI:
                 item_id = item.get('id')
                 logger.info(f"Successfully created item with ID: {item_id}")
                 
-                # Если есть фото, загружаем его
+                # If there's a photo, upload it
                 if photo_path and item_id:
                     logger.info(f"Uploading photo for item {item_id}")
                     uploaded = await self.upload_photo(item_id, photo_path)
                     if not uploaded:
-                        # Вернём флаг/сообщение, чтобы бот мог показать пользователю
+                        # Return flag/message so bot can show user
                         item['photo_upload'] = 'failed'
                         logger.warning(f"Photo upload failed for item {item_id}: {self.last_error}")
                     else:
@@ -168,7 +168,7 @@ class HomeboxAPI:
             import os
             import uuid
             
-            # Читаем файл
+            # Read file
             with open(photo_path, 'rb') as file:
                 file_content = file.read()
             
@@ -176,19 +176,19 @@ class HomeboxAPI:
             
             logger.info(f"Uploading photo {filename} for item {item_id}")
             
-            # Создаем boundary
+            # Create boundary
             boundary = f"----WebKitFormBoundary{uuid.uuid4().hex}"
             
-            # Формируем тело запроса вручную
+            # Form request body manually
             body_parts = []
             
-            # Добавляем поле name (требуется API)
+            # Add name field (required by API)
             body_parts.append(f'--{boundary}'.encode())
             body_parts.append(f'Content-Disposition: form-data; name="name"'.encode())
             body_parts.append(b'')
             body_parts.append(filename.encode())
             
-            # Добавляем файл
+            # Add file
             body_parts.append(f'--{boundary}'.encode())
             body_parts.append(f'Content-Disposition: form-data; name="file"; filename="{filename}"'.encode())
             body_parts.append(b'Content-Type: image/jpeg')
@@ -198,14 +198,14 @@ class HomeboxAPI:
             
             body = b'\r\n'.join(body_parts)
             
-            # Заголовки
+            # Headers
             headers = {
                 'Authorization': self._build_auth_header(self.token),
                 'Content-Type': f'multipart/form-data; boundary={boundary}',
                 'Content-Length': str(len(body))
             }
             
-            # Отправляем через aiohttp
+            # Send via aiohttp
             session = await self._get_session()
             async with session.post(
                 f'{self.base_url}/api/v1/items/{item_id}/attachments',
@@ -234,7 +234,7 @@ class HomeboxAPI:
     async def ensure_authorized(self) -> None:
         """Ensure we have a valid token; if absent, perform login."""
         if self.token:
-            # Токен уже есть
+            # Token already exists
             return
             
         # Require username/password for login

@@ -21,7 +21,7 @@ from database import db
 
 # Enhanced logging setup
 logging.basicConfig(
-    level=logging.DEBUG,  # Изменено на DEBUG для более детального логирования
+    level=logging.DEBUG,  # Changed to DEBUG for more detailed logging
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler('bot.log', encoding='utf-8'),
@@ -103,7 +103,7 @@ async def cleanup_temp_files():
     
     for temp_file in temp_files:
         try:
-            # Проверяем возраст файла (старше 1 часа)
+            # Check file age (older than 1 hour)
             file_time = datetime.fromtimestamp(os.path.getmtime(temp_file))
             if datetime.now() - file_time > timedelta(hours=1):
                 os.remove(temp_file)
@@ -113,18 +113,18 @@ async def cleanup_temp_files():
     
     return removed_count
 
-async def update_progress_message(message: Message, progress_msg: Message, step: str, lang: str):
+async def update_progress_message(message: Message, progress_msg: Message, step: str, bot_lang: str):
     """Обновляет сообщение о прогрессе"""
     try:
-        await progress_msg.edit_text(t(lang, f'progress.{step}'))
+        await progress_msg.edit_text(t(bot_lang, f'progress.{step}'))
     except Exception as e:
         logger.warning(f"Failed to update progress message: {e}")
-        # Если не удалось обновить, отправляем новое сообщение
+        # If update failed, send a new message
         try:
             await progress_msg.delete()
         except:
             pass
-        return await message.answer(t(lang, f'progress.{step}'))
+        return await message.answer(t(bot_lang, f'progress.{step}'))
     return progress_msg
 
 def encode_image(image_path: str) -> str:
@@ -138,7 +138,7 @@ async def analyze_image(image_path: str, locations: list, lang: str = 'ru', mode
     
     locations_text = "\n".join([f"- {loc['name']}" for loc in locations])
     
-    # Добавляем информацию о caption в промпт, если она есть
+    # Add caption information to prompt if available
     caption_info = ""
     if caption and caption.strip():
         if lang == 'en':
@@ -194,7 +194,7 @@ async def analyze_image(image_path: str, locations: list, lang: str = 'ru', mode
 }}"""
 
     try:
-        # Используем выбранную модель или дефолтную
+        # Use selected model or default
         selected_model = model or config.DEFAULT_MODEL
         logger.info(f"Analyzing image with model: {selected_model}")
         
@@ -237,58 +237,73 @@ async def analyze_image(image_path: str, locations: list, lang: str = 'ru', mode
             "suggested_location": locations[0]['name'] if locations else ("Unknown" if lang == 'en' else "Unknown")
         }
 
-def settings_keyboard(current_lang: str) -> InlineKeyboardMarkup:
+def bot_lang_keyboard(current_lang: str) -> InlineKeyboardMarkup:
+    """Клавиатура выбора языка интерфейса бота"""
     builder = InlineKeyboardBuilder()
     ru_label = t(current_lang, 'settings.lang.ru') + (" ✓" if current_lang == 'ru' else "")
     en_label = t(current_lang, 'settings.lang.en') + (" ✓" if current_lang == 'en' else "")
-    builder.row(InlineKeyboardButton(text=ru_label, callback_data="lang_ru"))
-    builder.row(InlineKeyboardButton(text=en_label, callback_data="lang_en"))
+    builder.row(InlineKeyboardButton(text=ru_label, callback_data="bot_lang_ru"))
+    builder.row(InlineKeyboardButton(text=en_label, callback_data="bot_lang_en"))
+    return builder.as_markup()
+
+def gen_lang_keyboard(current_lang: str) -> InlineKeyboardMarkup:
+    """Клавиатура выбора языка генерации"""
+    builder = InlineKeyboardBuilder()
+    ru_label = t(current_lang, 'settings.lang.ru') + (" ✓" if current_lang == 'ru' else "")
+    en_label = t(current_lang, 'settings.lang.en') + (" ✓" if current_lang == 'en' else "")
+    builder.row(InlineKeyboardButton(text=ru_label, callback_data="gen_lang_ru"))
+    builder.row(InlineKeyboardButton(text=en_label, callback_data="gen_lang_en"))
+    return builder.as_markup()
+
+def settings_main_keyboard(bot_lang: str) -> InlineKeyboardMarkup:
+    """Главная клавиатура настроек"""
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text=t(bot_lang, 'settings.bot_lang.title'), callback_data="settings_bot_lang"))
+    builder.row(InlineKeyboardButton(text=t(bot_lang, 'settings.gen_lang.title'), callback_data="settings_gen_lang"))
+    builder.row(InlineKeyboardButton(text=t(bot_lang, 'settings.choose_model'), callback_data="settings_model"))
     return builder.as_markup()
 
 @router.message(Command("settings"))
 async def cmd_settings(message: Message):
     if config.ALLOWED_USER_IDS and message.from_user.id not in config.ALLOWED_USER_IDS:
         user_settings = await db.get_user_settings(message.from_user.id)
-        lang = user_settings.get('lang', 'ru')
-        await message.answer(t(lang, 'access.denied'))
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await message.answer(t(bot_lang, 'access.denied'))
         return
     
     settings = await db.get_user_settings(message.from_user.id)
+    bot_lang = settings.get('bot_lang', 'ru')
     await message.answer(
-        t(settings.get('lang', 'ru'), 'settings.title'),
-        reply_markup=settings_keyboard(settings.get('lang', 'ru'))
-    )
-    await message.answer(
-        t(settings.get('lang', 'ru'), 'settings.choose_model'),
-        reply_markup=models_keyboard(settings.get('model', config.DEFAULT_MODEL), settings.get('lang', 'ru'), 0)
+        t(bot_lang, 'settings.title'),
+        reply_markup=settings_main_keyboard(bot_lang)
     )
 
 @router.message(Command(commands=["myid", "id"]))
 async def cmd_myid(message: Message):
     """Отправить пользователю его Telegram ID (доступно всем)."""
     user_settings = await db.get_user_settings(message.from_user.id)
-    lang = user_settings.get('lang', 'ru')
-    await message.answer(t(lang, 'cmd.myid', user_id=message.from_user.id))
+    bot_lang = user_settings.get('bot_lang', 'ru')
+    await message.answer(t(bot_lang, 'cmd.myid', user_id=message.from_user.id))
 
 @router.message(Command("stats"))
 async def cmd_stats(message: Message):
     """Показать статистику бота (только для администраторов)."""
     if not is_admin(message.from_user.id):
         user_settings = await db.get_user_settings(message.from_user.id)
-        lang = user_settings.get('lang', 'ru')
-        await message.answer(t(lang, 'admin.access.denied'))
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await message.answer(t(bot_lang, 'admin.access.denied'))
         return
     
     user_settings = await db.get_user_settings(message.from_user.id)
-    lang = user_settings.get('lang', 'ru')
+    bot_lang = user_settings.get('bot_lang', 'ru')
     stats = await db.get_bot_stats()
     
     stats_text = (
-        f"{t(lang, 'admin.stats.title')}\n\n"
-        f"{t(lang, 'admin.stats.users', count=len(stats.get('users_registered', [])))}\n"
-        f"{t(lang, 'admin.stats.items', count=stats.get('items_processed', 0))}\n"
-        f"{t(lang, 'admin.stats.sessions', count=len(items_data))}\n"
-        f"{t(lang, 'admin.stats.uptime', uptime=await get_uptime())}\n\n"
+        f"{t(bot_lang, 'admin.stats.title')}\n\n"
+        f"{t(bot_lang, 'admin.stats.users', count=len(stats.get('users_registered', [])))}\n"
+        f"{t(bot_lang, 'admin.stats.items', count=stats.get('items_processed', 0))}\n"
+        f"{t(bot_lang, 'admin.stats.sessions', count=len(items_data))}\n"
+        f"{t(bot_lang, 'admin.stats.uptime', uptime=await get_uptime())}\n\n"
         f"📈 Всего запросов: {stats.get('total_requests', 0)}"
     )
     
@@ -299,19 +314,19 @@ async def cmd_cleanup(message: Message):
     """Очистить временные файлы (только для администраторов)."""
     if not is_admin(message.from_user.id):
         user_settings = await db.get_user_settings(message.from_user.id)
-        lang = user_settings.get('lang', 'ru')
-        await message.answer(t(lang, 'admin.access.denied'))
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await message.answer(t(bot_lang, 'admin.access.denied'))
         return
     
     user_settings = await db.get_user_settings(message.from_user.id)
-    lang = user_settings.get('lang', 'ru')
+    bot_lang = user_settings.get('bot_lang', 'ru')
     
     try:
         removed_count = await cleanup_temp_files()
-        await message.answer(t(lang, 'admin.cleanup.done', files=removed_count))
+        await message.answer(t(bot_lang, 'admin.cleanup.done', files=removed_count))
         log_user_action("admin_cleanup", message.from_user.id, {"files_removed": removed_count})
     except Exception as e:
-        await message.answer(t(lang, 'admin.cleanup.error', error=str(e)))
+        await message.answer(t(bot_lang, 'admin.cleanup.error', error=str(e)))
         log_error(e, "admin cleanup", message.from_user.id)
 
 @router.message(Command("testupload"))
@@ -319,23 +334,23 @@ async def cmd_test_upload(message: Message):
     """Тестирование методов загрузки фотографий (только для администраторов)."""
     if not is_admin(message.from_user.id):
         user_settings = await db.get_user_settings(message.from_user.id)
-        lang = user_settings.get('lang', 'ru')
-        await message.answer(t(lang, 'admin.access.denied'))
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await message.answer(t(bot_lang, 'admin.access.denied'))
         return
     
     user_settings = await db.get_user_settings(message.from_user.id)
-    lang = user_settings.get('lang', 'ru')
+    bot_lang = user_settings.get('bot_lang', 'ru')
     
-    await message.answer(t(lang, 'admin.test_upload'))
+    await message.answer(t(bot_lang, 'admin.test_upload'))
     
     try:
-        # Создаем тестовый предмет
+        # Create test item
         locations = await homebox_api.get_locations()
         if not locations:
             await message.answer("❌ Не удалось получить список локаций для тестирования")
             return
         
-        # Создаем тестовый предмет
+        # Create test item
         test_item_result = await homebox_api.create_item(
             name="Test Upload Item",
             description="Test item for upload methods",
@@ -348,24 +363,24 @@ async def cmd_test_upload(message: Message):
         
         test_item_id = test_item_result.get('id')
         
-        # Создаем тестовое изображение
+        # Create test image
         from PIL import Image
         import tempfile
         
         with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
-            # Создаем простое тестовое изображение
+            # Create simple test image
             img = Image.new('RGB', (100, 100), color='red')
             img.save(temp_file.name, 'JPEG')
             temp_path = temp_file.name
         
         try:
-            # Тестируем единственный метод загрузки
+            # Test the only upload method
             success = await homebox_api.upload_photo(test_item_id, temp_path)
             results = {'upload_photo': success}
             if not success:
                 results['upload_photo_error'] = homebox_api.last_error
             
-            # Форматируем результаты
+            # Format results
             results_text = ""
             for method, success in results.items():
                 if not method.endswith('_error'):
@@ -375,10 +390,10 @@ async def cmd_test_upload(message: Message):
                     if error_info:
                         results_text += f"   Ошибка: {error_info[:100]}...\n"
             
-            await message.answer(t(lang, 'admin.test_upload.results', results=results_text), parse_mode="Markdown")
+            await message.answer(t(bot_lang, 'admin.test_upload.results', results=results_text), parse_mode="Markdown")
             
         finally:
-            # Удаляем временный файл
+            # Remove temporary file
             import os
             if os.path.exists(temp_path):
                 os.remove(temp_path)
@@ -394,20 +409,20 @@ async def cmd_check_api(message: Message):
     """Проверка возможностей API HomeBox (только для администраторов)."""
     if not is_admin(message.from_user.id):
         user_settings = await db.get_user_settings(message.from_user.id)
-        lang = user_settings.get('lang', 'ru')
-        await message.answer(t(lang, 'admin.access.denied'))
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await message.answer(t(bot_lang, 'admin.access.denied'))
         return
     
     user_settings = await db.get_user_settings(message.from_user.id)
-    lang = user_settings.get('lang', 'ru')
+    bot_lang = user_settings.get('bot_lang', 'ru')
     
-    await message.answer(t(lang, 'admin.check_api'))
+    await message.answer(t(bot_lang, 'admin.check_api'))
     
     try:
-        # Проверяем возможности API
+        # Check API capabilities
         api_info = await homebox_api.check_api_capabilities()
         
-        # Форматируем результаты
+        # Format results
         results_text = ""
         for endpoint, info in api_info.items():
             if 'data' in info:
@@ -423,7 +438,7 @@ async def cmd_check_api(message: Message):
         if not results_text:
             results_text = "❌ Не удалось получить информацию об API"
         
-        await message.answer(t(lang, 'admin.check_api.results', results=results_text), parse_mode="Markdown")
+        await message.answer(t(bot_lang, 'admin.check_api.results', results=results_text), parse_mode="Markdown")
         
         log_user_action("admin_check_api", message.from_user.id, {"api_info": api_info})
         
@@ -436,23 +451,23 @@ async def cmd_quick_test(message: Message):
     """Быстрый тест загрузки фотографий (только для администраторов)."""
     if not is_admin(message.from_user.id):
         user_settings = await db.get_user_settings(message.from_user.id)
-        lang = user_settings.get('lang', 'ru')
-        await message.answer(t(lang, 'admin.access.denied'))
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await message.answer(t(bot_lang, 'admin.access.denied'))
         return
     
     user_settings = await db.get_user_settings(message.from_user.id)
-    lang = user_settings.get('lang', 'ru')
+    bot_lang = user_settings.get('bot_lang', 'ru')
     
-    await message.answer(t(lang, 'admin.quick_test'))
+    await message.answer(t(bot_lang, 'admin.quick_test'))
     
     try:
-        # Создаем тестовый предмет
+        # Create test item
         locations = await homebox_api.get_locations()
         if not locations:
             await message.answer("❌ Не удалось получить список локаций")
             return
         
-        # Создаем тестовый предмет
+        # Create test item
         test_item_result = await homebox_api.create_item(
             name="Quick Test Item",
             description="Quick test item",
@@ -465,52 +480,119 @@ async def cmd_quick_test(message: Message):
         
         test_item_id = test_item_result.get('id')
         
-        # Создаем тестовое изображение
+        # Create test image
         from PIL import Image
         import tempfile
         
         with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
-            # Создаем простое тестовое изображение
+            # Create simple test image
             img = Image.new('RGB', (50, 50), color='blue')
             img.save(temp_file.name, 'JPEG')
             temp_path = temp_file.name
         
         try:
-            # Тестируем единственный метод загрузки
+            # Test the only upload method
             success = await homebox_api.upload_photo(test_item_id, temp_path)
             
             if success:
-                await message.answer(t(lang, 'admin.quick_test.success'))
+                await message.answer(t(bot_lang, 'admin.quick_test.success'))
                 log_user_action("admin_quick_test", message.from_user.id, {"success": True})
             else:
-                await message.answer(t(lang, 'admin.quick_test.failed', error=homebox_api.last_error))
+                await message.answer(t(bot_lang, 'admin.quick_test.failed', error=homebox_api.last_error))
                 log_user_action("admin_quick_test", message.from_user.id, {"success": False, "error": homebox_api.last_error})
             
         finally:
-            # Удаляем временный файл
+            # Remove temporary file
             import os
             if os.path.exists(temp_path):
                 os.remove(temp_path)
         
     except Exception as e:
-        await message.answer(t(lang, 'admin.quick_test.failed', error=str(e)))
+        await message.answer(t(bot_lang, 'admin.quick_test.failed', error=str(e)))
         log_error(e, "admin quick test", message.from_user.id)
 
-@router.callback_query(F.data.in_({"lang_ru", "lang_en"}))
-async def cb_set_lang(callback: CallbackQuery):
+@router.callback_query(F.data == "settings_bot_lang")
+async def cb_settings_bot_lang(callback: CallbackQuery):
     if config.ALLOWED_USER_IDS and callback.from_user.id not in config.ALLOWED_USER_IDS:
         user_settings = await db.get_user_settings(callback.from_user.id)
-        lang = user_settings.get('lang', 'ru')
-        await callback.answer(t(lang, 'access.denied'), show_alert=True)
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await callback.answer(t(bot_lang, 'access.denied'), show_alert=True)
         return
     
-    lang = 'ru' if callback.data == 'lang_ru' else 'en'
     settings = await db.get_user_settings(callback.from_user.id)
-    settings['lang'] = lang
+    bot_lang = settings.get('bot_lang', 'ru')
+    await callback.message.edit_text(
+        t(bot_lang, 'settings.bot_lang.title'),
+        reply_markup=bot_lang_keyboard(bot_lang)
+    )
+    await callback.answer()
+
+@router.callback_query(F.data == "settings_gen_lang")
+async def cb_settings_gen_lang(callback: CallbackQuery):
+    if config.ALLOWED_USER_IDS and callback.from_user.id not in config.ALLOWED_USER_IDS:
+        user_settings = await db.get_user_settings(callback.from_user.id)
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await callback.answer(t(bot_lang, 'access.denied'), show_alert=True)
+        return
+    
+    settings = await db.get_user_settings(callback.from_user.id)
+    bot_lang = settings.get('bot_lang', 'ru')
+    await callback.message.edit_text(
+        t(bot_lang, 'settings.gen_lang.title'),
+        reply_markup=gen_lang_keyboard(settings.get('gen_lang', 'ru'))
+    )
+    await callback.answer()
+
+@router.callback_query(F.data == "settings_model")
+async def cb_settings_model(callback: CallbackQuery):
+    if config.ALLOWED_USER_IDS and callback.from_user.id not in config.ALLOWED_USER_IDS:
+        user_settings = await db.get_user_settings(callback.from_user.id)
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await callback.answer(t(bot_lang, 'access.denied'), show_alert=True)
+        return
+    
+    settings = await db.get_user_settings(callback.from_user.id)
+    bot_lang = settings.get('bot_lang', 'ru')
+    await callback.message.edit_text(
+        t(bot_lang, 'settings.choose_model'),
+        reply_markup=models_keyboard(settings.get('model', config.DEFAULT_MODEL), bot_lang, 0)
+    )
+    await callback.answer()
+
+@router.callback_query(F.data.in_({"bot_lang_ru", "bot_lang_en"}))
+async def cb_set_bot_lang(callback: CallbackQuery):
+    if config.ALLOWED_USER_IDS and callback.from_user.id not in config.ALLOWED_USER_IDS:
+        user_settings = await db.get_user_settings(callback.from_user.id)
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await callback.answer(t(bot_lang, 'access.denied'), show_alert=True)
+        return
+    
+    lang = 'ru' if callback.data == 'bot_lang_ru' else 'en'
+    settings = await db.get_user_settings(callback.from_user.id)
+    settings['bot_lang'] = lang
     await db.set_user_settings(callback.from_user.id, settings)
     
-    text = t(lang, 'settings.lang.set.ru') if lang == 'ru' else t(lang, 'settings.lang.set.en')
-    await callback.message.edit_reply_markup(reply_markup=settings_keyboard(lang))
+    text = t(lang, 'settings.bot_lang.set.ru') if lang == 'ru' else t(lang, 'settings.bot_lang.set.en')
+    await callback.message.edit_reply_markup(reply_markup=bot_lang_keyboard(lang))
+    await callback.message.answer(text)
+    await callback.answer()
+
+@router.callback_query(F.data.in_({"gen_lang_ru", "gen_lang_en"}))
+async def cb_set_gen_lang(callback: CallbackQuery):
+    if config.ALLOWED_USER_IDS and callback.from_user.id not in config.ALLOWED_USER_IDS:
+        user_settings = await db.get_user_settings(callback.from_user.id)
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await callback.answer(t(bot_lang, 'access.denied'), show_alert=True)
+        return
+    
+    lang = 'ru' if callback.data == 'gen_lang_ru' else 'en'
+    settings = await db.get_user_settings(callback.from_user.id)
+    settings['gen_lang'] = lang
+    await db.set_user_settings(callback.from_user.id, settings)
+    
+    bot_lang = settings.get('bot_lang', 'ru')
+    text = t(bot_lang, 'settings.gen_lang.set.ru') if lang == 'ru' else t(bot_lang, 'settings.gen_lang.set.en')
+    await callback.message.edit_reply_markup(reply_markup=gen_lang_keyboard(lang))
     await callback.message.answer(text)
     await callback.answer()
 
@@ -522,7 +604,7 @@ def models_keyboard(current_model: str, lang: str = 'ru', page: int = 0, page_si
     for m in models[start:end]:
         label = ("✓ " if m == current_model else "") + m
         builder.row(InlineKeyboardButton(text=label, callback_data=f"model_{m}"))
-    # Навигация
+    # Navigation
     nav = []
     if page > 0:
         nav.append(InlineKeyboardButton(text=t(lang, 'btn.prev'), callback_data=f"model_page_{page-1}"))
@@ -536,8 +618,8 @@ def models_keyboard(current_model: str, lang: str = 'ru', page: int = 0, page_si
 async def cb_model_page(callback: CallbackQuery):
     if config.ALLOWED_USER_IDS and callback.from_user.id not in config.ALLOWED_USER_IDS:
         user_settings = await db.get_user_settings(callback.from_user.id)
-        lang = user_settings.get('lang', 'ru')
-        await callback.answer(t(lang, 'access.denied'), show_alert=True)
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await callback.answer(t(bot_lang, 'access.denied'), show_alert=True)
         return
     
     try:
@@ -553,15 +635,15 @@ async def cb_model_page(callback: CallbackQuery):
 async def cb_set_model(callback: CallbackQuery):
     if config.ALLOWED_USER_IDS and callback.from_user.id not in config.ALLOWED_USER_IDS:
         user_settings = await db.get_user_settings(callback.from_user.id)
-        lang = user_settings.get('lang', 'ru')
-        await callback.answer(t(lang, 'access.denied'), show_alert=True)
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await callback.answer(t(bot_lang, 'access.denied'), show_alert=True)
         return
     
     model = callback.data.replace("model_", "")
     if model not in config.AVAILABLE_MODELS:
         user_settings = await db.get_user_settings(callback.from_user.id)
-        lang = user_settings.get('lang', 'ru')
-        await callback.answer(t(lang, 'settings.model.unavailable'), show_alert=True)
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await callback.answer(t(bot_lang, 'settings.model.unavailable'), show_alert=True)
         return
     
     settings = await db.get_user_settings(callback.from_user.id)
@@ -569,33 +651,33 @@ async def cb_set_model(callback: CallbackQuery):
     await db.set_user_settings(callback.from_user.id, settings)
     
     settings = await db.get_user_settings(callback.from_user.id)
-    lang = settings.get('lang', 'ru')
-    await callback.message.edit_reply_markup(reply_markup=models_keyboard(model, lang, 0))
-    await callback.message.answer(t(lang, 'model.selected', model=model))
+    bot_lang = settings.get('bot_lang', 'ru')
+    await callback.message.edit_reply_markup(reply_markup=models_keyboard(model, bot_lang, 0))
+    await callback.message.answer(t(bot_lang, 'model.selected', model=model))
     await callback.answer()
 
-def create_confirmation_keyboard(locations: list, current_location: str, lang: str = 'ru') -> InlineKeyboardMarkup:
+def create_confirmation_keyboard(locations: list, current_location: str, bot_lang: str = 'ru') -> InlineKeyboardMarkup:
     """Создание клавиатуры для подтверждения"""
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text=t(lang, 'btn.edit.name'), callback_data="edit_name")
+        InlineKeyboardButton(text=t(bot_lang, 'btn.edit.name'), callback_data="edit_name")
     )
     builder.row(
-        InlineKeyboardButton(text=t(lang, 'btn.edit.description'), callback_data="edit_description")
+        InlineKeyboardButton(text=t(bot_lang, 'btn.edit.description'), callback_data="edit_description")
     )
     builder.row(
-        InlineKeyboardButton(text=t(lang, 'btn.edit.location'), callback_data="edit_location")
+        InlineKeyboardButton(text=t(bot_lang, 'btn.edit.location'), callback_data="edit_location")
     )
     builder.row(
-        InlineKeyboardButton(text=t(lang, 'btn.confirm'), callback_data="confirm")
+        InlineKeyboardButton(text=t(bot_lang, 'btn.confirm'), callback_data="confirm")
     )
     builder.row(
-        InlineKeyboardButton(text=t(lang, 'btn.cancel'), callback_data="cancel")
+        InlineKeyboardButton(text=t(bot_lang, 'btn.cancel'), callback_data="cancel")
     )
     
     return builder.as_markup()
 
-def create_locations_keyboard(locations: list, lang: str = 'ru') -> InlineKeyboardMarkup:
+def create_locations_keyboard(locations: list, bot_lang: str = 'ru') -> InlineKeyboardMarkup:
     """Создание клавиатуры выбора локации"""
     builder = InlineKeyboardBuilder()
     
@@ -608,7 +690,7 @@ def create_locations_keyboard(locations: list, lang: str = 'ru') -> InlineKeyboa
         )
     
     builder.row(
-        InlineKeyboardButton(text=t(lang, 'back'), callback_data="back_to_confirm")
+        InlineKeyboardButton(text=t(bot_lang, 'back'), callback_data="back_to_confirm")
     )
     
     return builder.as_markup()
@@ -622,32 +704,32 @@ async def cmd_start(message: Message, state: FSMContext):
             "first_name": message.from_user.first_name
         })
         
-        # Проверяем авторизацию пользователя
+        # Check user authorization
         if config.ALLOWED_USER_IDS and message.from_user.id not in config.ALLOWED_USER_IDS:
             user_settings = await db.get_user_settings(message.from_user.id)
-            lang = user_settings.get('lang', 'ru')
-            await message.answer(t(lang, 'access.denied'))
+            bot_lang = user_settings.get('bot_lang', 'ru')
+            await message.answer(t(bot_lang, 'access.denied'))
             log_user_action("access_denied", message.from_user.id)
             return
             
         await state.clear()
         
-        # Получаем или создаем настройки пользователя
+        # Get or create user settings
         user_settings = await db.get_user_settings(message.from_user.id)
         if not user_settings or user_settings == {'lang': 'ru', 'model': 'gpt-4o'}:
-            # Новый пользователь
+            # New user
             await db.set_user_settings(message.from_user.id, {
                 'lang': 'ru',
                 'model': config.DEFAULT_MODEL
             })
             log_user_action("first_time_user", message.from_user.id)
         
-        # Обновляем статистику
+        # Update statistics
         await db.add_user(message.from_user.id)
         await db.increment_requests()
             
-        lang = user_settings.get('lang', 'ru')
-        await message.answer(t(lang, 'start.intro'))
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await message.answer(t(bot_lang, 'start.intro'))
         await state.set_state(ItemStates.waiting_for_photo)
         
     except Exception as e:
@@ -663,82 +745,83 @@ async def handle_photo(message: Message, state: FSMContext):
             "photo_size": len(message.photo) if message.photo else 0
         })
         
-        # Обновляем статистику
+        # Update statistics
         await db.increment_requests()
         
         if config.ALLOWED_USER_IDS and message.from_user.id not in config.ALLOWED_USER_IDS:
             user_settings = await db.get_user_settings(message.from_user.id)
-            lang = user_settings.get('lang', 'ru')
-            await message.answer(t(lang, 'access.denied'))
+            bot_lang = user_settings.get('bot_lang', 'ru')
+            await message.answer(t(bot_lang, 'access.denied'))
             return
             
         user_settings = await db.get_user_settings(message.from_user.id)
-        lang = user_settings.get('lang', 'ru')
+        bot_lang = user_settings.get('bot_lang', 'ru')
         
-        # Отправляем начальный индикатор загрузки
-        progress_msg = await message.answer(t(lang, 'progress.downloading'))
+        # Send initial loading indicator
+        progress_msg = await message.answer(t(bot_lang, 'progress.downloading'))
         
-        # Получаем фото в максимальном качестве
+        # Get photo in maximum quality
         photo = message.photo[-1]
         
-        # Скачиваем фото
+        # Download photo
         file = await bot.get_file(photo.file_id)
         file_path = f"temp_{message.from_user.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
         await bot.download_file(file.file_path, file_path)
         
-        # Обновляем прогресс - валидация
-        progress_msg = await update_progress_message(message, progress_msg, 'validating', lang)
+        # Update progress - validation
+        progress_msg = await update_progress_message(message, progress_msg, 'validating', bot_lang)
         
-        # Валидируем скачанное изображение
+        # Validate downloaded image
         is_valid, error_msg = validate_image_file(file_path)
         if not is_valid:
-            # Удаляем невалидный файл
+            # Remove invalid file
             if os.path.exists(file_path):
                 os.remove(file_path)
             
             await progress_msg.delete()
             await message.answer(
-                f"{t(lang, 'error.invalid_image', error=error_msg)}\n\n"
-                f"{t(lang, 'error.try_again')}"
+                f"{t(bot_lang, 'error.invalid_image', error=error_msg)}\n\n"
+                f"{t(bot_lang, 'error.try_again')}"
             )
             return
         
-        # Обновляем прогресс - получение локаций
-        progress_msg = await update_progress_message(message, progress_msg, 'getting_locations', lang)
+        # Update progress - getting locations
+        progress_msg = await update_progress_message(message, progress_msg, 'getting_locations', bot_lang)
         
-        # Получаем локации из Homebox
+        # Get locations from Homebox
         locations = await homebox_api.get_locations()
         
         if not locations:
-            # Удаляем временный файл
+            # Remove temporary file
             if os.path.exists(file_path):
                 os.remove(file_path)
             
             await progress_msg.delete()
-            # Покажем диагностическую информацию, если доступна
+            # Show diagnostic information if available
             diagnostic = getattr(homebox_api, 'last_error', None)
             if diagnostic:
                 await message.answer(
-                    f"{t(lang, 'homebox.locations.fail')}\n\n"
+                    f"{t(bot_lang, 'homebox.locations.fail')}\n\n"
                     f"Подробности: {diagnostic}"
                 )
             else:
-                await message.answer(t(lang, 'homebox.locations.fail'))
+                await message.answer(t(bot_lang, 'homebox.locations.fail'))
             await state.clear()
             return
         
-        # Обновляем прогресс - анализ ИИ
-        progress_msg = await update_progress_message(message, progress_msg, 'analyzing', lang)
+        # Update progress - AI analysis
+        progress_msg = await update_progress_message(message, progress_msg, 'analyzing', bot_lang)
         
-        # Анализируем изображение
+        # Analyze image
         model = user_settings.get('model', config.DEFAULT_MODEL)
+        gen_lang = user_settings.get('gen_lang', 'ru')
         
-        # Извлекаем caption (описание фото), если есть
+        # Extract caption (photo description) if available
         caption = message.caption if message.caption else None
         
-        analysis = await analyze_image(file_path, locations, lang, model, caption)
+        analysis = await analyze_image(file_path, locations, gen_lang, model, caption)
         
-        # Находим ID предложенной локации
+        # Find suggested location ID
         suggested_location_id = None
         for loc in locations:
             if loc['name'] == analysis['suggested_location']:
@@ -749,7 +832,7 @@ async def handle_photo(message: Message, state: FSMContext):
             suggested_location_id = str(locations[0]['id'])
             analysis['suggested_location'] = locations[0]['name']
         
-        # Сохраняем данные
+        # Save data
         items_data[message.from_user.id] = {
             'name': analysis['name'],
             'description': analysis['description'],
@@ -761,31 +844,31 @@ async def handle_photo(message: Message, state: FSMContext):
             'progress_msg_id': progress_msg.message_id
         }
         
-        # Формируем сообщение с информацией о caption
+        # Form message with caption information
         caption_info = ""
         if caption and caption.strip():
-            caption_info = t(lang, 'caption.used') + "\n\n"
+            caption_info = t(bot_lang, 'caption.used') + "\n\n"
         else:
-            caption_info = t(lang, 'caption.not_used') + "\n\n"
+            caption_info = t(bot_lang, 'caption.not_used') + "\n\n"
         
-        # Удаляем сообщение о прогрессе
+        # Remove progress message
         try:
             await progress_msg.delete()
         except Exception:
             pass
         
-        # Отправляем результат
+        # Send result
         await message.answer_photo(
             photo=photo.file_id,
             caption=(
-                t(lang, 'result.title')
+                t(bot_lang, 'result.title')
                 + caption_info
-                + t(lang, 'field.name', value=analysis['name']) + "\n\n"
-                + t(lang, 'field.description', value=analysis['description']) + "\n\n"
-                + t(lang, 'field.location', value=analysis['suggested_location']) + "\n\n"
-                + t(lang, 'edit.what_change')
+                + t(bot_lang, 'field.name', value=analysis['name']) + "\n\n"
+                + t(bot_lang, 'field.description', value=analysis['description']) + "\n\n"
+                + t(bot_lang, 'field.location', value=analysis['suggested_location']) + "\n\n"
+                + t(bot_lang, 'edit.what_change')
             ),
-            reply_markup=create_confirmation_keyboard(locations, analysis['suggested_location'], lang),
+            reply_markup=create_confirmation_keyboard(locations, analysis['suggested_location'], bot_lang),
             parse_mode="Markdown"
         )
         
@@ -798,7 +881,7 @@ async def handle_photo(message: Message, state: FSMContext):
     except Exception as e:
         log_error(e, "photo handling", message.from_user.id)
         
-        # Очищаем временные файлы при ошибке
+        # Clean up temporary files on error
         temp_files = [f for f in os.listdir('.') if f.startswith(f'temp_{message.from_user.id}_')]
         for temp_file in temp_files:
             try:
@@ -807,7 +890,7 @@ async def handle_photo(message: Message, state: FSMContext):
                 pass
         
         user_settings = await db.get_user_settings(message.from_user.id)
-        lang = user_settings.get('lang', 'ru')
+        bot_lang = user_settings.get('bot_lang', 'ru')
         await message.answer(
             "Произошла ошибка при обработке фотографии. Попробуйте еще раз или отправьте другое фото."
         )
@@ -822,8 +905,8 @@ async def edit_name(callback: CallbackQuery, state: FSMContext):
         pass
     
     user_settings = await db.get_user_settings(callback.from_user.id)
-    lang = user_settings.get('lang', 'ru')
-    await callback.message.answer(t(lang, 'edit.enter_name'))
+    bot_lang = user_settings.get('bot_lang', 'ru')
+    await callback.message.answer(t(bot_lang, 'edit.enter_name'))
     await state.set_state(ItemStates.editing_name)
     await callback.answer()
 
@@ -835,16 +918,16 @@ async def save_new_name(message: Message, state: FSMContext):
         user_data['name'] = message.text
         
         user_settings = await db.get_user_settings(message.from_user.id)
-        lang = user_settings.get('lang', 'ru')
+        bot_lang = user_settings.get('bot_lang', 'ru')
         await message.answer(
-            f"{t(lang, 'changed.name')}\n\n"
-            f"{t(lang, 'field.name', value=user_data['name'])}\n"
-            f"{t(lang, 'field.description', value=user_data['description'])}\n"
+            f"{t(bot_lang, 'changed.name')}\n\n"
+            f"{t(bot_lang, 'field.name', value=user_data['name'])}\n"
+            f"{t(bot_lang, 'field.description', value=user_data['description'])}\n"
             f"**Ящик:** {user_data['location_name']}",
             reply_markup=create_confirmation_keyboard(
                 user_data['locations'],
                 user_data['location_name'],
-                lang
+                bot_lang
             ),
             parse_mode="Markdown"
         )
@@ -860,8 +943,8 @@ async def edit_description(callback: CallbackQuery, state: FSMContext):
         pass
     
     user_settings = await db.get_user_settings(callback.from_user.id)
-    lang = user_settings.get('lang', 'ru')
-    await callback.message.answer(t(lang, 'edit.enter_description'))
+    bot_lang = user_settings.get('bot_lang', 'ru')
+    await callback.message.answer(t(bot_lang, 'edit.enter_description'))
     await state.set_state(ItemStates.editing_description)
     await callback.answer()
 
@@ -873,16 +956,16 @@ async def save_new_description(message: Message, state: FSMContext):
         user_data['description'] = message.text
         
         user_settings = await db.get_user_settings(message.from_user.id)
-        lang = user_settings.get('lang', 'ru')
+        bot_lang = user_settings.get('bot_lang', 'ru')
         await message.answer(
-            f"{t(lang, 'changed.description')}\n\n"
-            f"{t(lang, 'field.name', value=user_data['name'])}\n"
-            f"{t(lang, 'field.description', value=user_data['description'])}\n"
+            f"{t(bot_lang, 'changed.description')}\n\n"
+            f"{t(bot_lang, 'field.name', value=user_data['name'])}\n"
+            f"{t(bot_lang, 'field.description', value=user_data['description'])}\n"
             f"**Ящик:** {user_data['location_name']}",
             reply_markup=create_confirmation_keyboard(
                 user_data['locations'],
                 user_data['location_name'],
-                lang
+                bot_lang
             ),
             parse_mode="Markdown"
         )
@@ -899,10 +982,10 @@ async def edit_location(callback: CallbackQuery, state: FSMContext):
         except Exception:
             pass
         user_settings = await db.get_user_settings(callback.from_user.id)
-        lang = user_settings.get('lang', 'ru')
+        bot_lang = user_settings.get('bot_lang', 'ru')
         await callback.message.answer(
-            t(lang, 'edit.select_location'),
-            reply_markup=create_locations_keyboard(user_data['locations'], lang)
+            t(bot_lang, 'edit.select_location'),
+            reply_markup=create_locations_keyboard(user_data['locations'], bot_lang)
         )
         await state.set_state(ItemStates.selecting_location)
     await callback.answer()
@@ -919,7 +1002,7 @@ async def save_new_location(callback: CallbackQuery, state: FSMContext):
             await callback.message.edit_reply_markup(reply_markup=None)
         except Exception:
             pass
-        # Находим название локации
+        # Find location name
         location_name = None
         for loc in user_data['locations']:
             if str(loc['id']) == str(location_id):
@@ -930,16 +1013,16 @@ async def save_new_location(callback: CallbackQuery, state: FSMContext):
         user_data['location_name'] = location_name
         
         user_settings = await db.get_user_settings(callback.from_user.id)
-        lang = user_settings.get('lang', 'ru')
+        bot_lang = user_settings.get('bot_lang', 'ru')
         await callback.message.answer(
-            f"{t(lang, 'changed.location')}\n\n"
-            f"{t(lang, 'field.name', value=user_data['name'])}\n"
-            f"{t(lang, 'field.description', value=user_data['description'])}\n"
+            f"{t(bot_lang, 'changed.location')}\n\n"
+            f"{t(bot_lang, 'field.name', value=user_data['name'])}\n"
+            f"{t(bot_lang, 'field.description', value=user_data['description'])}\n"
             f"**Ящик:** {user_data['location_name']}",
             reply_markup=create_confirmation_keyboard(
                 user_data['locations'],
                 user_data['location_name'],
-                lang
+                bot_lang
             ),
             parse_mode="Markdown"
         )
@@ -957,15 +1040,15 @@ async def back_to_confirm(callback: CallbackQuery, state: FSMContext):
         except Exception:
             pass
         user_settings = await db.get_user_settings(callback.from_user.id)
-        lang = user_settings.get('lang', 'ru')
+        bot_lang = user_settings.get('bot_lang', 'ru')
         await callback.message.answer(
-            f"{t(lang, 'field.name', value=user_data['name'])}\n"
-            f"{t(lang, 'field.description', value=user_data['description'])}\n"
+            f"{t(bot_lang, 'field.name', value=user_data['name'])}\n"
+            f"{t(bot_lang, 'field.description', value=user_data['description'])}\n"
             f"**Ящик:** {user_data['location_name']}",
             reply_markup=create_confirmation_keyboard(
                 user_data['locations'],
                 user_data['location_name'],
-                lang
+                bot_lang
             ),
             parse_mode="Markdown"
         )
@@ -981,27 +1064,27 @@ async def confirm_and_add(callback: CallbackQuery, state: FSMContext):
     except Exception:
         pass
     user_settings = await db.get_user_settings(callback.from_user.id)
-    lang = user_settings.get('lang', 'ru')
+    bot_lang = user_settings.get('bot_lang', 'ru')
     
-    # Отправляем индикатор загрузки
-    progress_msg = await callback.message.answer(t(lang, 'progress.uploading'))
+    # Send loading indicator
+    progress_msg = await callback.message.answer(t(bot_lang, 'progress.uploading'))
     
     user_data = items_data.get(callback.from_user.id)
     if user_data:
-        # Убедимся, что локальный файл существует. Если нет — попробуем скачать заново по file_id
+        # Make sure local file exists. If not, try to download again by file_id
         try:
             photo_path = user_data.get('photo_path')
             photo_file_id = user_data.get('photo_file_id')
             if (not photo_path) or (not os.path.exists(photo_path)):
                 if photo_file_id:
                     file = await bot.get_file(photo_file_id)
-                    # Восстановим путь, если отсутствует
+                    # Restore path if missing
                     if not photo_path:
                         photo_path = f"temp_{callback.from_user.id}.jpg"
                         user_data['photo_path'] = photo_path
                     await bot.download_file(file.file_path, photo_path)
         except Exception as _:
-            # Игнорируем, Homebox сохранит без фото, но мы не падаем
+            # Ignore, Homebox will save without photo, but we don't crash
             pass
         result = await homebox_api.create_item(
             name=user_data['name'],
@@ -1010,7 +1093,7 @@ async def confirm_and_add(callback: CallbackQuery, state: FSMContext):
             photo_path=user_data['photo_path']
         )
         
-        # Удаляем индикатор прогресса
+        # Remove progress indicator
         try:
             await progress_msg.delete()
         except Exception:
@@ -1018,11 +1101,11 @@ async def confirm_and_add(callback: CallbackQuery, state: FSMContext):
         
         if 'error' not in result:
             await callback.message.answer(
-                f"{t(lang, 'added.success')}\n\n"
-                f"{t(lang, 'field.name', value=user_data['name'])}\n"
+                f"{t(bot_lang, 'added.success')}\n\n"
+                f"{t(bot_lang, 'field.name', value=user_data['name'])}\n"
                 f"**Ящик:** {user_data['location_name']}\n\n"
-                f"{t(lang, 'added.new_prompt')}\n"
-                f"{(t(lang, 'added.photo_failed') if result.get('photo_upload') == 'failed' else '')}",
+                f"{t(bot_lang, 'added.new_prompt')}\n"
+                f"{(t(bot_lang, 'added.photo_failed') if result.get('photo_upload') == 'failed' else '')}",
                 parse_mode="Markdown"
             )
             if result.get('photo_upload') == 'failed':
@@ -1032,13 +1115,13 @@ async def confirm_and_add(callback: CallbackQuery, state: FSMContext):
                         f"Подробности загрузки фото: {diagnostic}"
                     )
             
-            # Удаляем временный файл
+            # Remove temporary file
             if os.path.exists(user_data['photo_path']):
                 os.remove(user_data['photo_path'])
             
-            # Очищаем данные
+            # Clear data
             del items_data[callback.from_user.id]
-            # Обновляем статистику
+            # Update statistics
             await db.increment_items_processed()
             await state.set_state(ItemStates.waiting_for_photo)
         else:
@@ -1062,7 +1145,7 @@ async def cancel_operation(callback: CallbackQuery, state: FSMContext):
         del items_data[callback.from_user.id]
     
     user_settings = await db.get_user_settings(callback.from_user.id)
-    lang = user_settings.get('lang', 'ru')
+    bot_lang = user_settings.get('bot_lang', 'ru')
     await callback.message.answer(t(lang, 'cancel.done'))
     await state.set_state(ItemStates.waiting_for_photo)
     await callback.answer()
@@ -1070,7 +1153,7 @@ async def cancel_operation(callback: CallbackQuery, state: FSMContext):
 async def main():
     dp.include_router(router)
     
-    # Инициализируем HomeBox API с контекстным менеджером
+    # Initialize HomeBox API with context manager
     async with homebox_api:
         logger.info("Starting bot...")
         await dp.start_polling(bot)

@@ -1,33 +1,33 @@
 #!/bin/bash
 
-# Скрипт для безопасного запуска бота HomeBox AI
-# Автоматически останавливает предыдущие экземпляры
+# Script for safe HomeBox AI bot startup
+# Automatically stops previous instances
 
-echo "🤖 Запуск HomeBox AI Bot..."
+echo "🤖 Starting HomeBox AI Bot..."
 
-# Переходим в директорию проекта
+# Navigate to project directory
 cd "$(dirname "$0")"
 
-# Проверяем, запущен ли уже бот
+# Check if bot is already running
 BOT_PID=$(ps aux | grep "python bot.py" | grep -v grep | awk '{print $2}')
 
 if [ ! -z "$BOT_PID" ]; then
-    echo "⚠️  Найден запущенный экземпляр бота (PID: $BOT_PID)"
-    echo "🛑 Останавливаем предыдущий экземпляр..."
+    echo "⚠️  Found running bot instance (PID: $BOT_PID)"
+    echo "🛑 Stopping previous instance..."
     kill $BOT_PID
     sleep 2
     
-    # Проверяем, что процесс действительно остановлен
+    # Check if process is actually stopped
     if ps -p $BOT_PID > /dev/null 2>&1; then
-        echo "🔨 Принудительно завершаем процесс..."
+        echo "🔨 Forcefully terminating process..."
         kill -9 $BOT_PID
         sleep 1
     fi
     
-    echo "✅ Предыдущий экземпляр остановлен"
+    echo "✅ Previous instance stopped"
 fi
 
-# Активируем виртуальное окружение и запускаем бота
-echo "🚀 Запускаем новый экземпляр бота..."
+# Activate virtual environment and start bot
+echo "🚀 Starting new bot instance..."
 source venv/bin/activate
 python bot.py
