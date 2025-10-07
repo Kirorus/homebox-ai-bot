@@ -113,10 +113,20 @@ async def cleanup_temp_files():
     
     return removed_count
 
-async def update_progress_message(message: Message, progress_msg: Message, step: str, bot_lang: str):
-    """Обновляет сообщение о прогрессе"""
+def create_progress_bar(step: int, total: int = 5, bot_lang: str = 'ru') -> str:
+    """Создает визуальный прогресс-бар"""
+    progress_chars = ['⬜', '🟨', '🟧', '🟩', '✅']
+    filled = min(step, total)
+    bar = ''.join([progress_chars[min(i, len(progress_chars)-1)] for i in range(total)])
+    return f"{bar} {filled}/{total}"
+
+async def update_progress_message(message: Message, progress_msg: Message, step: str, bot_lang: str, step_num: int = 1):
+    """Обновляет сообщение о прогрессе с визуальным индикатором"""
+    progress_bar = create_progress_bar(step_num)
+    progress_text = f"{progress_bar}\n\n{t(bot_lang, f'progress.{step}')}"
+    
     try:
-        await progress_msg.edit_text(t(bot_lang, f'progress.{step}'))
+        await progress_msg.edit_text(progress_text)
     except Exception as e:
         logger.warning(f"Failed to update progress message: {e}")
         # If update failed, send a new message
@@ -124,7 +134,7 @@ async def update_progress_message(message: Message, progress_msg: Message, step:
             await progress_msg.delete()
         except:
             pass
-        return await message.answer(t(bot_lang, f'progress.{step}'))
+        return await message.answer(progress_text)
     return progress_msg
 
 def encode_image(image_path: str) -> str:
@@ -256,11 +266,26 @@ def gen_lang_keyboard(current_lang: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 def settings_main_keyboard(bot_lang: str) -> InlineKeyboardMarkup:
-    """Главная клавиатура настроек"""
+    """Главная клавиатура настроек с улучшенным дизайном"""
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text=t(bot_lang, 'settings.bot_lang.title'), callback_data="settings_bot_lang"))
-    builder.row(InlineKeyboardButton(text=t(bot_lang, 'settings.gen_lang.title'), callback_data="settings_gen_lang"))
-    builder.row(InlineKeyboardButton(text=t(bot_lang, 'settings.choose_model'), callback_data="settings_model"))
+    
+    # Первый ряд - языки
+    builder.row(
+        InlineKeyboardButton(text=t(bot_lang, 'settings.bot_lang.title'), callback_data="settings_bot_lang"),
+        InlineKeyboardButton(text=t(bot_lang, 'settings.gen_lang.title'), callback_data="settings_gen_lang")
+    )
+    
+    # Второй ряд - модель
+    builder.row(
+        InlineKeyboardButton(text=t(bot_lang, 'settings.choose_model'), callback_data="settings_model")
+    )
+    
+    # Третий ряд - быстрые действия
+    builder.row(
+        InlineKeyboardButton(text="📊 Статистика", callback_data="quick_stats"),
+        InlineKeyboardButton(text="🔄 Перезапуск", callback_data="quick_restart")
+    )
+    
     return builder.as_markup()
 
 @router.message(Command("settings"))
@@ -299,11 +324,11 @@ async def cmd_stats(message: Message):
     stats = await db.get_bot_stats()
     
     stats_text = (
-        f"{t(bot_lang, 'admin.stats.title')}\n\n"
-        f"{t(bot_lang, 'admin.stats.users', count=len(stats.get('users_registered', [])))}\n"
-        f"{t(bot_lang, 'admin.stats.items', count=stats.get('items_processed', 0))}\n"
-        f"{t(bot_lang, 'admin.stats.sessions', count=len(items_data))}\n"
-        f"{t(bot_lang, 'admin.stats.uptime', uptime=await get_uptime())}\n\n"
+        f"**{t(bot_lang, 'admin.stats.title')}**\n\n"
+        f"👥 {t(bot_lang, 'admin.stats.users', count=len(stats.get('users_registered', [])))}\n"
+        f"📦 {t(bot_lang, 'admin.stats.items', count=stats.get('items_processed', 0))}\n"
+        f"🔄 {t(bot_lang, 'admin.stats.sessions', count=len(items_data))}\n"
+        f"⏱️ {t(bot_lang, 'admin.stats.uptime', uptime=await get_uptime())}\n\n"
         f"📈 Всего запросов: {stats.get('total_requests', 0)}"
     )
     
@@ -575,7 +600,7 @@ async def cb_set_bot_lang(callback: CallbackQuery):
     text = t(lang, 'settings.bot_lang.set.ru') if lang == 'ru' else t(lang, 'settings.bot_lang.set.en')
     await callback.message.edit_reply_markup(reply_markup=bot_lang_keyboard(lang))
     await callback.message.answer(text)
-    await callback.answer()
+    await callback.answer(f"🌐 Язык изменен на {lang.upper()}", show_alert=True)
 
 @router.callback_query(F.data.in_({"gen_lang_ru", "gen_lang_en"}))
 async def cb_set_gen_lang(callback: CallbackQuery):
@@ -594,7 +619,7 @@ async def cb_set_gen_lang(callback: CallbackQuery):
     text = t(bot_lang, 'settings.gen_lang.set.ru') if lang == 'ru' else t(bot_lang, 'settings.gen_lang.set.en')
     await callback.message.edit_reply_markup(reply_markup=gen_lang_keyboard(lang))
     await callback.message.answer(text)
-    await callback.answer()
+    await callback.answer(f"🤖 Язык генерации: {lang.upper()}", show_alert=True)
 
 def models_keyboard(current_model: str, lang: str = 'ru', page: int = 0, page_size: int = 10) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
@@ -654,41 +679,51 @@ async def cb_set_model(callback: CallbackQuery):
     bot_lang = settings.get('bot_lang', 'ru')
     await callback.message.edit_reply_markup(reply_markup=models_keyboard(model, bot_lang, 0))
     await callback.message.answer(t(bot_lang, 'model.selected', model=model))
-    await callback.answer()
+    await callback.answer(f"🧠 Модель: {model}", show_alert=True)
 
 def create_confirmation_keyboard(locations: list, current_location: str, bot_lang: str = 'ru') -> InlineKeyboardMarkup:
-    """Создание клавиатуры для подтверждения"""
+    """Создание клавиатуры для подтверждения с улучшенным дизайном"""
     builder = InlineKeyboardBuilder()
+    
+    # Первый ряд - редактирование
     builder.row(
-        InlineKeyboardButton(text=t(bot_lang, 'btn.edit.name'), callback_data="edit_name")
-    )
-    builder.row(
+        InlineKeyboardButton(text=t(bot_lang, 'btn.edit.name'), callback_data="edit_name"),
         InlineKeyboardButton(text=t(bot_lang, 'btn.edit.description'), callback_data="edit_description")
     )
+    
+    # Второй ряд - локация
     builder.row(
         InlineKeyboardButton(text=t(bot_lang, 'btn.edit.location'), callback_data="edit_location")
     )
+    
+    # Третий ряд - основные действия
     builder.row(
-        InlineKeyboardButton(text=t(bot_lang, 'btn.confirm'), callback_data="confirm")
-    )
-    builder.row(
+        InlineKeyboardButton(text=t(bot_lang, 'btn.confirm'), callback_data="confirm"),
         InlineKeyboardButton(text=t(bot_lang, 'btn.cancel'), callback_data="cancel")
     )
     
     return builder.as_markup()
 
 def create_locations_keyboard(locations: list, bot_lang: str = 'ru') -> InlineKeyboardMarkup:
-    """Создание клавиатуры выбора локации"""
+    """Создание клавиатуры выбора локации с улучшенным дизайном"""
     builder = InlineKeyboardBuilder()
     
-    for loc in locations:
-        builder.row(
-            InlineKeyboardButton(
-                text=loc['name'],
-                callback_data=f"location_{loc['id']}"
-            )
-        )
+    # Добавляем локации по 2 в ряд для компактности
+    for i in range(0, len(locations), 2):
+        row_buttons = []
+        for j in range(2):
+            if i + j < len(locations):
+                loc = locations[i + j]
+                row_buttons.append(
+                    InlineKeyboardButton(
+                        text=loc['name'],
+                        callback_data=f"location_{loc['id']}"
+                    )
+                )
+        if row_buttons:
+            builder.row(*row_buttons)
     
+    # Кнопка назад
     builder.row(
         InlineKeyboardButton(text=t(bot_lang, 'back'), callback_data="back_to_confirm")
     )
@@ -769,7 +804,7 @@ async def handle_photo(message: Message, state: FSMContext):
         await bot.download_file(file.file_path, file_path)
         
         # Update progress - validation
-        progress_msg = await update_progress_message(message, progress_msg, 'validating', bot_lang)
+        progress_msg = await update_progress_message(message, progress_msg, 'validating', bot_lang, 2)
         
         # Validate downloaded image
         is_valid, error_msg = validate_image_file(file_path)
@@ -786,7 +821,7 @@ async def handle_photo(message: Message, state: FSMContext):
             return
         
         # Update progress - getting locations
-        progress_msg = await update_progress_message(message, progress_msg, 'getting_locations', bot_lang)
+        progress_msg = await update_progress_message(message, progress_msg, 'getting_locations', bot_lang, 3)
         
         # Get locations from Homebox
         locations = await homebox_api.get_locations()
@@ -810,7 +845,7 @@ async def handle_photo(message: Message, state: FSMContext):
             return
         
         # Update progress - AI analysis
-        progress_msg = await update_progress_message(message, progress_msg, 'analyzing', bot_lang)
+        progress_msg = await update_progress_message(message, progress_msg, 'analyzing', bot_lang, 4)
         
         # Analyze image
         model = user_settings.get('model', config.DEFAULT_MODEL)
@@ -857,17 +892,22 @@ async def handle_photo(message: Message, state: FSMContext):
         except Exception:
             pass
         
-        # Send result
+        # Send result with improved formatting
+        result_caption = (
+            f"**{t(bot_lang, 'result.title')}**\n\n"
+            f"{caption_info}"
+            f"📝 **{t(bot_lang, 'field.name', value='')}**\n"
+            f"`{analysis['name']}`\n\n"
+            f"📋 **{t(bot_lang, 'field.description', value='')}**\n"
+            f"`{analysis['description']}`\n\n"
+            f"📦 **{t(bot_lang, 'field.location', value='')}**\n"
+            f"`{analysis['suggested_location']}`\n\n"
+            f"✨ {t(bot_lang, 'edit.what_change')}"
+        )
+        
         await message.answer_photo(
             photo=photo.file_id,
-            caption=(
-                t(bot_lang, 'result.title')
-                + caption_info
-                + t(bot_lang, 'field.name', value=analysis['name']) + "\n\n"
-                + t(bot_lang, 'field.description', value=analysis['description']) + "\n\n"
-                + t(bot_lang, 'field.location', value=analysis['suggested_location']) + "\n\n"
-                + t(bot_lang, 'edit.what_change')
-            ),
+            caption=result_caption,
             reply_markup=create_confirmation_keyboard(locations, analysis['suggested_location'], bot_lang),
             parse_mode="Markdown"
         )
@@ -919,11 +959,17 @@ async def save_new_name(message: Message, state: FSMContext):
         
         user_settings = await db.get_user_settings(message.from_user.id)
         bot_lang = user_settings.get('bot_lang', 'ru')
+        
+        updated_message = (
+            f"**{t(bot_lang, 'changed.name')}**\n\n"
+            f"📝 **Название:** `{user_data['name']}`\n"
+            f"📋 **Описание:** `{user_data['description']}`\n"
+            f"📦 **Ящик:** `{user_data['location_name']}`\n\n"
+            f"✨ Что еще хотите изменить?"
+        )
+        
         await message.answer(
-            f"{t(bot_lang, 'changed.name')}\n\n"
-            f"{t(bot_lang, 'field.name', value=user_data['name'])}\n"
-            f"{t(bot_lang, 'field.description', value=user_data['description'])}\n"
-            f"**Ящик:** {user_data['location_name']}",
+            updated_message,
             reply_markup=create_confirmation_keyboard(
                 user_data['locations'],
                 user_data['location_name'],
@@ -957,11 +1003,17 @@ async def save_new_description(message: Message, state: FSMContext):
         
         user_settings = await db.get_user_settings(message.from_user.id)
         bot_lang = user_settings.get('bot_lang', 'ru')
+        
+        updated_message = (
+            f"**{t(bot_lang, 'changed.description')}**\n\n"
+            f"📝 **Название:** `{user_data['name']}`\n"
+            f"📋 **Описание:** `{user_data['description']}`\n"
+            f"📦 **Ящик:** `{user_data['location_name']}`\n\n"
+            f"✨ Что еще хотите изменить?"
+        )
+        
         await message.answer(
-            f"{t(bot_lang, 'changed.description')}\n\n"
-            f"{t(bot_lang, 'field.name', value=user_data['name'])}\n"
-            f"{t(bot_lang, 'field.description', value=user_data['description'])}\n"
-            f"**Ящик:** {user_data['location_name']}",
+            updated_message,
             reply_markup=create_confirmation_keyboard(
                 user_data['locations'],
                 user_data['location_name'],
@@ -1014,11 +1066,17 @@ async def save_new_location(callback: CallbackQuery, state: FSMContext):
         
         user_settings = await db.get_user_settings(callback.from_user.id)
         bot_lang = user_settings.get('bot_lang', 'ru')
+        
+        updated_message = (
+            f"**{t(bot_lang, 'changed.location')}**\n\n"
+            f"📝 **Название:** `{user_data['name']}`\n"
+            f"📋 **Описание:** `{user_data['description']}`\n"
+            f"📦 **Ящик:** `{user_data['location_name']}`\n\n"
+            f"✨ Что еще хотите изменить?"
+        )
+        
         await callback.message.answer(
-            f"{t(bot_lang, 'changed.location')}\n\n"
-            f"{t(bot_lang, 'field.name', value=user_data['name'])}\n"
-            f"{t(bot_lang, 'field.description', value=user_data['description'])}\n"
-            f"**Ящик:** {user_data['location_name']}",
+            updated_message,
             reply_markup=create_confirmation_keyboard(
                 user_data['locations'],
                 user_data['location_name'],
@@ -1100,12 +1158,18 @@ async def confirm_and_add(callback: CallbackQuery, state: FSMContext):
             pass
         
         if 'error' not in result:
+            success_message = (
+                f"**{t(bot_lang, 'added.success')}**\n\n"
+                f"📝 **Предмет:** `{user_data['name']}`\n"
+                f"📦 **Ящик:** `{user_data['location_name']}`\n\n"
+                f"✨ {t(bot_lang, 'added.new_prompt')}\n"
+            )
+            
+            if result.get('photo_upload') == 'failed':
+                success_message += f"\n⚠️ {t(bot_lang, 'added.photo_failed')}"
+            
             await callback.message.answer(
-                f"{t(bot_lang, 'added.success')}\n\n"
-                f"{t(bot_lang, 'field.name', value=user_data['name'])}\n"
-                f"**Ящик:** {user_data['location_name']}\n\n"
-                f"{t(bot_lang, 'added.new_prompt')}\n"
-                f"{(t(bot_lang, 'added.photo_failed') if result.get('photo_upload') == 'failed' else '')}",
+                success_message,
                 parse_mode="Markdown"
             )
             if result.get('photo_upload') == 'failed':
@@ -1125,7 +1189,7 @@ async def confirm_and_add(callback: CallbackQuery, state: FSMContext):
             await db.increment_items_processed()
             await state.set_state(ItemStates.waiting_for_photo)
         else:
-            await callback.message.answer(t(lang, 'added.fail'))
+            await callback.message.answer(t(bot_lang, 'added.fail'))
     
     await callback.answer()
 
@@ -1146,9 +1210,52 @@ async def cancel_operation(callback: CallbackQuery, state: FSMContext):
     
     user_settings = await db.get_user_settings(callback.from_user.id)
     bot_lang = user_settings.get('bot_lang', 'ru')
-    await callback.message.answer(t(lang, 'cancel.done'))
+    await callback.message.answer(t(bot_lang, 'cancel.done'))
     await state.set_state(ItemStates.waiting_for_photo)
     await callback.answer()
+
+@router.callback_query(F.data == "quick_stats")
+async def quick_stats(callback: CallbackQuery):
+    """Быстрая статистика для пользователя"""
+    user_settings = await db.get_user_settings(callback.from_user.id)
+    bot_lang = user_settings.get('bot_lang', 'ru')
+    
+    stats = await db.get_bot_stats()
+    uptime = await get_uptime()
+    
+    stats_text = (
+        f"**{t(bot_lang, 'admin.stats.title')}**\n\n"
+        f"👥 {t(bot_lang, 'admin.stats.users', count=len(stats.get('users_registered', [])))}\n"
+        f"📦 {t(bot_lang, 'admin.stats.items', count=stats.get('items_processed', 0))}\n"
+        f"⏱️ {t(bot_lang, 'admin.stats.uptime', uptime=uptime)}\n"
+        f"🔄 {t(bot_lang, 'admin.stats.sessions', count=len(items_data))}"
+    )
+    
+    await callback.message.answer(stats_text, parse_mode="Markdown")
+    await callback.answer("📊 Статистика загружена")
+
+@router.callback_query(F.data == "quick_restart")
+async def quick_restart(callback: CallbackQuery, state: FSMContext):
+    """Быстрый перезапуск сессии"""
+    user_settings = await db.get_user_settings(callback.from_user.id)
+    bot_lang = user_settings.get('bot_lang', 'ru')
+    
+    # Очищаем текущую сессию
+    if callback.from_user.id in items_data:
+        user_data = items_data[callback.from_user.id]
+        if os.path.exists(user_data.get('photo_path', '')):
+            os.remove(user_data['photo_path'])
+        del items_data[callback.from_user.id]
+    
+    await state.clear()
+    await state.set_state(ItemStates.waiting_for_photo)
+    
+    await callback.message.answer(
+        f"**Сессия перезапущена!**\n\n"
+        f"📸 Отправьте новое фото для добавления предмета.",
+        parse_mode="Markdown"
+    )
+    await callback.answer("🔄 Готов к новой работе")
 
 async def main():
     dp.include_router(router)
