@@ -685,18 +685,22 @@ def create_confirmation_keyboard(locations: list, current_location: str, bot_lan
     """Создание клавиатуры для подтверждения с улучшенным дизайном"""
     builder = InlineKeyboardBuilder()
     
-    # Первый ряд - редактирование
+    # Первый ряд - изменить название
     builder.row(
-        InlineKeyboardButton(text=t(bot_lang, 'btn.edit.name'), callback_data="edit_name"),
+        InlineKeyboardButton(text=t(bot_lang, 'btn.edit.name'), callback_data="edit_name")
+    )
+    
+    # Второй ряд - изменить описание
+    builder.row(
         InlineKeyboardButton(text=t(bot_lang, 'btn.edit.description'), callback_data="edit_description")
     )
     
-    # Второй ряд - локация
+    # Третий ряд - изменить локацию
     builder.row(
         InlineKeyboardButton(text=t(bot_lang, 'btn.edit.location'), callback_data="edit_location")
     )
     
-    # Третий ряд - основные действия
+    # Четвертый ряд - основные действия
     builder.row(
         InlineKeyboardButton(text=t(bot_lang, 'btn.confirm'), callback_data="confirm"),
         InlineKeyboardButton(text=t(bot_lang, 'btn.cancel'), callback_data="cancel")
