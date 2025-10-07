@@ -1,0 +1,16 @@
+{
+  "user_settings": {
+    "60012970": {
+      "lang": "en",
+      "model": "gpt-4o"
+    }
+  },
+  "bot_stats": {
+    "start_time": "2025-10-07T23:21:00.135215",
+    "items_processed": 5,
+    "users_registered": [
+      60012970
+    ],
+    "total_requests": 9
+  }
+}
