@@ -31,3 +31,7 @@ AVAILABLE_MODELS = [
 
 # Default model
 DEFAULT_MODEL = os.getenv('OPENAI_MODEL') or 'gpt-4o'
+
+# Location filtering settings
+LOCATION_FILTER_MODE = os.getenv('LOCATION_FILTER_MODE', 'marker')  # 'marker', 'all', 'none'
+LOCATION_MARKER = os.getenv('LOCATION_MARKER', '[TGB]')  # Marker in location description

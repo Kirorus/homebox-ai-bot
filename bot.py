@@ -78,6 +78,31 @@ def is_admin(user_id: int) -> bool:
     """Check if user is administrator"""
     return user_id in config.ALLOWED_USER_IDS
 
+def is_location_bot_allowed(location: dict) -> bool:
+    """Check if location is allowed for bot usage based on marker in description"""
+    filter_mode = config.LOCATION_FILTER_MODE
+    
+    # If filter mode is 'none', no locations are allowed
+    if filter_mode == 'none':
+        return False
+    
+    # If filter mode is 'all', all locations are allowed
+    if filter_mode == 'all':
+        return True
+    
+    # If filter mode is 'marker', check for marker in description
+    if filter_mode == 'marker':
+        description = location.get('description', '')
+        marker = config.LOCATION_MARKER
+        return marker in description
+    
+    # Default: no locations allowed
+    return False
+
+def filter_allowed_locations(locations: list) -> list:
+    """Filter locations based on bot allowance"""
+    return [loc for loc in locations if is_location_bot_allowed(loc)]
+
 async def get_uptime() -> str:
     """Return bot uptime in readable format"""
     stats = await db.get_bot_stats()
@@ -536,6 +561,130 @@ async def cmd_quick_test(message: Message):
         await message.answer(t(bot_lang, 'admin.quick_test.failed', error=str(e)))
         log_error(e, "admin quick test", message.from_user.id)
 
+@router.message(Command("locations"))
+async def cmd_locations(message: Message):
+    """Show location management commands (admin only)."""
+    if not is_admin(message.from_user.id):
+        user_settings = await db.get_user_settings(message.from_user.id)
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await message.answer(t(bot_lang, 'admin.access.denied'))
+        return
+    
+    user_settings = await db.get_user_settings(message.from_user.id)
+    bot_lang = user_settings.get('bot_lang', 'ru')
+    
+    help_text = (
+        f"🏠 **Location Management Commands**\n\n"
+        f"📋 `/list_locations` - Show all available locations\n"
+        f"✅ `/allowed_locations` - Show allowed locations for bot\n"
+        f"⚙️ `/location_config` - Show current location configuration\n\n"
+        f"💡 **Current marker:** `{config.LOCATION_MARKER}`\n"
+        f"🔧 **Filter mode:** `{config.LOCATION_FILTER_MODE}`"
+    )
+    
+    await message.answer(help_text, parse_mode="Markdown")
+
+@router.message(Command("list_locations"))
+async def cmd_list_locations(message: Message):
+    """List all available locations with bot access status (admin only)."""
+    if not is_admin(message.from_user.id):
+        user_settings = await db.get_user_settings(message.from_user.id)
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await message.answer(t(bot_lang, 'admin.access.denied'))
+        return
+    
+    try:
+        all_locations = await homebox_api.get_locations()
+        allowed_locations = filter_allowed_locations(all_locations)
+        
+        if not all_locations:
+            await message.answer("❌ Не удалось получить список локаций")
+            return
+        
+        locations_text = f"🏠 **All Available Locations:**\n\n"
+        for loc in all_locations:
+            status = "✅" if is_location_bot_allowed(loc) else "❌"
+            description = loc.get('description', 'No description')
+            marker_status = "🎯" if config.LOCATION_MARKER in description else "⚪"
+            locations_text += f"{status} {marker_status} **{loc['name']}** (ID: {loc['id']})\n"
+            if description and len(description) > 0:
+                locations_text += f"    📝 {description[:50]}{'...' if len(description) > 50 else ''}\n"
+        
+        locations_text += f"\n📊 **Statistics:**\n"
+        locations_text += f"📦 **Total locations:** {len(all_locations)}\n"
+        locations_text += f"✅ **Bot allowed:** {len(allowed_locations)}\n"
+        locations_text += f"❌ **Bot blocked:** {len(all_locations) - len(allowed_locations)}\n"
+        locations_text += f"🎯 **With marker:** {sum(1 for loc in all_locations if config.LOCATION_MARKER in loc.get('description', ''))}"
+        
+        await message.answer(locations_text, parse_mode="Markdown")
+        
+    except Exception as e:
+        await message.answer(f"❌ Ошибка получения локаций: {str(e)}")
+        log_error(e, "list locations", message.from_user.id)
+
+@router.message(Command("allowed_locations"))
+async def cmd_allowed_locations(message: Message):
+    """Show allowed locations for bot (admin only)."""
+    if not is_admin(message.from_user.id):
+        user_settings = await db.get_user_settings(message.from_user.id)
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await message.answer(t(bot_lang, 'admin.access.denied'))
+        return
+    
+    try:
+        all_locations = await homebox_api.get_locations()
+        allowed_locations = filter_allowed_locations(all_locations)
+        
+        if not allowed_locations:
+            await message.answer(
+                f"❌ **Нет разрешенных локаций**\n\n"
+                f"Все локации заблокированы для бота.\n\n"
+                f"💡 **Для разрешения добавьте маркер `{config.LOCATION_MARKER}` в описание нужных локаций в HomeBox.**"
+            )
+            return
+        
+        locations_text = f"✅ **Allowed Locations for Bot:**\n\n"
+        for loc in allowed_locations:
+            description = loc.get('description', 'No description')
+            locations_text += f"📦 **{loc['name']}** (ID: {loc['id']})\n"
+            locations_text += f"    📝 {description}\n\n"
+        
+        locations_text += f"📊 **Total allowed:** {len(allowed_locations)} locations"
+        
+        await message.answer(locations_text, parse_mode="Markdown")
+        
+    except Exception as e:
+        await message.answer(f"❌ Ошибка получения разрешенных локаций: {str(e)}")
+        log_error(e, "allowed locations", message.from_user.id)
+
+@router.message(Command("location_config"))
+async def cmd_location_config(message: Message):
+    """Show current location configuration (admin only)."""
+    if not is_admin(message.from_user.id):
+        user_settings = await db.get_user_settings(message.from_user.id)
+        bot_lang = user_settings.get('bot_lang', 'ru')
+        await message.answer(t(bot_lang, 'admin.access.denied'))
+        return
+    
+    try:
+        config_text = f"⚙️ **Location Configuration:**\n\n"
+        config_text += f"🔧 **Filter Mode:** `{config.LOCATION_FILTER_MODE}`\n"
+        config_text += f"🎯 **Marker:** `{config.LOCATION_MARKER}`\n\n"
+        
+        config_text += f"📋 **Available Modes:**\n"
+        config_text += f"• `marker` - Only locations with marker in description\n"
+        config_text += f"• `all` - All locations allowed\n"
+        config_text += f"• `none` - No locations allowed\n\n"
+        
+        config_text += f"💡 **How to enable locations:**\n"
+        config_text += f"Add `{config.LOCATION_MARKER}` to the description of desired locations in HomeBox."
+        
+        await message.answer(config_text, parse_mode="Markdown")
+        
+    except Exception as e:
+        await message.answer(f"❌ Ошибка получения конфигурации: {str(e)}")
+        log_error(e, "location config", message.from_user.id)
+
 @router.callback_query(F.data == "settings_bot_lang")
 async def cb_settings_bot_lang(callback: CallbackQuery):
     if config.ALLOWED_USER_IDS and callback.from_user.id not in config.ALLOWED_USER_IDS:
@@ -828,9 +977,9 @@ async def handle_photo(message: Message, state: FSMContext):
         progress_msg = await update_progress_message(message, progress_msg, 'getting_locations', bot_lang, 3)
         
         # Get locations from Homebox
-        locations = await homebox_api.get_locations()
+        all_locations = await homebox_api.get_locations()
         
-        if not locations:
+        if not all_locations:
             # Remove temporary file
             if os.path.exists(file_path):
                 os.remove(file_path)
@@ -845,6 +994,23 @@ async def handle_photo(message: Message, state: FSMContext):
                 )
             else:
                 await message.answer(t(bot_lang, 'homebox.locations.fail'))
+            await state.clear()
+            return
+        
+        # Filter locations based on bot allowance
+        locations = filter_allowed_locations(all_locations)
+        
+        if not locations:
+            # Remove temporary file
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            
+            await progress_msg.delete()
+            await message.answer(
+                f"❌ **Нет доступных локаций для добавления предметов**\n\n"
+                f"Все локации заблокированы для бота. Обратитесь к администратору для настройки разрешенных локаций.\n\n"
+                f"💡 **Подсказка:** Добавьте маркер `{config.LOCATION_MARKER}` в описание нужных локаций в HomeBox."
+            )
             await state.clear()
             return
         
