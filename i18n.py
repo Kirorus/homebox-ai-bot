@@ -76,6 +76,9 @@ MESSAGES: Dict[str, Dict[str, str]] = {
         'progress.uploading': '⬆️ Загружаю в HomeBox...',
         'error.invalid_image': '❌ Ошибка с изображением: {error}',
         'error.try_again': 'Пожалуйста, отправьте другое фото (JPEG, PNG или WEBP, до 20MB).',
+        'btn.prev': '« Назад',
+        'btn.next': 'Вперед »',
+        'model.selected': 'Модель установлена: {model}',
     },
     LANG_EN: {
         'start.intro': (
@@ -147,6 +150,9 @@ MESSAGES: Dict[str, Dict[str, str]] = {
         'progress.uploading': '⬆️ Uploading to HomeBox...',
         'error.invalid_image': '❌ Image error: {error}',
         'error.try_again': 'Please send another photo (JPEG, PNG or WEBP, up to 20MB).',
+        'btn.prev': '« Prev',
+        'btn.next': 'Next »',
+        'model.selected': 'Model set: {model}',
     },
 }
 

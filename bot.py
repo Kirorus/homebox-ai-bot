@@ -239,8 +239,8 @@ async def analyze_image(image_path: str, locations: list, lang: str = 'ru', mode
 
 def settings_keyboard(current_lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    ru_label = "🇷🇺 Русский" + (" ✓" if current_lang == 'ru' else "")
-    en_label = "🇬🇧 English" + (" ✓" if current_lang == 'en' else "")
+    ru_label = t(current_lang, 'settings.lang.ru') + (" ✓" if current_lang == 'ru' else "")
+    en_label = t(current_lang, 'settings.lang.en') + (" ✓" if current_lang == 'en' else "")
     builder.row(InlineKeyboardButton(text=ru_label, callback_data="lang_ru"))
     builder.row(InlineKeyboardButton(text=en_label, callback_data="lang_en"))
     return builder.as_markup()
@@ -260,7 +260,7 @@ async def cmd_settings(message: Message):
     )
     await message.answer(
         t(settings.get('lang', 'ru'), 'settings.choose_model'),
-        reply_markup=models_keyboard(settings.get('model', config.DEFAULT_MODEL), 0)
+        reply_markup=models_keyboard(settings.get('model', config.DEFAULT_MODEL), settings.get('lang', 'ru'), 0)
     )
 
 @router.message(Command(commands=["myid", "id"]))
@@ -514,7 +514,7 @@ async def cb_set_lang(callback: CallbackQuery):
     await callback.message.answer(text)
     await callback.answer()
 
-def models_keyboard(current_model: str, page: int = 0, page_size: int = 10) -> InlineKeyboardMarkup:
+def models_keyboard(current_model: str, lang: str = 'ru', page: int = 0, page_size: int = 10) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     models = config.AVAILABLE_MODELS
     start = page * page_size
@@ -525,9 +525,9 @@ def models_keyboard(current_model: str, page: int = 0, page_size: int = 10) -> I
     # Навигация
     nav = []
     if page > 0:
-        nav.append(InlineKeyboardButton(text="« Prev", callback_data=f"model_page_{page-1}"))
+        nav.append(InlineKeyboardButton(text=t(lang, 'btn.prev'), callback_data=f"model_page_{page-1}"))
     if end < len(models):
-        nav.append(InlineKeyboardButton(text="Next »", callback_data=f"model_page_{page+1}"))
+        nav.append(InlineKeyboardButton(text=t(lang, 'btn.next'), callback_data=f"model_page_{page+1}"))
     if nav:
         builder.row(*nav)
     return builder.as_markup()
@@ -546,7 +546,7 @@ async def cb_model_page(callback: CallbackQuery):
         page = 0
     
     settings = await db.get_user_settings(callback.from_user.id)
-    await callback.message.edit_reply_markup(reply_markup=models_keyboard(settings.get('model', config.DEFAULT_MODEL), page))
+    await callback.message.edit_reply_markup(reply_markup=models_keyboard(settings.get('model', config.DEFAULT_MODEL), settings.get('lang', 'ru'), page))
     await callback.answer()
 
 @router.callback_query(F.data.startswith("model_"))
@@ -568,34 +568,34 @@ async def cb_set_model(callback: CallbackQuery):
     settings['model'] = model
     await db.set_user_settings(callback.from_user.id, settings)
     
-    await callback.message.edit_reply_markup(reply_markup=models_keyboard(model, 0))
-    await callback.message.answer(f"Модель установлена: {model}")
+    settings = await db.get_user_settings(callback.from_user.id)
+    lang = settings.get('lang', 'ru')
+    await callback.message.edit_reply_markup(reply_markup=models_keyboard(model, lang, 0))
+    await callback.message.answer(t(lang, 'model.selected', model=model))
     await callback.answer()
 
-def create_confirmation_keyboard(locations: list, current_location: str) -> InlineKeyboardMarkup:
+def create_confirmation_keyboard(locations: list, current_location: str, lang: str = 'ru') -> InlineKeyboardMarkup:
     """Создание клавиатуры для подтверждения"""
     builder = InlineKeyboardBuilder()
-    user_lang = None
-    # Try to infer language from locations/current session would require user id; keep RU labels defaulted later
     builder.row(
-        InlineKeyboardButton(text=t('ru', 'btn.edit.name'), callback_data="edit_name")
+        InlineKeyboardButton(text=t(lang, 'btn.edit.name'), callback_data="edit_name")
     )
     builder.row(
-        InlineKeyboardButton(text=t('ru', 'btn.edit.description'), callback_data="edit_description")
+        InlineKeyboardButton(text=t(lang, 'btn.edit.description'), callback_data="edit_description")
     )
     builder.row(
-        InlineKeyboardButton(text=t('ru', 'btn.edit.location'), callback_data="edit_location")
+        InlineKeyboardButton(text=t(lang, 'btn.edit.location'), callback_data="edit_location")
     )
     builder.row(
-        InlineKeyboardButton(text=t('ru', 'btn.confirm'), callback_data="confirm")
+        InlineKeyboardButton(text=t(lang, 'btn.confirm'), callback_data="confirm")
     )
     builder.row(
-        InlineKeyboardButton(text=t('ru', 'btn.cancel'), callback_data="cancel")
+        InlineKeyboardButton(text=t(lang, 'btn.cancel'), callback_data="cancel")
     )
     
     return builder.as_markup()
 
-def create_locations_keyboard(locations: list) -> InlineKeyboardMarkup:
+def create_locations_keyboard(locations: list, lang: str = 'ru') -> InlineKeyboardMarkup:
     """Создание клавиатуры выбора локации"""
     builder = InlineKeyboardBuilder()
     
@@ -608,7 +608,7 @@ def create_locations_keyboard(locations: list) -> InlineKeyboardMarkup:
         )
     
     builder.row(
-        InlineKeyboardButton(text=t('ru', 'back'), callback_data="back_to_confirm")
+        InlineKeyboardButton(text=t(lang, 'back'), callback_data="back_to_confirm")
     )
     
     return builder.as_markup()
@@ -785,7 +785,7 @@ async def handle_photo(message: Message, state: FSMContext):
                 + t(lang, 'field.location', value=analysis['suggested_location']) + "\n\n"
                 + t(lang, 'edit.what_change')
             ),
-            reply_markup=create_confirmation_keyboard(locations, analysis['suggested_location']),
+            reply_markup=create_confirmation_keyboard(locations, analysis['suggested_location'], lang),
             parse_mode="Markdown"
         )
         
@@ -843,7 +843,8 @@ async def save_new_name(message: Message, state: FSMContext):
             f"**Ящик:** {user_data['location_name']}",
             reply_markup=create_confirmation_keyboard(
                 user_data['locations'],
-                user_data['location_name']
+                user_data['location_name'],
+                lang
             ),
             parse_mode="Markdown"
         )
@@ -880,7 +881,8 @@ async def save_new_description(message: Message, state: FSMContext):
             f"**Ящик:** {user_data['location_name']}",
             reply_markup=create_confirmation_keyboard(
                 user_data['locations'],
-                user_data['location_name']
+                user_data['location_name'],
+                lang
             ),
             parse_mode="Markdown"
         )
@@ -900,7 +902,7 @@ async def edit_location(callback: CallbackQuery, state: FSMContext):
         lang = user_settings.get('lang', 'ru')
         await callback.message.answer(
             t(lang, 'edit.select_location'),
-            reply_markup=create_locations_keyboard(user_data['locations'])
+            reply_markup=create_locations_keyboard(user_data['locations'], lang)
         )
         await state.set_state(ItemStates.selecting_location)
     await callback.answer()
@@ -936,7 +938,8 @@ async def save_new_location(callback: CallbackQuery, state: FSMContext):
             f"**Ящик:** {user_data['location_name']}",
             reply_markup=create_confirmation_keyboard(
                 user_data['locations'],
-                user_data['location_name']
+                user_data['location_name'],
+                lang
             ),
             parse_mode="Markdown"
         )
@@ -961,7 +964,8 @@ async def back_to_confirm(callback: CallbackQuery, state: FSMContext):
             f"**Ящик:** {user_data['location_name']}",
             reply_markup=create_confirmation_keyboard(
                 user_data['locations'],
-                user_data['location_name']
+                user_data['location_name'],
+                lang
             ),
             parse_mode="Markdown"
         )
