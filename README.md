@@ -28,6 +28,22 @@ An intelligent Telegram bot that uses AI vision to automatically add items to yo
 - **Session Management**: Handle multiple concurrent users
 - **Settings Persistence**: Save user preferences
 
+### 🛡️ Enhanced Features
+
+#### Error Handling & Logging
+- **Comprehensive Logging**: Detailed error tracking with context and user information
+- **JSON Error Logs**: Structured error logging in `errors.log` for better analysis
+- **User Action Tracking**: Analytics and debugging support with detailed logging
+- **Graceful Recovery**: Robust error handling with automatic retry mechanisms
+- **Debug Mode**: Enhanced DEBUG-level logging for development and troubleshooting
+
+#### Performance & Reliability
+- **Uptime Tracking**: Monitor bot availability and performance with detailed uptime reporting
+- **Statistics Dashboard**: Real-time usage analytics via `/stats` command
+- **Temporary File Management**: Automatic cleanup of processing files and temp directories
+- **Memory Management**: Efficient handling of image processing and API calls
+- **Process Management**: Safe startup/shutdown scripts prevent conflicts and duplicate instances
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -88,10 +104,11 @@ OPENAI_MODEL=gpt-4o                                   # Default model
 ```
 
 ### Configuration Notes
-- **OPENAI_BASE_URL**: Use for custom OpenAI-compatible providers (e.g., Bothub)
+- **OPENAI_BASE_URL**: Use for custom OpenAI-compatible providers (e.g., Bothub, Ollama)
 - **HOMEBOX_TOKEN**: If not provided, bot will login using username/password
-- **ALLOWED_USER_IDS**: If empty, bot is open to all users
-- **OPENAI_MODEL**: Override default model selection
+- **ALLOWED_USER_IDS**: If empty, bot is open to all users (comma-separated list)
+- **OPENAI_MODEL**: Override default model selection (defaults to gpt-4o)
+- **Model Support**: Supports 20+ models including GPT, Claude, Gemini, DeepSeek, and Grok
 
 ## 📱 Usage
 
@@ -128,10 +145,11 @@ OPENAI_MODEL=gpt-4o                                   # Default model
 - Per-user language preferences saved
 
 #### AI Model Selection
-- **GPT Models**: GPT-4o, GPT-4-turbo, GPT-5, etc.
-- **Claude Models**: Claude Sonnet, Claude Opus
+- **GPT Models**: GPT-4o, GPT-4-turbo, GPT-5, GPT-4.1, GPT-5-nano, GPT-5-chat, GPT-5-pro, etc.
+- **Claude Models**: Claude Sonnet 4, Claude Sonnet 4.5, Claude Opus 4
 - **Gemini Models**: Gemini 2.5 Pro, Gemini 2.5 Flash
-- **Other Models**: DeepSeek, Grok, and more
+- **DeepSeek Models**: DeepSeek Chat v3, DeepSeek R1, DeepSeek v3.2, DeepSeek v3.1
+- **Other Models**: Grok-4, Gemma-3-4b-it, and more
 
 #### Photo Processing
 - **Supported Formats**: JPEG, PNG, WEBP
@@ -209,6 +227,8 @@ sudo systemctl start homebox-bot.service
 - **`database.py`** - JSON-based database for user settings and statistics
 - **`i18n.py`** - Internationalization support (Russian/English)
 - **`utils.py`** - Utility functions for image validation and file handling
+- **`start_bot.sh`** - Safe startup script with automatic instance management
+- **`stop_bot.sh`** - Graceful shutdown script for all bot instances
 
 ### FSM States
 - `waiting_for_photo` - Waiting for user to send photo
@@ -230,11 +250,11 @@ sudo systemctl start homebox-bot.service
 ```
 aiogram==3.3.0          # Telegram Bot API
 openai==1.12.0          # OpenAI API client
-aiohttp==3.9.1          # HTTP client
 python-dotenv==1.0.0    # Environment variables
+aiohttp==3.9.1          # HTTP client
+pillow==10.2.0          # Image processing
 httpx==0.27.2           # HTTP client
 aiofiles==23.2.1        # Async file operations
-pillow==10.2.0          # Image processing
 ```
 
 ### Development Setup
@@ -310,21 +330,38 @@ tail -f bot.log
 ## 🔮 Roadmap
 
 ### Planned Features
-- [ ] Persistent state storage (database)
-- [ ] Batch photo processing
-- [ ] Advanced location highlighting
-- [ ] Custom recognition prompts
-- [ ] Item search and management
-- [ ] Export/import functionality
-- [ ] Web dashboard
-- [ ] API rate limiting
-- [ ] Advanced error recovery
+- [ ] SQLite database integration for better data persistence
+- [ ] Batch photo processing (multiple items at once)
+- [ ] Advanced location highlighting with visual maps
+- [ ] Custom recognition prompts and templates
+- [ ] Item search and management interface
+- [ ] Export/import functionality (CSV, JSON)
+- [ ] Web dashboard for administration
+- [ ] API rate limiting and usage quotas
+- [ ] Advanced error recovery and auto-restart
+- [ ] Photo quality enhancement and preprocessing
+- [ ] Integration with additional storage providers
+- [ ] Real-time notifications and webhooks
 
 ### Performance Improvements
+- [x] Enhanced logging and error tracking
+- [x] Process management and conflict prevention
+- [x] Temporary file cleanup automation
 - [ ] Connection pooling optimization
-- [ ] Caching mechanisms
+- [ ] Caching mechanisms for API responses
 - [ ] Async processing improvements
 - [ ] Memory usage optimization
+- [ ] Image compression and optimization
+
+### Current Status (v1.0)
+- ✅ Core functionality fully implemented
+- ✅ Multi-language support (Russian/English)
+- ✅ 20+ AI model support
+- ✅ Robust error handling and logging
+- ✅ Safe process management
+- ✅ User access control
+- ✅ Statistics and monitoring
+- ✅ HomeBox API integration
 
 ## 📄 License
 
