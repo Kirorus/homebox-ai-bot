@@ -359,11 +359,11 @@ async def cmd_test_upload(message: Message):
             temp_path = temp_file.name
         
         try:
-        # Тестируем единственный метод загрузки
-        success = await homebox_api.upload_photo(test_item_id, temp_path)
-        results = {'upload_photo': success}
-        if not success:
-            results['upload_photo_error'] = homebox_api.last_error
+            # Тестируем единственный метод загрузки
+            success = await homebox_api.upload_photo(test_item_id, temp_path)
+            results = {'upload_photo': success}
+            if not success:
+                results['upload_photo_error'] = homebox_api.last_error
             
             # Форматируем результаты
             results_text = ""
