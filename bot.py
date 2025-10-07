@@ -858,23 +858,17 @@ def create_confirmation_keyboard(locations: list, current_location: str, bot_lan
     return builder.as_markup()
 
 def create_locations_keyboard(locations: list, bot_lang: str = 'ru') -> InlineKeyboardMarkup:
-    """Create location selection keyboard with improved design"""
+    """Create location selection keyboard with one button per row"""
     builder = InlineKeyboardBuilder()
     
-    # Add locations 2 per row for compactness
-    for i in range(0, len(locations), 2):
-        row_buttons = []
-        for j in range(2):
-            if i + j < len(locations):
-                loc = locations[i + j]
-                row_buttons.append(
-                    InlineKeyboardButton(
-                        text=loc['name'],
-                        callback_data=f"location_{loc['id']}"
-                    )
-                )
-        if row_buttons:
-            builder.row(*row_buttons)
+    # Add each location on its own row
+    for loc in locations:
+        builder.row(
+            InlineKeyboardButton(
+                text=loc['name'],
+                callback_data=f"location_{loc['id']}"
+            )
+        )
     
     # Back button
     builder.row(
