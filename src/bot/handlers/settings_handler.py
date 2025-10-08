@@ -907,26 +907,6 @@ class SettingsHandler(BaseHandler):
         except Exception as e:
             await self.handle_error(e, "show_locations_page", callback.from_user.id)
             await callback.answer(t('en', 'errors.occurred'))
-    
-    def create_locations_view_keyboard(self, bot_lang: str, current_page: int, total_pages: int) -> InlineKeyboardMarkup:
-        """Create keyboard for locations view with pagination"""
-        builder = InlineKeyboardBuilder()
-        
-        # Navigation buttons
-        if total_pages > 1:
-            nav_buttons = []
-            if current_page > 0:
-                nav_buttons.append(InlineKeyboardButton(text=t(bot_lang, 'common.previous'), callback_data=f"locations_view_page_{current_page-1}"))
-            if current_page < total_pages - 1:
-                nav_buttons.append(InlineKeyboardButton(text=t(bot_lang, 'common.next'), callback_data=f"locations_view_page_{current_page+1}"))
-            
-            if nav_buttons:
-                builder.row(*nav_buttons)
-        
-        # Back button
-        builder.row(InlineKeyboardButton(text=t(bot_lang, 'common.back'), callback_data="back_to_location_management"))
-        
-        return builder.as_markup()
         
         @self.router.callback_query(F.data == "generate_location_descriptions")
         async def start_description_generation(callback: CallbackQuery, state: FSMContext):
@@ -1168,4 +1148,24 @@ class SettingsHandler(BaseHandler):
             except Exception as e:
                 await self.handle_error(e, "cancel_description_generation", callback.from_user.id)
                 await callback.answer(t('en', 'errors.occurred'))
+    
+    def create_locations_view_keyboard(self, bot_lang: str, current_page: int, total_pages: int) -> InlineKeyboardMarkup:
+        """Create keyboard for locations view with pagination"""
+        builder = InlineKeyboardBuilder()
+        
+        # Navigation buttons
+        if total_pages > 1:
+            nav_buttons = []
+            if current_page > 0:
+                nav_buttons.append(InlineKeyboardButton(text=t(bot_lang, 'common.previous'), callback_data=f"locations_view_page_{current_page-1}"))
+            if current_page < total_pages - 1:
+                nav_buttons.append(InlineKeyboardButton(text=t(bot_lang, 'common.next'), callback_data=f"locations_view_page_{current_page+1}"))
+            
+            if nav_buttons:
+                builder.row(*nav_buttons)
+        
+        # Back button
+        builder.row(InlineKeyboardButton(text=t(bot_lang, 'common.back'), callback_data="back_to_location_management"))
+        
+        return builder.as_markup()
         
