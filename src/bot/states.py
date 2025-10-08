@@ -13,3 +13,10 @@ class ItemStates(StatesGroup):
     editing_description = State()
     selecting_location = State()
     waiting_for_reanalysis_hint = State()
+
+
+class SearchStates(StatesGroup):
+    """States for search workflow"""
+    waiting_for_search_query = State()
+    viewing_search_results = State()
+    viewing_item_details = State()

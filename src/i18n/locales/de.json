@@ -23,7 +23,7 @@
     "step3": "3️⃣ Bearbeiten Sie Details bei Bedarf",
     "step4": "4️⃣ Gegenstand wird zu HomeBox hinzugefügt",
     "commands": "💡 Befehle:",
-    "commands_list": "⚙️ /settings - Einstellungen\n❓ /help - Hilfe\n📊 /stats - Statistiken",
+    "commands_list": "⚙️ /settings - Einstellungen\n🔍 /search - Gegenstände suchen\n📦 /recent - Neueste Gegenstände\n📊 /stats - Statistiken\n❓ /help - Hilfe",
     "get_started": "🚀 Bereit zu organisieren? Senden Sie Ihr erstes Foto!"
   },
   "settings": {
@@ -178,6 +178,30 @@
     "commands": "Verfügbare Befehle:",
     "start_desc": "Bot starten",
     "settings_desc": "Einstellungen öffnen",
+    "stats_desc": "Statistiken anzeigen",
+    "search_desc": "Gegenstände suchen",
+    "recent_desc": "Neueste Gegenstände",
     "help_desc": "Diese Hilfe anzeigen"
+  },
+  "search": {
+    "enter_query": "🔍 Geben Sie Ihre Suchanfrage ein:",
+    "searching": "🔍 Suche...",
+    "loading_recent": "📦 Lade neueste Gegenstände...",
+    "no_results": "❌ Keine Gegenstände für Ihre Suche gefunden.",
+    "no_items": "📦 Keine Gegenstände in Ihrem Inventar gefunden.",
+    "empty_query": "❌ Bitte geben Sie eine Suchanfrage ein.",
+    "results_title": "Suchergebnisse",
+    "recent_title": "Neueste Gegenstände",
+    "page_info": "Seite",
+    "location": "Standort",
+    "description": "Beschreibung",
+    "quantity": "Menge",
+    "created": "Erstellt",
+    "item_not_found": "Gegenstand nicht gefunden",
+    "invalid_page": "Ungültige Seitenzahl",
+    "cancelled": "Suche abgebrochen",
+    "new_search": "🔍 Neue Suche",
+    "cancel": "❌ Abbrechen",
+    "back_to_results": "⬅️ Zurück zu Ergebnissen"
   }
 }

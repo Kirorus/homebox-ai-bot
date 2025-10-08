@@ -27,7 +27,17 @@ if [ ! -z "$BOT_PID" ]; then
     echo "✅ Previous instance stopped"
 fi
 
+# Check if virtual environment exists, create if not
+if [ ! -d ".venv" ]; then
+    echo "📦 Virtual environment not found. Creating new one..."
+    python3 -m venv .venv
+    echo "📥 Installing dependencies..."
+    source .venv/bin/activate
+    pip install -r requirements.txt
+    echo "✅ Virtual environment created and dependencies installed"
+fi
+
 # Activate virtual environment and start bot
 echo "🚀 Starting new bot instance..."
-source venv/bin/activate
+source .venv/bin/activate
 cd src && python main.py

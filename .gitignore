@@ -23,6 +23,7 @@ MANIFEST
 
 # Virtual Environment
 venv/
+.venv/
 env/
 ENV/
 env.bak/
@@ -50,6 +51,7 @@ temp_*.jpg
 temp_*.png
 temp_*.jpeg
 temp_*
+temp/
 
 # Log files
 *.log
@@ -57,7 +59,11 @@ logs/
 
 # Database files (keep structure, ignore data)
 bot_data.db
+data/bot_data.db
 *.db-journal
+
+# Data directory (contains database and user data)
+data/
 
 # Old architecture files (migrated to src/)
 bot.py

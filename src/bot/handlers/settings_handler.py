@@ -98,6 +98,11 @@ class SettingsHandler(BaseHandler):
 **{t(bot_lang, 'help.commands')}**
 • /start - {t(bot_lang, 'help.start_desc')}
 • /settings - {t(bot_lang, 'help.settings_desc')}
+• /stats - {t(bot_lang, 'help.stats_desc')}
+• /search - {t(bot_lang, 'help.search_desc')}
+• /recent - {t(bot_lang, 'help.recent_desc')}
+• /test_items - {t(bot_lang, 'help.test_items_desc')}
+• /test_search - {t(bot_lang, 'help.test_search_desc')}
 • /help - {t(bot_lang, 'help.help_desc')}
                 """.strip()
                 
@@ -108,6 +113,39 @@ class SettingsHandler(BaseHandler):
                 
             except Exception as e:
                 await self.handle_error(e, "help command", message.from_user.id)
+                await message.answer(t('en', 'errors.occurred'))
+        
+        @self.router.message(Command("stats"))
+        async def cmd_stats(message: Message, state: FSMContext):
+            """Handle /stats command"""
+            try:
+                await self.log_user_action("stats_command", message.from_user.id)
+                
+                # Check user authorization
+                if not await self.is_user_allowed(message.from_user.id):
+                    await message.answer(t('en', 'errors.access_denied'))
+                    return
+                
+                # Get user settings
+                user_settings = await self.get_user_settings(message.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Get bot and user statistics
+                bot_stats = await self.database.get_bot_stats()
+                user_stats = await self.database.get_user_stats(message.from_user.id)
+                
+                # Create detailed stats message
+                stats_text = self.create_detailed_stats_message(
+                    bot_lang, bot_stats, user_stats, user_settings.to_dict()
+                )
+                
+                await message.answer(
+                    stats_text,
+                    parse_mode="Markdown"
+                )
+                
+            except Exception as e:
+                await self.handle_error(e, "stats command", message.from_user.id)
                 await message.answer(t('en', 'errors.occurred'))
         
         @self.router.callback_query(F.data == "settings_bot_lang")

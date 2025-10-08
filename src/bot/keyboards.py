@@ -151,3 +151,16 @@ class KeyboardManager:
         builder.row(InlineKeyboardButton(text=t(lang, 'common.back'), callback_data="back_to_settings"))
         
         return builder.as_markup()
+    
+    def search_cancel_keyboard(self, lang: str) -> InlineKeyboardMarkup:
+        """Create search cancel keyboard"""
+        builder = InlineKeyboardBuilder()
+        builder.row(InlineKeyboardButton(text=t(lang, 'search.cancel'), callback_data="search_cancel"))
+        return builder.as_markup()
+    
+    def item_details_keyboard(self, lang: str) -> InlineKeyboardMarkup:
+        """Create item details keyboard"""
+        builder = InlineKeyboardBuilder()
+        builder.row(InlineKeyboardButton(text=t(lang, 'search.back_to_results'), callback_data="search_back"))
+        builder.row(InlineKeyboardButton(text=t(lang, 'search.new_search'), callback_data="search_new"))
+        return builder.as_markup()

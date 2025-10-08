@@ -16,7 +16,7 @@ class FileManager:
     """File management utilities"""
     
     def __init__(self, temp_dir: Optional[str] = None):
-        self.temp_dir = temp_dir or tempfile.gettempdir()
+        self.temp_dir = temp_dir or os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'temp')
         self._ensure_temp_dir()
     
     def _ensure_temp_dir(self):

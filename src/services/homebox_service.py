@@ -288,3 +288,186 @@ class HomeBoxService:
             self.last_error = f'Exception in upload_photo: {str(e)}'
             logger.error(f"Exception in upload_photo: {e}")
             return False
+    
+    @retry_async(max_attempts=3, delay=2.0, exceptions=(aiohttp.ClientError, asyncio.TimeoutError))
+    async def get_items(self, limit: int = 50, offset: int = 0) -> List[Dict]:
+        """Get items from HomeBox"""
+        try:
+            session = await self._get_session()
+            
+            # Build query parameters according to HomeBox API
+            params = {
+                'pageSize': limit,
+                'page': (offset // limit) + 1
+            }
+            
+            logger.info(f"Fetching items from HomeBox (limit={limit}, offset={offset})")
+            logger.info(f"Get items URL: {self.base_url}/api/v1/items")
+            logger.info(f"Get items params: {params}")
+            
+            async with session.get(
+                f'{self.base_url}/api/v1/items',
+                headers=self.headers,
+                params=params
+            ) as response:
+                logger.info(f"Get items response status: {response.status}")
+                
+                if response.status != 200:
+                    try:
+                        body = await response.text()
+                    except Exception:
+                        body = ''
+                    self.last_error = f'GET items failed HTTP {response.status}; body: {body[:500]}'
+                    logger.error(f"Failed to fetch items: {self.last_error}")
+                    return []
+                
+                try:
+                    response_data = await response.json()
+                    logger.info(f"Get items API response type: {type(response_data)}")
+                    
+                    # Extract items from response
+                    if isinstance(response_data, dict) and 'items' in response_data:
+                        items_data = response_data['items']
+                        logger.info(f"Successfully fetched {len(items_data)} items")
+                        logger.info(f"Items response sample: {items_data[:2] if items_data else 'No items'}")
+                        return items_data
+                    elif isinstance(response_data, list):
+                        # Direct array response
+                        logger.info(f"Successfully fetched {len(response_data)} items")
+                        logger.info(f"Items response sample: {response_data[:2] if response_data else 'No items'}")
+                        return response_data
+                    else:
+                        logger.error(f"Unexpected response format: {type(response_data)}")
+                        return []
+                        
+                except Exception as e:
+                    self.last_error = f'Failed to parse items: {e}'
+                    logger.error(self.last_error)
+                    return []
+                    
+        except Exception as e:
+            error_msg = f'Exception in get_items: {str(e)}'
+            logger.error(error_msg)
+            return []
+    
+    @retry_async(max_attempts=3, delay=2.0, exceptions=(aiohttp.ClientError, asyncio.TimeoutError))
+    async def search_items(self, query: str, limit: int = 20) -> List[Dict]:
+        """Search items by name or description using HomeBox API"""
+        try:
+            session = await self._get_session()
+            
+            # Build search parameters according to HomeBox API
+            params = {
+                'q': query,
+                'pageSize': limit,
+                'page': 1
+            }
+            
+            logger.info(f"Searching items with query: '{query}'")
+            logger.info(f"Search URL: {self.base_url}/api/v1/items")
+            logger.info(f"Search params: {params}")
+            
+            async with session.get(
+                f'{self.base_url}/api/v1/items',
+                headers=self.headers,
+                params=params
+            ) as response:
+                logger.info(f"Search response status: {response.status}")
+                
+                if response.status != 200:
+                    try:
+                        body = await response.text()
+                    except Exception:
+                        body = ''
+                    self.last_error = f'SEARCH items failed HTTP {response.status}; body: {body[:500]}'
+                    logger.error(f"Failed to search items: {self.last_error}")
+                    return []
+                
+                try:
+                    response_data = await response.json()
+                    logger.info(f"Search API response type: {type(response_data)}")
+                    
+                    # Extract items from response
+                    if isinstance(response_data, dict) and 'items' in response_data:
+                        items_data = response_data['items']
+                        logger.info(f"Found {len(items_data)} items for query: '{query}'")
+                        logger.info(f"Search response sample: {items_data[:2] if items_data else 'No items'}")
+                        return items_data
+                    elif isinstance(response_data, list):
+                        # Direct array response
+                        logger.info(f"Found {len(response_data)} items for query: '{query}'")
+                        logger.info(f"Search response sample: {response_data[:2] if response_data else 'No items'}")
+                        return response_data
+                    else:
+                        logger.error(f"Unexpected response format: {type(response_data)}")
+                        return []
+                        
+                except Exception as e:
+                    self.last_error = f'Failed to parse search results: {e}'
+                    logger.error(self.last_error)
+                    return []
+                    
+        except Exception as e:
+            error_msg = f'Exception in search_items: {str(e)}'
+            logger.error(error_msg)
+            return []
+    
+    async def get_item_by_id(self, item_id: str) -> Optional[Dict]:
+        """Get specific item by ID"""
+        try:
+            session = await self._get_session()
+            
+            logger.info(f"Fetching item {item_id} from HomeBox")
+            
+            async with session.get(
+                f'{self.base_url}/api/v1/items/{item_id}',
+                headers=self.headers
+            ) as response:
+                if response.status != 200:
+                    try:
+                        body = await response.text()
+                    except Exception:
+                        body = ''
+                    self.last_error = f'GET item {item_id} failed HTTP {response.status}; body: {body[:500]}'
+                    logger.error(f"Failed to fetch item {item_id}: {self.last_error}")
+                    return None
+                
+                try:
+                    item_data = await response.json()
+                    logger.info(f"Successfully fetched item {item_id}")
+                    return item_data
+                except Exception as e:
+                    self.last_error = f'Failed to parse item {item_id}: {e}'
+                    logger.error(self.last_error)
+                    return None
+                    
+        except Exception as e:
+            error_msg = f'Exception in get_item_by_id: {str(e)}'
+            logger.error(error_msg)
+            return None
+    
+    async def get_image_url(self, image_id: str, item_id: str) -> str:
+        """Get image URL from image ID and item ID"""
+        if not image_id or not item_id:
+            return ""
+        
+        # Get access token
+        access_token = await self._get_access_token()
+        if not access_token:
+            logger.warning("No access token available for image URL")
+            return ""
+        
+        # Format: /api/v1/items/{item_id}/attachments/{attachment_id}?access_token={token}
+        return f"{self.base_url}/api/v1/items/{item_id}/attachments/{image_id}?access_token={access_token}"
+    
+    async def _get_access_token(self) -> str:
+        """Get access token for API calls"""
+        # For now, return a hardcoded token
+        # TODO: Implement proper token management
+        return "GP36NSUB4IY35VVGDQDK5SQ66I"
+    
+    def get_thumbnail_url(self, thumbnail_id: str) -> str:
+        """Get thumbnail URL from thumbnail ID"""
+        if not thumbnail_id:
+            return ""
+        return f"{self.base_url}/images/{thumbnail_id}"

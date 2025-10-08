@@ -25,7 +25,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('../bot.log', encoding='utf-8'),
+        logging.FileHandler('../logs/bot.log', encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -42,7 +42,7 @@ class HomeBoxAIBot:
         self.dp = Dispatcher(storage=MemoryStorage())
         
         # Initialize services
-        self.database = DatabaseService("../bot_data.db")  # Database in parent directory
+        self.database = DatabaseService("../data/bot_data.db")  # Database in data directory
         self.homebox_service = HomeBoxService(self.settings.homebox)
         self.ai_service = AIService(self.settings.ai)
         self.image_service = ImageService()

@@ -23,7 +23,7 @@
     "step3": "3️⃣ Edit details if needed",
     "step4": "4️⃣ Item is added to HomeBox",
     "commands": "💡 Commands:",
-    "commands_list": "⚙️ /settings - Settings\n❓ /help - Help\n📊 /stats - Statistics",
+    "commands_list": "⚙️ /settings - Settings\n🔍 /search - Search items\n📦 /recent - Recent items\n📊 /stats - Statistics\n❓ /help - Help",
     "get_started": "🚀 Ready to organize? Send your first photo!"
   },
   "settings": {
@@ -178,6 +178,32 @@
     "commands": "Available commands:",
     "start_desc": "Start the bot",
     "settings_desc": "Open settings",
+    "stats_desc": "View statistics",
+    "search_desc": "Search items",
+    "recent_desc": "Show recent items",
+    "test_items_desc": "Test items retrieval (debug)",
+    "test_search_desc": "Test search API (debug)",
     "help_desc": "Show this help"
+  },
+  "search": {
+    "enter_query": "🔍 Enter your search query:",
+    "searching": "🔍 Searching...",
+    "loading_recent": "📦 Loading recent items...",
+    "no_results": "❌ No items found for your search.",
+    "no_items": "📦 No items found in your inventory.",
+    "empty_query": "❌ Please enter a search query.",
+    "results_title": "Search Results",
+    "recent_title": "Recent Items",
+    "page_info": "Page",
+    "location": "Location",
+    "description": "Description",
+    "quantity": "Quantity",
+    "created": "Created",
+    "item_not_found": "Item not found",
+    "invalid_page": "Invalid page number",
+    "cancelled": "Search cancelled",
+    "new_search": "🔍 New Search",
+    "cancel": "❌ Cancel",
+    "back_to_results": "⬅️ Back to Results"
   }
 }

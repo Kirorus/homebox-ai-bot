@@ -21,6 +21,8 @@ An intelligent Telegram bot that uses AI vision to automatically add items to yo
 - **Seamless Upload**: Direct integration with HomeBox API
 - **Photo Attachment**: Automatically uploads photos as item attachments
 - **Location Management**: Fetches and manages HomeBox storage locations
+- **Item Search**: Search through your HomeBox inventory with text queries
+- **Image Display**: View item photos directly in search results and item details
 - **Error Handling**: Robust error handling and retry mechanisms
 
 ### 👥 User Management
@@ -124,12 +126,35 @@ OPENAI_MODEL=gpt-4o                                   # Default model
 4. **Edit if needed**: Use buttons to modify any suggestions
 5. **Confirm**: Add the item to HomeBox with photo attached
 
+### 🔍 Search & Browse Features
+
+#### Item Search
+- **Text Search**: Search items by name or description using `/search` command
+- **Recent Items**: View recently added items with `/recent` command
+- **Image Gallery**: Items with photos are displayed as image galleries
+- **Pagination**: Navigate through search results with page controls
+- **Item Details**: Click on any item to view full details with photos
+
+#### Search Interface
+- **Smart Results**: Search results show item name, location, and description
+- **Photo Preview**: Items with images display thumbnails in search results
+- **Quick Actions**: Easy navigation between search results and item details
+- **Fallback Support**: Graceful handling when images are unavailable
+
+#### Image Display
+- **High-Quality Photos**: Full-resolution images in item details
+- **Media Groups**: Multiple items displayed as photo galleries
+- **Caption Support**: Item information displayed with each photo
+- **Error Handling**: Automatic fallback to text when images fail to load
+
 ### Available Commands
 
 #### User Commands
 - `/start` - Start the bot and begin item addition process
 - `/settings` - Configure language and AI model preferences
 - `/myid` or `/id` - Get your Telegram user ID
+- `/search` - Search for items in your HomeBox inventory
+- `/recent` - View recent items from your HomeBox
 
 #### Admin Commands
 - `/stats` - View bot statistics and usage information
@@ -137,6 +162,8 @@ OPENAI_MODEL=gpt-4o                                   # Default model
 - `/testupload` - Test photo upload methods
 - `/checkapi` - Check HomeBox API connectivity
 - `/quicktest` - Quick upload functionality test
+- `/test_items` - Test HomeBox items API
+- `/test_search` - Test search functionality
 
 ### Interface Features
 
@@ -384,7 +411,6 @@ tail -f bot.log
 - [ ] Batch photo processing (multiple items at once)
 - [ ] Advanced location highlighting with visual maps
 - [ ] Custom recognition prompts and templates
-- [ ] Item search and management interface
 - [ ] Export/import functionality (CSV, JSON)
 - [ ] Web dashboard for administration
 - [ ] API rate limiting and usage quotas
@@ -392,6 +418,9 @@ tail -f bot.log
 - [ ] Photo quality enhancement and preprocessing
 - [ ] Integration with additional storage providers
 - [ ] Real-time notifications and webhooks
+- [ ] Advanced search filters (by location, date, tags)
+- [ ] Item editing and management through bot
+- [ ] Bulk operations on search results
 
 ### Performance Improvements
 - [x] Enhanced logging and error tracking
@@ -400,6 +429,9 @@ tail -f bot.log
 - [x] Modular architecture with clean separation
 - [x] Type-safe models with validation
 - [x] Service-based architecture
+- [x] Image URL optimization with proper API endpoints
+- [x] Media group handling for efficient image display
+- [x] Fallback mechanisms for failed image loads
 - [ ] Connection pooling optimization
 - [ ] Caching mechanisms for API responses
 - [ ] Async processing improvements
@@ -408,7 +440,7 @@ tail -f bot.log
 
 ### Current Status (v2.0)
 - ✅ Core functionality fully implemented
-- ✅ Multi-language support (Russian/English)
+- ✅ Multi-language support (5 languages: EN, RU, DE, FR, ES)
 - ✅ 20+ AI model support
 - ✅ Robust error handling and logging
 - ✅ Safe process management
@@ -419,6 +451,11 @@ tail -f bot.log
 - ✅ Type-safe models with validation
 - ✅ Service-based architecture
 - ✅ SQLite database integration
+- ✅ Item search functionality with text queries
+- ✅ Image display in search results and item details
+- ✅ Pagination and navigation controls
+- ✅ Media group support for multiple images
+- ✅ Fallback handling for missing images
 
 ## 📄 License
 

@@ -120,7 +120,7 @@ class PhotoHandler(BaseHandler):
                 
                 # Download photo
                 file = await self.bot.get_file(photo.file_id)
-                file_path = f"../temp_{message.from_user.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                file_path = f"../temp/temp_{message.from_user.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                 await self.bot.download_file(file.file_path, file_path)
                 
                 # Update progress - AI analysis
@@ -243,10 +243,10 @@ class PhotoHandler(BaseHandler):
                 await self.handle_error(e, "photo handling", message.from_user.id)
                 
                 # Clean up temporary files on error
-                temp_files = [f for f in os.listdir('..') if f.startswith(f'temp_{message.from_user.id}_')]
+                temp_files = [f for f in os.listdir('../temp') if f.startswith(f'temp_{message.from_user.id}_')]
                 for temp_file in temp_files:
                     try:
-                        os.remove(f'../{temp_file}')
+                        os.remove(f'../temp/{temp_file}')
                     except Exception:
                         pass
                 

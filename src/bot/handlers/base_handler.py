@@ -208,7 +208,7 @@ class BaseHandler(ABC):
             memory_usage = "Unknown"
         
         try:
-            db_size = os.path.getsize("../bot_data.db") / 1024 / 1024
+            db_size = os.path.getsize("../data/bot_data.db") / 1024 / 1024
             db_size = f"{db_size:.1f} MB"
         except:
             db_size = "Unknown"
