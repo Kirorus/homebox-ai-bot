@@ -17,7 +17,7 @@ import config
 from homebox_api import HomeboxAPI
 from i18n import t
 from utils import validate_image_file, format_file_size
-from database import db
+from database_sqlite import db
 
 # Enhanced logging setup
 logging.basicConfig(
@@ -1426,6 +1426,10 @@ async def quick_restart(callback: CallbackQuery, state: FSMContext):
     await callback.answer("🔄 Готов к новой работе")
 
 async def main():
+    # Initialize SQLite database
+    await db.init_database()
+    logger.info("Database initialized")
+    
     dp.include_router(router)
     
     # Initialize HomeBox API with context manager
