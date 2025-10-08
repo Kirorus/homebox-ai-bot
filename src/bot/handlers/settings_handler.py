@@ -49,6 +49,7 @@ class SettingsHandler(BaseHandler):
         @self.router.callback_query(F.data == "generate_location_descriptions")
         async def start_description_generation(callback: CallbackQuery, state: FSMContext):
             """Start location description generation process"""
+            logger.info("start_description_generation handler called")
             try:
                 user_settings = await self.get_user_settings(callback.from_user.id)
                 bot_lang = user_settings.bot_lang
@@ -83,6 +84,7 @@ class SettingsHandler(BaseHandler):
                 )
                 
                 await state.set_state(LocationStates.selecting_locations_for_description)
+                logger.info(f"State set to: {LocationStates.selecting_locations_for_description}")
                 await callback.answer()
                 
             except Exception as e:
@@ -954,6 +956,7 @@ class SettingsHandler(BaseHandler):
         @self.router.callback_query(F.data.startswith("generate_desc_"), LocationStates.selecting_locations_for_description)
         async def generate_location_description(callback: CallbackQuery, state: FSMContext):
             """Generate description for selected location"""
+            logger.info(f"generate_location_description handler called with data: {callback.data}")
             try:
                 user_settings = await self.get_user_settings(callback.from_user.id)
                 bot_lang = user_settings.bot_lang
