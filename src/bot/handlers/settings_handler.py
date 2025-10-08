@@ -46,6 +46,49 @@ class SettingsHandler(BaseHandler):
     def register_handlers(self):
         """Register settings-related handlers"""
         
+        @self.router.callback_query(F.data == "generate_location_descriptions")
+        async def start_description_generation(callback: CallbackQuery, state: FSMContext):
+            """Start location description generation process"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Get all locations
+                all_locations = await self.homebox_service.get_locations()
+                if not all_locations:
+                    await callback.answer(t(bot_lang, 'errors.no_locations'))
+                    return
+                
+                # Filter locations with [TGB] marker
+                marked_locations = [loc for loc in all_locations if '[TGB]' in (loc.description or '')]
+                
+                if not marked_locations:
+                    await callback.answer(t(bot_lang, 'locations.no_marked_locations'), show_alert=True)
+                    return
+                
+                # Store data in state
+                await state.set_data({
+                    'all_locations': all_locations,
+                    'marked_locations': marked_locations,
+                    'current_page': 0
+                })
+                
+                text = t(bot_lang, 'locations.select_for_description')
+                keyboard = self.keyboard_manager.location_description_selection_keyboard(all_locations, bot_lang, 0)
+                
+                await callback.message.edit_text(
+                    text,
+                    reply_markup=keyboard,
+                    parse_mode="Markdown"
+                )
+                
+                await state.set_state(LocationStates.selecting_locations_for_description)
+                await callback.answer()
+                
+            except Exception as e:
+                await self.handle_error(e, "start_description_generation", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+        
         @self.router.message(Command("settings"))
         async def cmd_settings(message: Message, state: FSMContext):
             """Handle /settings command"""
@@ -908,8 +951,8 @@ class SettingsHandler(BaseHandler):
             await self.handle_error(e, "show_locations_page", callback.from_user.id)
             await callback.answer(t('en', 'errors.occurred'))
         
-        @self.router.callback_query(F.data == "generate_location_descriptions")
-        async def start_description_generation(callback: CallbackQuery, state: FSMContext):
+        @self.router.callback_query(F.data.startswith("generate_desc_"), LocationStates.selecting_locations_for_description)
+        async def generate_location_description(callback: CallbackQuery, state: FSMContext):
             """Start location description generation process"""
             try:
                 user_settings = await self.get_user_settings(callback.from_user.id)
