@@ -16,28 +16,15 @@
   },
   "start": {
     "welcome": "🏠 Willkommen beim HomeBox AI Bot!",
-    "subtitle": "Ihr intelligenter Assistent für die Organisation von Haushaltsgegenständen",
-    "description": "📸 Senden Sie mir ein Foto eines Gegenstands, und ich helfe Ihnen dabei, ihn mit automatischer Analyse und Lagerortauswahl zu HomeBox hinzuzufügen.",
-    "features": {
-      "ai_analysis": "🧠 KI-Gegenstandsanalyse",
-      "auto_location": "📍 Automatische Standortauswahl",
-      "multi_lang": "🌍 5-Sprachen-Unterstützung",
-      "smart_org": "📦 Intelligente Organisation",
-      "reanalysis": "🔄 Neu-Analyse mit Hinweisen",
-      "beautiful_ui": "✨ Schöne Benutzeroberfläche"
-    },
+    "description": "📸 Senden Sie mir ein Foto eines Gegenstands, und ich analysiere ihn automatisch und füge ihn mit dem besten Lagerort zu HomeBox hinzu.",
     "how_it_works": "🎯 So funktioniert es:",
     "step1": "1️⃣ Senden Sie ein Foto eines Gegenstands",
     "step2": "2️⃣ KI analysiert und schlägt Standort vor",
     "step3": "3️⃣ Bearbeiten Sie Details bei Bedarf",
     "step4": "4️⃣ Gegenstand wird zu HomeBox hinzugefügt",
-        "commands": "💡 Verfügbare Befehle:",
-        "commands_list": "⚙️ /settings - Einstellungen\n❓ /help - Hilfe\n📊 /stats - Statistiken",
-    "get_started": "🚀 Bereit zu organisieren? Senden Sie Ihr erstes Foto!",
-    "tips": "💡 Pro-Tipps:",
-    "tip1": "• Fügen Sie eine Beschriftung hinzu, um der KI zu helfen",
-    "tip2": "• Verwenden Sie Neu-Analyse, wenn das Ergebnis nicht perfekt ist",
-    "tip3": "• Ändern Sie die Sprache in den Einstellungen jederzeit"
+    "commands": "💡 Befehle:",
+    "commands_list": "⚙️ /settings - Einstellungen\n❓ /help - Hilfe\n📊 /stats - Statistiken",
+    "get_started": "🚀 Bereit zu organisieren? Senden Sie Ihr erstes Foto!"
   },
   "settings": {
     "title": "⚙️ Einstellungen",

@@ -66,42 +66,18 @@ class BaseHandler(ABC):
         logger.error(f"Error in {context}: {error}", extra=error_info)
     
     def create_beautiful_start_message(self, lang: str) -> str:
-        """Create beautiful start message with formatting"""
-        # Create feature list with emojis
-        features = [
-            t(lang, 'start.features.ai_analysis'),
-            t(lang, 'start.features.auto_location'),
-            t(lang, 'start.features.multi_lang'),
-            t(lang, 'start.features.smart_org'),
-            t(lang, 'start.features.reanalysis'),
-            t(lang, 'start.features.beautiful_ui')
-        ]
-        
-        feature_list = ""
-        for feature in features:
-            feature_list += f"  {feature}\n"
-        
+        """Create concise and informative start message"""
         # Create the main message
         message = f"""
 {t(lang, 'start.welcome')}
 
-**{t(lang, 'start.subtitle')}**
-
 {t(lang, 'start.description')}
-
-**✨ Features:**
-{feature_list}
 
 **{t(lang, 'start.how_it_works')}**
 {t(lang, 'start.step1')}
 {t(lang, 'start.step2')}
 {t(lang, 'start.step3')}
 {t(lang, 'start.step4')}
-
-**{t(lang, 'start.tips')}**
-{t(lang, 'start.tip1')}
-{t(lang, 'start.tip2')}
-{t(lang, 'start.tip3')}
 
 {t(lang, 'start.commands')}
 {t(lang, 'start.commands_list')}
