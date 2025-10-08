@@ -19,11 +19,22 @@
       "ai_analysis": "🧠 Análisis IA de artículos",
       "auto_location": "📍 Selección automática de ubicación",
       "multi_lang": "🌍 Soporte de 5 idiomas",
-      "smart_org": "📦 Organización inteligente"
+      "smart_org": "📦 Organización inteligente",
+      "reanalysis": "🔄 Reanálisis con pistas",
+      "beautiful_ui": "✨ Interfaz hermosa"
     },
+    "how_it_works": "🎯 Cómo funciona:",
+    "step1": "1️⃣ Envía una foto de cualquier objeto",
+    "step2": "2️⃣ La IA analiza y sugiere ubicación",
+    "step3": "3️⃣ Edita detalles si es necesario",
+    "step4": "4️⃣ El objeto se agrega a HomeBox",
     "commands": "💡 Comandos disponibles:",
     "commands_list": "⚙️ /settings - Configuración\n❓ /help - Ayuda",
-    "get_started": "🚀 ¡Comienza enviando una foto!"
+    "get_started": "🚀 ¿Listo para organizar? ¡Envía tu primera foto!",
+    "tips": "💡 Consejos profesionales:",
+    "tip1": "• Agrega una descripción para ayudar a la IA",
+    "tip2": "• Usa reanálisis si el resultado no es perfecto",
+    "tip3": "• Cambia el idioma en configuración en cualquier momento"
   },
   "settings": {
     "title": "⚙️ Configuración",

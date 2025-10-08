@@ -67,23 +67,19 @@ class BaseHandler(ABC):
     
     def create_beautiful_start_message(self, lang: str) -> str:
         """Create beautiful start message with formatting"""
-        # Create progress bar for features
-        def create_progress_bar(current: int, total: int, width: int = 10) -> str:
-            filled = int((current / total) * width)
-            bar = "█" * filled + "░" * (width - filled)
-            return f"`{bar}` {current}/{total}"
-        
-        # Create feature list with progress indicators
+        # Create feature list with emojis
         features = [
             t(lang, 'start.features.ai_analysis'),
             t(lang, 'start.features.auto_location'),
             t(lang, 'start.features.multi_lang'),
-            t(lang, 'start.features.smart_org')
+            t(lang, 'start.features.smart_org'),
+            t(lang, 'start.features.reanalysis'),
+            t(lang, 'start.features.beautiful_ui')
         ]
         
         feature_list = ""
-        for i, feature in enumerate(features, 1):
-            feature_list += f"  {create_progress_bar(i, len(features))} {feature}\n"
+        for feature in features:
+            feature_list += f"  {feature}\n"
         
         # Create the main message
         message = f"""
@@ -93,8 +89,19 @@ class BaseHandler(ABC):
 
 {t(lang, 'start.description')}
 
-**✨ {t(lang, 'start.features.ai_analysis')}**
+**✨ Features:**
 {feature_list}
+
+**{t(lang, 'start.how_it_works')}**
+{t(lang, 'start.step1')}
+{t(lang, 'start.step2')}
+{t(lang, 'start.step3')}
+{t(lang, 'start.step4')}
+
+**{t(lang, 'start.tips')}**
+{t(lang, 'start.tip1')}
+{t(lang, 'start.tip2')}
+{t(lang, 'start.tip3')}
 
 {t(lang, 'start.commands')}
 {t(lang, 'start.commands_list')}

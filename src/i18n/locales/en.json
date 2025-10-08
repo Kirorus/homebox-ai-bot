@@ -19,11 +19,22 @@
       "ai_analysis": "🧠 AI item analysis",
       "auto_location": "📍 Automatic location selection",
       "multi_lang": "🌍 5 language support",
-      "smart_org": "📦 Smart organization"
+      "smart_org": "📦 Smart organization",
+      "reanalysis": "🔄 Re-analysis with hints",
+      "beautiful_ui": "✨ Beautiful interface"
     },
+    "how_it_works": "🎯 How it works:",
+    "step1": "1️⃣ Send a photo of any item",
+    "step2": "2️⃣ AI analyzes and suggests location",
+    "step3": "3️⃣ Edit details if needed",
+    "step4": "4️⃣ Item is added to HomeBox",
     "commands": "💡 Available commands:",
     "commands_list": "⚙️ /settings - Settings\n❓ /help - Help",
-    "get_started": "🚀 Start by sending a photo!"
+    "get_started": "🚀 Ready to organize? Send your first photo!",
+    "tips": "💡 Pro tips:",
+    "tip1": "• Add a caption to help AI understand better",
+    "tip2": "• Use re-analysis if the result isn't perfect",
+    "tip3": "• Change language in settings anytime"
   },
   "settings": {
     "title": "⚙️ Settings",
