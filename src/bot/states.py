@@ -20,3 +20,7 @@ class SearchStates(StatesGroup):
     waiting_for_search_query = State()
     viewing_search_results = State()
     viewing_item_details = State()
+    selecting_new_location = State()
+    editing_item_name = State()
+    editing_item_description = State()
+    waiting_for_reanalysis_hint = State()

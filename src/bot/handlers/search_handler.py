@@ -181,7 +181,7 @@ class SearchHandler(BaseHandler):
                         await callback.message.answer_photo(
                             photo=image_url,
                             caption=details_text,
-                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang),
+                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
                             parse_mode="Markdown"
                         )
                     except Exception as photo_error:
@@ -189,7 +189,7 @@ class SearchHandler(BaseHandler):
                         # Fallback to text message
                         await callback.message.answer(
                             details_text,
-                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang),
+                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
                             parse_mode="Markdown"
                         )
                 else:
@@ -197,13 +197,13 @@ class SearchHandler(BaseHandler):
                     try:
                         await callback.message.edit_text(
                             details_text,
-                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang),
+                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
                             parse_mode="Markdown"
                         )
                     except Exception as edit_error:
                         await callback.message.answer(
                             details_text,
-                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang),
+                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
                             parse_mode="Markdown"
                         )
                 
@@ -321,6 +321,620 @@ class SearchHandler(BaseHandler):
             except Exception as e:
                 await self.handle_error(e, "new_search", callback.from_user.id)
                 await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+        
+        @self.router.callback_query(F.data.startswith("move_item_"))
+        async def start_move_item(callback: CallbackQuery, state: FSMContext):
+            """Start moving item to new location"""
+            try:
+                # Extract item ID from callback data
+                item_id = callback.data.split("_", 2)[2]
+                
+                # Get user settings
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Get current item to show current location
+                item = await self.homebox_service.get_item_by_id(item_id)
+                if not item:
+                    await callback.answer(t(bot_lang, 'search.item_not_found'), show_alert=True)
+                    return
+                
+                # Get all locations
+                all_locations = await self.homebox_service.get_locations()
+                if not all_locations:
+                    await callback.answer(t(bot_lang, 'errors.no_locations'), show_alert=True)
+                    return
+                
+                # Filter locations using the same logic as item creation
+                location_manager = self.homebox_service.get_location_manager(all_locations)
+                allowed_locations = location_manager.get_allowed_locations(
+                    self.settings.homebox.location_filter_mode,
+                    self.settings.homebox.location_marker
+                )
+                
+                if not allowed_locations:
+                    await callback.answer(t(bot_lang, 'errors.no_locations'), show_alert=True)
+                    return
+                
+                # Get current location ID
+                current_location_id = item.get('location', {}).get('id', '') if isinstance(item.get('location'), dict) else ''
+                
+                # Show location selection
+                move_text = t(bot_lang, 'search.select_new_location').format(
+                    item_name=item.get('name', 'Unknown Item'),
+                    current_location=item.get('location', {}).get('name', 'Unknown Location') if isinstance(item.get('location'), dict) else 'Unknown Location'
+                )
+                
+                try:
+                    await callback.message.edit_text(
+                        move_text,
+                        reply_markup=self.keyboard_manager.move_item_location_keyboard(
+                            allowed_locations, current_location_id, bot_lang, item_id
+                        ),
+                        parse_mode="Markdown"
+                    )
+                except Exception as edit_error:
+                    await callback.message.answer(
+                        move_text,
+                        reply_markup=self.keyboard_manager.move_item_location_keyboard(
+                            allowed_locations, current_location_id, bot_lang, item_id
+                        ),
+                        parse_mode="Markdown"
+                    )
+                
+                # Create location mapping for callback data
+                location_mapping = {}
+                filtered_locations = []
+                for loc in allowed_locations:
+                    if str(loc.id) != str(current_location_id):
+                        location_mapping[len(filtered_locations)] = loc.id
+                        filtered_locations.append(loc)
+                
+                await callback.answer()
+                await state.set_state(SearchStates.selecting_new_location)
+                await state.update_data(
+                    moving_item_id=item_id, 
+                    current_item=item,
+                    location_mapping=location_mapping,
+                    filtered_locations=filtered_locations
+                )
+                
+            except Exception as e:
+                await self.handle_error(e, "start_move_item", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+        
+        @self.router.callback_query(F.data.startswith("mov_loc_"))
+        async def confirm_move_item(callback: CallbackQuery, state: FSMContext):
+            """Move item to selected location"""
+            try:
+                # Extract location index from callback data
+                location_index = int(callback.data.split("_")[2])
+                
+                # Get user settings
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Get state data
+                data = await state.get_data()
+                current_item = data.get('current_item', {})
+                item_id = data.get('moving_item_id', '')
+                location_mapping = data.get('location_mapping', {})
+                
+                # Get location ID from mapping
+                if location_index not in location_mapping:
+                    await callback.answer(t(bot_lang, 'errors.location_not_found'), show_alert=True)
+                    return
+                
+                new_location_id = location_mapping[location_index]
+                
+                # Show moving message
+                moving_msg = await callback.message.answer(t(bot_lang, 'search.moving_item'))
+                
+                # Update item location
+                success = await self.homebox_service.update_item_location(item_id, new_location_id)
+                
+                if success:
+                    # Get updated item and new location info
+                    updated_item = await self.homebox_service.get_item_by_id(item_id)
+                    all_locations = await self.homebox_service.get_locations()
+                    new_location_name = "Unknown Location"
+                    
+                    if all_locations:
+                        for loc in all_locations:
+                            if str(loc.id) == str(new_location_id):
+                                new_location_name = loc.name
+                                break
+                    
+                    # Show success message
+                    success_text = t(bot_lang, 'search.item_moved_successfully').format(
+                        item_name=current_item.get('name', 'Unknown Item'),
+                        new_location=new_location_name
+                    )
+                    
+                    try:
+                        await moving_msg.edit_text(
+                            success_text,
+                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                            parse_mode="Markdown"
+                        )
+                    except Exception as edit_error:
+                        await callback.message.answer(
+                            success_text,
+                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                            parse_mode="Markdown"
+                        )
+                    
+                    await state.set_state(SearchStates.viewing_item_details)
+                    await state.update_data(current_item=updated_item)
+                    
+                else:
+                    # Show error message
+                    error_text = t(bot_lang, 'search.move_failed').format(
+                        error=self.homebox_service.last_error or 'Unknown error'
+                    )
+                    
+                    try:
+                        await moving_msg.edit_text(
+                            error_text,
+                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                            parse_mode="Markdown"
+                        )
+                    except Exception as edit_error:
+                        await callback.message.answer(
+                            error_text,
+                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                            parse_mode="Markdown"
+                        )
+                
+                await callback.answer()
+                
+            except Exception as e:
+                await self.handle_error(e, "confirm_move_item", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+        
+        @self.router.callback_query(F.data == "mov_back")
+        async def back_to_item_details(callback: CallbackQuery, state: FSMContext):
+            """Return to item details from location selection"""
+            try:
+                # Get state data
+                data = await state.get_data()
+                item_id = data.get('moving_item_id', '')
+                
+                if not item_id:
+                    await callback.answer(t('en', 'search.item_not_found'), show_alert=True)
+                    return
+                
+                # Get user settings
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Get updated item details
+                item = await self.homebox_service.get_item_by_id(item_id)
+                if not item:
+                    await callback.answer(t(bot_lang, 'search.item_not_found'), show_alert=True)
+                    return
+                
+                # Show item details
+                details_text = self.format_item_details(item, bot_lang)
+                image_url = await self.get_item_image_url(item)
+                
+                # Try to send photo with caption, fallback to text only
+                if image_url:
+                    try:
+                        await callback.message.edit_text(
+                            details_text,
+                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                            parse_mode="Markdown"
+                        )
+                    except Exception as edit_error:
+                        await callback.message.answer(
+                            details_text,
+                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                            parse_mode="Markdown"
+                        )
+                else:
+                    # No image, send text only
+                    try:
+                        await callback.message.edit_text(
+                            details_text,
+                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                            parse_mode="Markdown"
+                        )
+                    except Exception as edit_error:
+                        await callback.message.answer(
+                            details_text,
+                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                            parse_mode="Markdown"
+                        )
+                
+                await callback.answer()
+                await state.set_state(SearchStates.viewing_item_details)
+                await state.update_data(current_item=item)
+                
+            except Exception as e:
+                await self.handle_error(e, "back_to_item_details", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+        
+        @self.router.callback_query(F.data.startswith("edit_item_name_"))
+        async def start_edit_item_name(callback: CallbackQuery, state: FSMContext):
+            """Start editing item name"""
+            try:
+                # Extract item ID from callback data
+                item_id = callback.data.split("_", 3)[3]
+                
+                # Get user settings
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Get current item
+                item = await self.homebox_service.get_item_by_id(item_id)
+                if not item:
+                    await callback.answer(t(bot_lang, 'search.item_not_found'), show_alert=True)
+                    return
+                
+                # Show edit prompt
+                edit_text = f"✏️ **{t(bot_lang, 'edit.name_title')}**\n\n{t(bot_lang, 'edit.name_prompt')}"
+                
+                try:
+                    await callback.message.edit_text(
+                        edit_text,
+                        reply_markup=None,
+                        parse_mode="Markdown"
+                    )
+                except Exception as edit_error:
+                    await callback.message.answer(
+                        edit_text,
+                        reply_markup=None,
+                        parse_mode="Markdown"
+                    )
+                
+                await callback.answer()
+                await state.set_state(SearchStates.editing_item_name)
+                await state.update_data(editing_item_id=item_id, current_item=item)
+                
+            except Exception as e:
+                await self.handle_error(e, "start_edit_item_name", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+        
+        @self.router.callback_query(F.data.startswith("edit_item_desc_"))
+        async def start_edit_item_description(callback: CallbackQuery, state: FSMContext):
+            """Start editing item description"""
+            try:
+                # Extract item ID from callback data
+                item_id = callback.data.split("_", 3)[3]
+                
+                # Get user settings
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Get current item
+                item = await self.homebox_service.get_item_by_id(item_id)
+                if not item:
+                    await callback.answer(t(bot_lang, 'search.item_not_found'), show_alert=True)
+                    return
+                
+                # Show edit prompt
+                edit_text = f"✏️ **{t(bot_lang, 'edit.description_title')}**\n\n{t(bot_lang, 'edit.description_prompt')}"
+                
+                try:
+                    await callback.message.edit_text(
+                        edit_text,
+                        reply_markup=None,
+                        parse_mode="Markdown"
+                    )
+                except Exception as edit_error:
+                    await callback.message.answer(
+                        edit_text,
+                        reply_markup=None,
+                        parse_mode="Markdown"
+                    )
+                
+                await callback.answer()
+                await state.set_state(SearchStates.editing_item_description)
+                await state.update_data(editing_item_id=item_id, current_item=item)
+                
+            except Exception as e:
+                await self.handle_error(e, "start_edit_item_description", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+        
+        @self.router.callback_query(F.data.startswith("reanalyze_item_"))
+        async def start_reanalyze_item(callback: CallbackQuery, state: FSMContext):
+            """Start reanalyzing item"""
+            try:
+                # Extract item ID from callback data
+                item_id = callback.data.split("_", 2)[2]
+                
+                # Get user settings
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Get current item
+                item = await self.homebox_service.get_item_by_id(item_id)
+                if not item:
+                    await callback.answer(t(bot_lang, 'search.item_not_found'), show_alert=True)
+                    return
+                
+                # Show reanalysis prompt
+                reanalyze_text = f"🔄 **{t(bot_lang, 'reanalysis.title')}**\n\n{t(bot_lang, 'reanalysis.prompt')}\n\n💡 *{t(bot_lang, 'reanalysis.hint_placeholder')}*"
+                
+                try:
+                    await callback.message.edit_text(
+                        reanalyze_text,
+                        reply_markup=None,
+                        parse_mode="Markdown"
+                    )
+                except Exception as edit_error:
+                    await callback.message.answer(
+                        reanalyze_text,
+                        reply_markup=None,
+                        parse_mode="Markdown"
+                    )
+                
+                await callback.answer()
+                await state.set_state(SearchStates.waiting_for_reanalysis_hint)
+                await state.update_data(reanalyzing_item_id=item_id, current_item=item)
+                
+            except Exception as e:
+                await self.handle_error(e, "start_reanalyze_item", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+        
+        @self.router.message(SearchStates.editing_item_name, F.text)
+        async def handle_item_name_edit(message: Message, state: FSMContext):
+            """Handle item name editing"""
+            try:
+                user_settings = await self.get_user_settings(message.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Get state data
+                data = await state.get_data()
+                item_id = data.get('editing_item_id', '')
+                
+                if not item_id:
+                    await message.answer(t(bot_lang, 'search.item_not_found'))
+                    return
+                
+                # Validate name (basic validation)
+                new_name = message.text.strip()
+                if not new_name or len(new_name) < 1 or len(new_name) > 200:
+                    await message.answer(t(bot_lang, 'errors.invalid_name'))
+                    return
+                
+                # Show updating message
+                updating_msg = await message.answer(t(bot_lang, 'search.updating_item'))
+                
+                # Update item in HomeBox
+                success = await self.homebox_service.update_item(item_id, {'name': new_name})
+                
+                if success:
+                    # Get updated item
+                    updated_item = await self.homebox_service.get_item_by_id(item_id)
+                    if updated_item:
+                        # Show updated item details
+                        details_text = self.format_item_details(updated_item, bot_lang)
+                        image_url = await self.get_item_image_url(updated_item)
+                        
+                        success_text = t(bot_lang, 'search.item_updated_successfully').format(
+                            field=t(bot_lang, 'edit.name_title'),
+                            value=new_name
+                        )
+                        
+                        try:
+                            await updating_msg.edit_text(
+                                success_text,
+                                reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                                parse_mode="Markdown"
+                            )
+                        except Exception as edit_error:
+                            await message.answer(
+                                success_text,
+                                reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                                parse_mode="Markdown"
+                            )
+                        
+                        await state.set_state(SearchStates.viewing_item_details)
+                        await state.update_data(current_item=updated_item)
+                    else:
+                        await updating_msg.edit_text(t(bot_lang, 'search.item_not_found'))
+                else:
+                    error_text = t(bot_lang, 'search.update_failed').format(
+                        error=self.homebox_service.last_error or 'Unknown error'
+                    )
+                    await updating_msg.edit_text(error_text)
+                
+            except Exception as e:
+                await self.handle_error(e, "handle_item_name_edit", message.from_user.id)
+                await message.answer(t('en', 'errors.occurred'))
+        
+        @self.router.message(SearchStates.editing_item_description, F.text)
+        async def handle_item_description_edit(message: Message, state: FSMContext):
+            """Handle item description editing"""
+            try:
+                user_settings = await self.get_user_settings(message.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Get state data
+                data = await state.get_data()
+                item_id = data.get('editing_item_id', '')
+                
+                if not item_id:
+                    await message.answer(t(bot_lang, 'search.item_not_found'))
+                    return
+                
+                # Validate description (basic validation)
+                new_description = message.text.strip()
+                if len(new_description) > 1000:
+                    await message.answer(t(bot_lang, 'errors.invalid_description'))
+                    return
+                
+                # Show updating message
+                updating_msg = await message.answer(t(bot_lang, 'search.updating_item'))
+                
+                # Update item in HomeBox
+                success = await self.homebox_service.update_item(item_id, {'description': new_description})
+                
+                if success:
+                    # Get updated item
+                    updated_item = await self.homebox_service.get_item_by_id(item_id)
+                    if updated_item:
+                        success_text = t(bot_lang, 'search.item_updated_successfully').format(
+                            field=t(bot_lang, 'edit.description_title'),
+                            value=new_description[:50] + "..." if len(new_description) > 50 else new_description
+                        )
+                        
+                        try:
+                            await updating_msg.edit_text(
+                                success_text,
+                                reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                                parse_mode="Markdown"
+                            )
+                        except Exception as edit_error:
+                            await message.answer(
+                                success_text,
+                                reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                                parse_mode="Markdown"
+                            )
+                        
+                        await state.set_state(SearchStates.viewing_item_details)
+                        await state.update_data(current_item=updated_item)
+                    else:
+                        await updating_msg.edit_text(t(bot_lang, 'search.item_not_found'))
+                else:
+                    error_text = t(bot_lang, 'search.update_failed').format(
+                        error=self.homebox_service.last_error or 'Unknown error'
+                    )
+                    await updating_msg.edit_text(error_text)
+                
+            except Exception as e:
+                await self.handle_error(e, "handle_item_description_edit", message.from_user.id)
+                await message.answer(t('en', 'errors.occurred'))
+        
+        @self.router.message(SearchStates.waiting_for_reanalysis_hint, F.text)
+        async def handle_item_reanalysis_hint(message: Message, state: FSMContext):
+            """Handle item reanalysis hint"""
+            try:
+                user_settings = await self.get_user_settings(message.from_user.id)
+                bot_lang = user_settings.bot_lang
+                gen_lang = user_settings.gen_lang
+                
+                # Get state data
+                data = await state.get_data()
+                item_id = data.get('reanalyzing_item_id', '')
+                current_item = data.get('current_item', {})
+                
+                if not item_id or not current_item:
+                    await message.answer(t(bot_lang, 'search.item_not_found'))
+                    return
+                
+                hint = message.text.strip()
+                
+                # Show processing message
+                processing_msg = await message.answer(t(bot_lang, 'reanalysis.processing'))
+                
+                # Get all locations for reanalysis
+                all_locations = await self.homebox_service.get_locations()
+                if not all_locations:
+                    await processing_msg.edit_text(t(bot_lang, 'errors.no_locations'))
+                    return
+                
+                # Filter locations
+                location_manager = self.homebox_service.get_location_manager(all_locations)
+                allowed_locations = location_manager.get_allowed_locations(
+                    self.settings.homebox.location_filter_mode,
+                    self.settings.homebox.location_marker
+                )
+                
+                # Check if item has an image
+                image_id = current_item.get('imageId', '')
+                if not image_id:
+                    await processing_msg.edit_text(t(bot_lang, 'search.no_image_for_reanalysis'))
+                    return
+                
+                # Download item image for reanalysis
+                image_path = await self.homebox_service.download_item_image(item_id, image_id)
+                if not image_path:
+                    await processing_msg.edit_text(t(bot_lang, 'search.image_download_failed'))
+                    return
+                
+                try:
+                    # Perform AI reanalysis with hint
+                    analysis = await self.ai_service.analyze_image(
+                        image_path=image_path,
+                        location_manager=location_manager,
+                        lang=gen_lang,
+                        model=user_settings.model,
+                        caption=hint  # Use hint as additional caption
+                    )
+                    
+                    # Find the suggested location
+                    suggested_location = None
+                    for loc in allowed_locations:
+                        if loc.name == analysis.suggested_location:
+                            suggested_location = loc
+                            break
+                    
+                    if not suggested_location:
+                        suggested_location = allowed_locations[0] if allowed_locations else None
+                    
+                    if not suggested_location:
+                        await processing_msg.edit_text(t(bot_lang, 'errors.no_locations'))
+                        return
+                    
+                    # Update item with new analysis
+                    update_data = {
+                        'name': analysis.name,
+                        'description': analysis.description,
+                        'location_id': suggested_location.id
+                    }
+                    
+                    success = await self.homebox_service.update_item(item_id, update_data)
+                    
+                    if success:
+                        # Get updated item
+                        updated_item = await self.homebox_service.get_item_by_id(item_id)
+                        if updated_item:
+                            success_text = t(bot_lang, 'search.reanalysis_successful').format(
+                                hint=hint,
+                                new_name=analysis.name,
+                                new_description=analysis.description,
+                                new_location=suggested_location.name
+                            )
+                            
+                            try:
+                                await processing_msg.edit_text(
+                                    success_text,
+                                    reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                                    parse_mode="Markdown"
+                                )
+                            except Exception as edit_error:
+                                await message.answer(
+                                    success_text,
+                                    reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                                    parse_mode="Markdown"
+                                )
+                            
+                            await state.set_state(SearchStates.viewing_item_details)
+                            await state.update_data(current_item=updated_item)
+                        else:
+                            await processing_msg.edit_text(t(bot_lang, 'search.item_not_found'))
+                    else:
+                        error_text = t(bot_lang, 'search.update_failed').format(
+                            error=self.homebox_service.last_error or 'Unknown error'
+                        )
+                        await processing_msg.edit_text(error_text)
+                
+                finally:
+                    # Clean up temporary image file
+                    try:
+                        import os
+                        if image_path and os.path.exists(image_path):
+                            os.remove(image_path)
+                            logger.info(f"Cleaned up temporary image: {image_path}")
+                    except Exception as cleanup_error:
+                        logger.warning(f"Failed to cleanup temporary image {image_path}: {cleanup_error}")
+                
+            except Exception as e:
+                await self.handle_error(e, "handle_item_reanalysis_hint", message.from_user.id)
+                await message.answer(t('en', 'errors.occurred'))
     
     async def show_search_results(self, message: Message, state: FSMContext, items: list, page: int, lang: str, is_recent: bool = False):
         """Show search results with pagination"""

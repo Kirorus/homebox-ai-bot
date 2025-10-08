@@ -5,7 +5,7 @@ HomeBox API service
 import aiohttp
 import asyncio
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from config.settings import HomeBoxSettings
 from models.location import Location, LocationManager
 from models.item import Item
@@ -459,6 +459,107 @@ class HomeBoxService:
         
         # Format: /api/v1/items/{item_id}/attachments/{attachment_id}?access_token={token}
         return f"{self.base_url}/api/v1/items/{item_id}/attachments/{image_id}?access_token={access_token}"
+    
+    @retry_async(max_attempts=3, delay=2.0, exceptions=(aiohttp.ClientError, asyncio.TimeoutError))
+    async def update_item(self, item_id: str, updates: Dict[str, Any]) -> bool:
+        """Update item fields in HomeBox"""
+        try:
+            session = await self._get_session()
+            
+            logger.info(f"Updating item {item_id} with fields: {list(updates.keys())}")
+            
+            # First get the current item to preserve other fields
+            current_item = await self.get_item_by_id(item_id)
+            if not current_item:
+                self.last_error = f"Item {item_id} not found"
+                logger.error(self.last_error)
+                return False
+            
+            # Prepare update data - merge current data with updates
+            update_data = {
+                'name': current_item.get('name', ''),
+                'description': current_item.get('description', ''),
+                'locationId': current_item.get('location', {}).get('id', '') if isinstance(current_item.get('location'), dict) else current_item.get('locationId', ''),
+                'quantity': current_item.get('quantity', 1)
+            }
+            
+            # Apply updates
+            for key, value in updates.items():
+                if key == 'location_id':
+                    update_data['locationId'] = value
+                elif key in ['name', 'description', 'quantity']:
+                    update_data[key] = value
+            
+            async with session.put(
+                f'{self.base_url}/api/v1/items/{item_id}',
+                headers=self.headers,
+                json=update_data
+            ) as response:
+                if response.status not in [200, 204]:
+                    try:
+                        body = await response.text()
+                    except Exception:
+                        body = ''
+                    self.last_error = f'UPDATE item failed HTTP {response.status}; body: {body[:500]}'
+                    logger.error(f"Failed to update item: {self.last_error}")
+                    return False
+                
+                logger.info(f"Successfully updated item {item_id}")
+                return True
+                
+        except Exception as e:
+            error_msg = f'Exception in update_item: {str(e)}'
+            logger.error(error_msg)
+            return False
+    
+    async def update_item_location(self, item_id: str, new_location_id: str) -> bool:
+        """Update item location in HomeBox"""
+        return await self.update_item(item_id, {'location_id': new_location_id})
+    
+    async def download_item_image(self, item_id: str, image_id: str) -> Optional[str]:
+        """Download item image and save to temporary file"""
+        try:
+            import aiofiles
+            import os
+            import tempfile
+            
+            if not image_id or not item_id:
+                return None
+            
+            # Get access token
+            access_token = await self._get_access_token()
+            if not access_token:
+                logger.warning("No access token available for image download")
+                return None
+            
+            # Build image URL
+            image_url = f"{self.base_url}/api/v1/items/{item_id}/attachments/{image_id}?access_token={access_token}"
+            
+            # Create temporary file
+            temp_dir = tempfile.gettempdir()
+            temp_filename = f"reanalysis_{item_id}_{image_id}.jpg"
+            temp_path = os.path.join(temp_dir, temp_filename)
+            
+            logger.info(f"Downloading image for reanalysis: {image_url}")
+            
+            # Download image
+            session = await self._get_session()
+            async with session.get(image_url) as response:
+                if response.status != 200:
+                    logger.error(f"Failed to download image: HTTP {response.status}")
+                    return None
+                
+                # Save to temporary file
+                async with aiofiles.open(temp_path, 'wb') as f:
+                    async for chunk in response.content.iter_chunked(8192):
+                        await f.write(chunk)
+            
+            logger.info(f"Image downloaded successfully: {temp_path}")
+            return temp_path
+            
+        except Exception as e:
+            logger.error(f"Exception in download_item_image: {str(e)}")
+            return None
     
     async def _get_access_token(self) -> str:
         """Get access token for API calls"""

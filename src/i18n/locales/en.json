@@ -202,6 +202,18 @@
     "cancelled": "Search cancelled",
     "new_search": "🔍 New Search",
     "cancel": "❌ Cancel",
-    "back_to_results": "⬅️ Back to Results"
+    "back_to_results": "⬅️ Back to Results",
+    "move_item": "Move",
+    "select_new_location": "📦 **{item_name}**\n\n📍 Current location: **{current_location}**\n\n🗂️ Showing only available locations with [TGB] marker\n\nSelect new location for moving:",
+    "moving_item": "🔄 Moving item...",
+    "item_moved_successfully": "✅ **Item moved successfully!**\n\n📦 **{item_name}**\n📍 New location: **{new_location}**",
+    "move_failed": "❌ **Move failed**\n\nFailed to move item.\nError: {error}",
+    "updating_item": "🔄 Updating item...",
+    "item_updated_successfully": "✅ **{field} updated!**\n\nNew value: **{value}**",
+    "update_failed": "❌ **Update failed**\n\nFailed to update item.\nError: {error}",
+    "reanalysis_not_implemented": "ℹ️ **Reanalysis not implemented yet**\n\nYour hint: *{hint}*\n\nThis feature will be added in future versions.",
+    "no_image_for_reanalysis": "❌ **No image**\n\nThis item has no image for reanalysis.",
+    "image_download_failed": "❌ **Download failed**\n\nFailed to download image for reanalysis.",
+    "reanalysis_successful": "✅ **Reanalysis completed!**\n\n💡 **Your hint:** *{hint}*\n\n📦 **New name:** {new_name}\n📝 **New description:** {new_description}\n📍 **New location:** {new_location}"
   }
 }

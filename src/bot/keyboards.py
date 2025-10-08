@@ -158,9 +158,47 @@ class KeyboardManager:
         builder.row(InlineKeyboardButton(text=t(lang, 'search.cancel'), callback_data="search_cancel"))
         return builder.as_markup()
     
-    def item_details_keyboard(self, lang: str) -> InlineKeyboardMarkup:
+    def item_details_keyboard(self, lang: str, item_id: str = None) -> InlineKeyboardMarkup:
         """Create item details keyboard"""
         builder = InlineKeyboardBuilder()
+        
+        # Edit buttons
+        if item_id:
+            builder.row(
+                InlineKeyboardButton(text=t(lang, 'buttons.edit_name'), callback_data=f"edit_item_name_{item_id}"),
+                InlineKeyboardButton(text=t(lang, 'buttons.edit_description'), callback_data=f"edit_item_desc_{item_id}")
+            )
+            builder.row(InlineKeyboardButton(text=t(lang, 'buttons.reanalyze'), callback_data=f"reanalyze_item_{item_id}"))
+            builder.row(InlineKeyboardButton(text=f"📦 {t(lang, 'search.move_item')}", callback_data=f"move_item_{item_id}"))
+        
+        # Navigation buttons
         builder.row(InlineKeyboardButton(text=t(lang, 'search.back_to_results'), callback_data="search_back"))
         builder.row(InlineKeyboardButton(text=t(lang, 'search.new_search'), callback_data="search_new"))
+        return builder.as_markup()
+    
+    @staticmethod
+    def move_item_location_keyboard(locations: List[Location], current_location_id: str, lang: str, item_id: str) -> InlineKeyboardMarkup:
+        """Create location selection keyboard for moving items"""
+        builder = InlineKeyboardBuilder()
+        
+        # Add each location on its own row
+        for i, loc in enumerate(locations):
+            # Skip current location
+            if str(loc.id) == str(current_location_id):
+                continue
+            
+            # Use short callback data with index instead of full UUID
+            # Format: mov_loc_<index> - we'll store mapping in state
+            builder.row(
+                InlineKeyboardButton(
+                    text=f"📍 {loc.name}",
+                    callback_data=f"mov_loc_{i}"
+                )
+            )
+        
+        # Back button with short callback data
+        builder.row(
+            InlineKeyboardButton(text=t(lang, 'common.back'), callback_data="mov_back")
+        )
+        
         return builder.as_markup()
