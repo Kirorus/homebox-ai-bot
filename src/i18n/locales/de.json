@@ -78,9 +78,9 @@
     "success": "Analyse mit Ihrem Hinweis aktualisiert!"
   },
   "buttons": {
-    "edit_name": "✏️ Name",
-    "edit_description": "✏️ Beschreibung",
-    "edit_location": "✏️ Standort",
+    "edit_name": "🏷️ Name",
+    "edit_description": "📝 Beschreibung",
+    "edit_location": "📍 Standort",
     "reanalyze": "🔄 Neu analysieren",
     "confirm": "✅ Bestätigen",
     "cancel": "❌ Abbrechen"

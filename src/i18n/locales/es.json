@@ -78,9 +78,9 @@
     "success": "¡Análisis actualizado con tu pista!"
   },
   "buttons": {
-    "edit_name": "✏️ Nombre",
-    "edit_description": "✏️ Descripción",
-    "edit_location": "✏️ Ubicación",
+    "edit_name": "🏷️ Nombre",
+    "edit_description": "📝 Descripción",
+    "edit_location": "📍 Ubicación",
     "reanalyze": "🔄 Reanalizar",
     "confirm": "✅ Confirmar",
     "cancel": "❌ Cancelar"

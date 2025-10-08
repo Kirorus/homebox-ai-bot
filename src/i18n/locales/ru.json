@@ -78,9 +78,9 @@
     "success": "Анализ обновлен с вашей подсказкой!"
   },
   "buttons": {
-    "edit_name": "✏️ Название",
-    "edit_description": "✏️ Описание",
-    "edit_location": "✏️ Место",
+    "edit_name": "🏷️ Название",
+    "edit_description": "📝 Описание",
+    "edit_location": "📍 Место",
     "reanalyze": "🔄 Переанализировать",
     "confirm": "✅ Подтвердить",
     "cancel": "❌ Отмена"

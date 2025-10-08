@@ -80,24 +80,24 @@ class KeyboardManager:
         """Create confirmation keyboard"""
         builder = InlineKeyboardBuilder()
         
-        # First row - edit name
+        # First row - re-analyze (most important action)
+        builder.row(
+            InlineKeyboardButton(text=t(bot_lang, 'buttons.reanalyze'), callback_data="reanalyze")
+        )
+        
+        # Second row - edit name
         builder.row(
             InlineKeyboardButton(text=t(bot_lang, 'buttons.edit_name'), callback_data="edit_name")
         )
         
-        # Second row - edit description
+        # Third row - edit description
         builder.row(
             InlineKeyboardButton(text=t(bot_lang, 'buttons.edit_description'), callback_data="edit_description")
         )
         
-        # Third row - edit location
+        # Fourth row - edit location
         builder.row(
             InlineKeyboardButton(text=t(bot_lang, 'buttons.edit_location'), callback_data="edit_location")
-        )
-        
-        # Fourth row - re-analyze
-        builder.row(
-            InlineKeyboardButton(text=t(bot_lang, 'buttons.reanalyze'), callback_data="reanalyze")
         )
         
         # Fifth row - confirm action

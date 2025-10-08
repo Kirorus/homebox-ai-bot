@@ -78,9 +78,9 @@
     "success": "Analysis updated with your hint!"
   },
   "buttons": {
-    "edit_name": "✏️ Name",
-    "edit_description": "✏️ Description",
-    "edit_location": "✏️ Location",
+    "edit_name": "🏷️ Name",
+    "edit_description": "📝 Description",
+    "edit_location": "📍 Location",
     "reanalyze": "🔄 Re-analyze",
     "confirm": "✅ Confirm",
     "cancel": "❌ Cancel"

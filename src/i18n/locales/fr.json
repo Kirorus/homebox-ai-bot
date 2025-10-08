@@ -78,9 +78,9 @@
     "success": "Analyse mise à jour avec votre indice !"
   },
   "buttons": {
-    "edit_name": "✏️ Nom",
-    "edit_description": "✏️ Description",
-    "edit_location": "✏️ Emplacement",
+    "edit_name": "🏷️ Nom",
+    "edit_description": "📝 Description",
+    "edit_location": "📍 Emplacement",
     "reanalyze": "🔄 Réanalyser",
     "confirm": "✅ Confirmer",
     "cancel": "❌ Annuler"
