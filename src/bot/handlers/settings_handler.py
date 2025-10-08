@@ -91,6 +91,7 @@ class SettingsHandler(BaseHandler):
                 await self.handle_error(e, "start_description_generation", callback.from_user.id)
                 await callback.answer(t('en', 'errors.occurred'))
         
+        
         @self.router.message(Command("settings"))
         async def cmd_settings(message: Message, state: FSMContext):
             """Handle /settings command"""
