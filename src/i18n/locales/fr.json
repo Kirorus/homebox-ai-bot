@@ -1,0 +1,143 @@
+{
+  "common": {
+    "back": "⬅️ Retour",
+    "cancel": "❌ Annuler",
+    "confirm": "✅ Confirmer",
+    "next": "➡️ Suivant",
+    "previous": "⬅️ Précédent",
+    "loading": "⏳ Chargement...",
+    "error": "❌ Erreur",
+    "success": "✅ Succès",
+    "warning": "⚠️ Avertissement",
+    "info": "ℹ️ Info"
+  },
+  "start": {
+    "welcome": "🏠 Bienvenue dans HomeBox AI Bot !",
+    "subtitle": "Votre assistant intelligent pour organiser les articles ménagers",
+    "description": "📸 Envoyez-moi une photo d'un objet, et je vous aiderai à l'ajouter à HomeBox avec une analyse automatique et une sélection d'emplacement de stockage.",
+    "features": {
+      "ai_analysis": "🧠 Analyse IA des articles",
+      "auto_location": "📍 Sélection automatique d'emplacement",
+      "multi_lang": "🌍 Support de 5 langues",
+      "smart_org": "📦 Organisation intelligente"
+    },
+    "commands": "💡 Commandes disponibles :",
+    "commands_list": "⚙️ /settings - Paramètres\n❓ /help - Aide",
+    "get_started": "🚀 Commencez par envoyer une photo !"
+  },
+  "settings": {
+    "title": "⚙️ Paramètres",
+    "bot_lang": "Langue du bot",
+    "gen_lang": "Langue de génération",
+    "model": "Modèle IA",
+    "stats": "Statistiques",
+    "restart": "Redémarrer",
+    "bot_lang_title": "Langue du bot",
+    "gen_lang_title": "Langue de génération",
+    "choose_model": "Choisir le modèle",
+    "current_model": "Modèle actuel",
+    "choose_model_prompt": "Sélectionnez un modèle pour l'analyse d'images :",
+    "bot_lang_prompt": "Sélectionnez la langue de l'interface du bot :",
+    "gen_lang_prompt": "Sélectionnez la langue pour la génération de descriptions :",
+    "what_change": "Que souhaitez-vous modifier ?"
+  },
+  "languages": {
+    "ru": "🇷🇺 Русский",
+    "en": "🇺🇸 English",
+    "de": "🇩🇪 Deutsch",
+    "fr": "🇫🇷 Français",
+    "es": "🇪🇸 Español"
+  },
+  "item": {
+    "analysis_complete": "Analyse de l'objet terminée",
+    "name": "Nom",
+    "description": "Description",
+    "location": "Emplacement",
+    "what_change": "Que souhaitez-vous modifier ?",
+    "creating": "Création de l'objet dans HomeBox...",
+    "please_wait": "Veuillez patienter...",
+    "error_creating": "Erreur lors de la création de l'objet",
+    "success": "Objet ajouté avec succès !",
+    "success_desc": "Votre objet a été ajouté à HomeBox avec la photo jointe !",
+    "cancelled": "Création de l'objet annulée",
+    "cancelled_desc": "Envoyez-moi une nouvelle photo pour ajouter un autre objet à HomeBox."
+  },
+  "edit": {
+    "name_title": "Modifier le nom de l'objet",
+    "name_prompt": "Veuillez envoyer le nouveau nom pour cet objet :",
+    "description_title": "Modifier la description de l'objet",
+    "description_prompt": "Veuillez envoyer la nouvelle description pour cet objet :",
+    "location_title": "Sélectionner l'emplacement de stockage",
+    "location_prompt": "Choisissez le meilleur emplacement pour cet objet :"
+  },
+  "reanalysis": {
+    "title": "Réanalyser l'objet",
+    "prompt": "Envoyez des informations supplémentaires pour améliorer l'analyse :",
+    "hint_placeholder": "ex. 'C'est un appareil photo vintage des années 1980' ou 'C'est fait de bois et de métal'",
+    "processing": "Réanalyse avec votre indice...",
+    "success": "Analyse mise à jour avec votre indice !"
+  },
+  "buttons": {
+    "edit_name": "✏️ Nom",
+    "edit_description": "✏️ Description",
+    "edit_location": "✏️ Emplacement",
+    "reanalyze": "🔄 Réanalyser",
+    "confirm": "✅ Confirmer",
+    "cancel": "❌ Annuler"
+  },
+  "errors": {
+    "invalid_name": "Nom invalide",
+    "invalid_description": "Description invalide",
+    "try_again": "Veuillez réessayer :",
+    "occurred": "Une erreur s'est produite. Veuillez réessayer.",
+    "no_item_data": "Erreur : Aucune donnée d'objet trouvée",
+    "location_not_found": "Emplacement non trouvé",
+    "no_locations": "Aucun emplacement disponible",
+    "access_denied": "Accès refusé",
+    "photo_processing": "Une erreur s'est produite lors du traitement de votre photo. Veuillez réessayer ou envoyer une autre photo.",
+    "invalid_model": "Modèle invalide"
+  },
+  "processing": {
+    "photo": "📸 Traitement de votre photo...",
+    "analyzing": "🔍 Analyse de l'image...",
+    "ai_processing": "🧠 L'IA traite les données...",
+    "finding_location": "📍 Recherche d'un emplacement approprié...",
+    "creating": "📦 Création de l'objet dans HomeBox...",
+    "uploading_photo": "📤 Téléchargement de la photo...",
+    "please_wait": "⏳ Veuillez patienter...",
+    "progress": "Progrès : {current}/{total}",
+    "steps": {
+      "1": "Réception de la photo",
+      "2": "Analyse IA",
+      "3": "Recherche d'emplacement",
+      "4": "Création de l'objet",
+      "5": "Téléchargement de la photo"
+    }
+  },
+  "success": {
+    "language_updated": "Langue mise à jour !",
+    "model_updated": "Modèle mis à jour !",
+    "item_created": "Objet créé avec succès !",
+    "cancelled": "Annulé",
+    "bot_lang_set_ru": "Язык бота установлен: Русский",
+    "bot_lang_set_en": "Bot language set: English",
+    "bot_lang_set_de": "Bot-Sprache eingestellt: Deutsch",
+    "bot_lang_set_fr": "Langue du bot définie : Français",
+    "gen_lang_set_ru": "Язык генерации установлен: Русский",
+    "gen_lang_set_en": "Generation language set: English",
+    "gen_lang_set_de": "Generierungssprache eingestellt: Deutsch",
+    "gen_lang_set_fr": "Langue de génération définie : Français",
+    "model_set": "Modèle défini"
+  },
+  "stats": {
+    "title": "Statistiques",
+    "users": "Utilisateurs",
+    "items_processed": "Objets traités",
+    "total_requests": "Total des demandes",
+    "uptime": "Temps de fonctionnement",
+    "unknown": "Inconnu"
+  },
+  "restart": {
+    "not_implemented": "Fonction de redémarrage pas encore implémentée"
+  }
+}

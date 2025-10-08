@@ -5,7 +5,7 @@
 echo "🛑 Stopping HomeBox AI Bot..."
 
 # Find and stop all bot instances
-BOT_PIDS=$(ps aux | grep "python bot.py" | grep -v grep | awk '{print $2}')
+BOT_PIDS=$(ps aux | grep "python.*main.py" | grep -v grep | awk '{print $2}')
 
 if [ -z "$BOT_PIDS" ]; then
     echo "ℹ️  Bot is not running"

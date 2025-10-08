@@ -13,8 +13,9 @@ An intelligent Telegram bot that uses AI vision to automatically add items to yo
 ### 🎛️ User-Friendly Interface
 - **Interactive Editing**: Edit name, description, and location before adding to HomeBox
 - **Progress Tracking**: Real-time progress updates during processing
-- **Multilingual Support**: Interface available in Russian and English
+- **Multilingual Support**: Interface available in 5 languages (English, Russian, German, French, Spanish)
 - **Settings Management**: Per-user language and model preferences
+- **i18n System**: Professional internationalization with easy language addition
 
 ### 🔧 HomeBox Integration
 - **Seamless Upload**: Direct integration with HomeBox API
@@ -81,7 +82,7 @@ An intelligent Telegram bot that uses AI vision to automatically add items to yo
    ```bash
    ./start_bot.sh  # Linux/Mac
    # or
-   python bot.py   # Direct execution
+   python src/main.py   # Direct execution
    ```
 
 ## ⚙️ Configuration
@@ -219,14 +220,31 @@ sudo systemctl start homebox-bot.service
 
 ## 🏗️ Architecture
 
+### New Modular Architecture (v2.0)
+
+The bot has been refactored into a clean, modular architecture with clear separation of concerns:
+
+```
+src/
+├── bot/                    # Bot-specific code
+│   ├── handlers/          # Message and callback handlers
+│   ├── keyboards/         # Inline keyboard management
+│   └── states.py          # FSM states
+├── config/                # Configuration management
+├── models/                # Data models with validation
+├── services/              # Business logic services
+├── utils/                 # Utility functions
+└── main.py               # Application entry point
+```
+
 ### Core Components
 
-- **`bot.py`** - Main bot logic with Aiogram v3, FSM states, and handlers
-- **`homebox_api.py`** - HomeBox API client with authentication and upload methods
-- **`config.py`** - Environment configuration and model management
-- **`database.py`** - JSON-based database for user settings and statistics
-- **`i18n.py`** - Internationalization support (Russian/English)
-- **`utils.py`** - Utility functions for image validation and file handling
+- **`src/main.py`** - Application entry point with dependency injection
+- **`src/bot/handlers/`** - Modular message handlers (photo, settings, admin)
+- **`src/services/`** - Business logic services (AI, HomeBox, Image, Database)
+- **`src/models/`** - Type-safe data models with validation
+- **`src/config/`** - Centralized configuration with validation
+- **`src/utils/`** - Reusable utility functions
 - **`start_bot.sh`** - Safe startup script with automatic instance management
 - **`stop_bot.sh`** - Graceful shutdown script for all bot instances
 
@@ -244,17 +262,49 @@ sudo systemctl start homebox-bot.service
 4. Create HomeBox item → Upload photo
 5. Confirm success → Clean up temp files
 
+### 🌍 Internationalization (i18n)
+
+The bot includes a professional internationalization system:
+
+- **5 Languages**: English, Russian, German, French, Spanish
+- **Easy Extension**: Add new languages by creating JSON translation files
+- **Fallback System**: Automatic fallback to English for missing translations
+- **Parameter Support**: Dynamic content with named parameters
+- **Consistent Structure**: Hierarchical translation keys for easy management
+
+#### Adding a New Language
+
+1. Create `src/i18n/locales/[lang].json` (e.g., `it.json` for Italian)
+2. Copy structure from existing language file
+3. Translate all values
+4. Add language code to `supported_languages` in `i18n_manager.py`
+5. Update keyboard handlers to include new language
+
+#### Translation Usage
+
+```python
+from i18n import t
+
+# Basic translation
+text = t('en', 'settings.title')  # "Settings"
+text = t('ru', 'settings.title')  # "Настройки"
+
+# With parameters
+text = t('en', 'item.success', name="My Item")
+# "Item My Item created successfully!"
+```
+
 ## 🔧 Development
 
 ### Dependencies
 ```
-aiogram==3.3.0          # Telegram Bot API
-openai==1.12.0          # OpenAI API client
-python-dotenv==1.0.0    # Environment variables
-aiohttp==3.9.1          # HTTP client
-pillow==10.2.0          # Image processing
-httpx==0.27.2           # HTTP client
-aiofiles==23.2.1        # Async file operations
+aiogram==3.22.0         # Telegram Bot API
+openai==2.2.0           # OpenAI API client
+python-dotenv==1.1.1    # Environment variables
+aiohttp==3.12.15        # HTTP client
+pillow==11.3.0          # Image processing
+aiofiles==24.1.0        # Async file operations
+aiosqlite==0.21.0       # SQLite database
 ```
 
 ### Development Setup
@@ -263,7 +313,7 @@ aiofiles==23.2.1        # Async file operations
 pip install -r requirements.txt
 
 # Run in development mode
-python bot.py
+python src/main.py
 
 # Check logs
 tail -f bot.log
@@ -330,7 +380,7 @@ tail -f bot.log
 ## 🔮 Roadmap
 
 ### Planned Features
-- [ ] SQLite database integration for better data persistence
+- [ ] Complete settings and admin handlers
 - [ ] Batch photo processing (multiple items at once)
 - [ ] Advanced location highlighting with visual maps
 - [ ] Custom recognition prompts and templates
@@ -347,13 +397,16 @@ tail -f bot.log
 - [x] Enhanced logging and error tracking
 - [x] Process management and conflict prevention
 - [x] Temporary file cleanup automation
+- [x] Modular architecture with clean separation
+- [x] Type-safe models with validation
+- [x] Service-based architecture
 - [ ] Connection pooling optimization
 - [ ] Caching mechanisms for API responses
 - [ ] Async processing improvements
 - [ ] Memory usage optimization
 - [ ] Image compression and optimization
 
-### Current Status (v1.0)
+### Current Status (v2.0)
 - ✅ Core functionality fully implemented
 - ✅ Multi-language support (Russian/English)
 - ✅ 20+ AI model support
@@ -362,6 +415,10 @@ tail -f bot.log
 - ✅ User access control
 - ✅ Statistics and monitoring
 - ✅ HomeBox API integration
+- ✅ Modular architecture with clean separation
+- ✅ Type-safe models with validation
+- ✅ Service-based architecture
+- ✅ SQLite database integration
 
 ## 📄 License
 

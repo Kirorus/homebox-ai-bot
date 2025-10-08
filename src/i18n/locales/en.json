@@ -1,0 +1,145 @@
+{
+  "common": {
+    "back": "⬅️ Back",
+    "cancel": "❌ Cancel",
+    "confirm": "✅ Confirm",
+    "next": "➡️ Next",
+    "previous": "⬅️ Previous",
+    "loading": "⏳ Loading...",
+    "error": "❌ Error",
+    "success": "✅ Success",
+    "warning": "⚠️ Warning",
+    "info": "ℹ️ Info"
+  },
+  "start": {
+    "welcome": "🏠 Welcome to HomeBox AI Bot!",
+    "subtitle": "Your smart assistant for organizing household items",
+    "description": "📸 Send me a photo of an item, and I'll help you add it to HomeBox with automatic analysis and storage location selection.",
+    "features": {
+      "ai_analysis": "🧠 AI item analysis",
+      "auto_location": "📍 Automatic location selection",
+      "multi_lang": "🌍 5 language support",
+      "smart_org": "📦 Smart organization"
+    },
+    "commands": "💡 Available commands:",
+    "commands_list": "⚙️ /settings - Settings\n❓ /help - Help",
+    "get_started": "🚀 Start by sending a photo!"
+  },
+  "settings": {
+    "title": "⚙️ Settings",
+    "bot_lang": "Bot Language",
+    "gen_lang": "Generation Language",
+    "model": "AI Model",
+    "stats": "Statistics",
+    "restart": "Restart",
+    "bot_lang_title": "Bot Language",
+    "gen_lang_title": "Generation Language",
+    "choose_model": "Choose Model",
+    "current_model": "Current model",
+    "choose_model_prompt": "Select a model for image analysis:",
+    "bot_lang_prompt": "Select bot interface language:",
+    "gen_lang_prompt": "Select language for description generation:",
+    "what_change": "What would you like to change?"
+  },
+  "languages": {
+    "ru": "🇷🇺 Русский",
+    "en": "🇺🇸 English",
+    "de": "🇩🇪 Deutsch",
+    "fr": "🇫🇷 Français",
+    "es": "🇪🇸 Español"
+  },
+  "item": {
+    "analysis_complete": "Item Analysis Complete",
+    "name": "Name",
+    "description": "Description",
+    "location": "Location",
+    "what_change": "What would you like to change?",
+    "creating": "Creating item in HomeBox...",
+    "please_wait": "Please wait...",
+    "error_creating": "Error creating item",
+    "success": "Item Successfully Added!",
+    "success_desc": "Your item has been added to HomeBox with photo attached!",
+    "cancelled": "Item Creation Cancelled",
+    "cancelled_desc": "Send me a new photo to add another item to HomeBox."
+  },
+  "edit": {
+    "name_title": "Edit Item Name",
+    "name_prompt": "Please send the new name for this item:",
+    "description_title": "Edit Item Description",
+    "description_prompt": "Please send the new description for this item:",
+    "location_title": "Select Storage Location",
+    "location_prompt": "Choose the best location for this item:"
+  },
+  "reanalysis": {
+    "title": "Re-analyze Item",
+    "prompt": "Send additional information to help improve the analysis:",
+    "hint_placeholder": "e.g., 'This is a vintage camera from the 1980s' or 'It's made of wood and metal'",
+    "processing": "Re-analyzing with your hint...",
+    "success": "Analysis updated with your hint!"
+  },
+  "buttons": {
+    "edit_name": "✏️ Name",
+    "edit_description": "✏️ Description",
+    "edit_location": "✏️ Location",
+    "reanalyze": "🔄 Re-analyze",
+    "confirm": "✅ Confirm",
+    "cancel": "❌ Cancel"
+  },
+  "errors": {
+    "invalid_name": "Invalid name",
+    "invalid_description": "Invalid description",
+    "try_again": "Please try again:",
+    "occurred": "An error occurred. Please try again.",
+    "no_item_data": "Error: No item data found",
+    "location_not_found": "Location not found",
+    "no_locations": "No locations available",
+    "access_denied": "Access denied",
+    "photo_processing": "An error occurred while processing your photo. Please try again or send another photo.",
+    "invalid_model": "Invalid model"
+  },
+  "processing": {
+    "photo": "📸 Processing your photo...",
+    "analyzing": "🔍 Analyzing image...",
+    "ai_processing": "🧠 AI processing data...",
+    "finding_location": "📍 Finding suitable location...",
+    "creating": "📦 Creating item in HomeBox...",
+    "uploading_photo": "📤 Uploading photo...",
+    "please_wait": "⏳ Please wait...",
+    "progress": "Progress: {current}/{total}",
+    "steps": {
+      "1": "Receiving photo",
+      "2": "AI analysis",
+      "3": "Finding location",
+      "4": "Creating item",
+      "5": "Uploading photo"
+    }
+  },
+  "success": {
+    "language_updated": "Language updated!",
+    "model_updated": "Model updated!",
+    "item_created": "Item created successfully!",
+    "cancelled": "Cancelled",
+    "bot_lang_set_ru": "Язык бота установлен: Русский",
+    "bot_lang_set_en": "Bot language set: English",
+    "bot_lang_set_de": "Bot-Sprache eingestellt: Deutsch",
+    "bot_lang_set_fr": "Langue du bot définie : Français",
+    "bot_lang_set_es": "Idioma del bot establecido: Español",
+    "gen_lang_set_ru": "Язык генерации установлен: Русский",
+    "gen_lang_set_en": "Generation language set: English",
+    "gen_lang_set_de": "Generierungssprache eingestellt: Deutsch",
+    "gen_lang_set_fr": "Langue de génération définie : Français",
+    "gen_lang_set_es": "Idioma de generación establecido: Español",
+    "model_set": "Model set"
+  },
+  "stats": {
+    "title": "Statistics",
+    "users": "Users",
+    "items_processed": "Items processed",
+    "total_requests": "Total requests",
+    "uptime": "Uptime",
+    "unknown": "Unknown"
+  },
+  "restart": {
+    "not_implemented": "Restart function not implemented yet"
+  }
+}

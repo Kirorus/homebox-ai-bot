@@ -9,7 +9,7 @@ echo "🤖 Starting HomeBox AI Bot..."
 cd "$(dirname "$0")"
 
 # Check if bot is already running
-BOT_PID=$(ps aux | grep "python bot.py" | grep -v grep | awk '{print $2}')
+BOT_PID=$(ps aux | grep "python.*main.py" | grep -v grep | awk '{print $2}')
 
 if [ ! -z "$BOT_PID" ]; then
     echo "⚠️  Found running bot instance (PID: $BOT_PID)"
@@ -30,4 +30,4 @@ fi
 # Activate virtual environment and start bot
 echo "🚀 Starting new bot instance..."
 source venv/bin/activate
-python bot.py
+cd src && python main.py

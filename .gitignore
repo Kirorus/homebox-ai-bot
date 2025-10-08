@@ -49,6 +49,7 @@ Thumbs.db
 temp_*.jpg
 temp_*.png
 temp_*.jpeg
+temp_*
 
 # Log files
 *.log
@@ -57,6 +58,16 @@ logs/
 # Database files (keep structure, ignore data)
 bot_data.db
 *.db-journal
+
+# Old architecture files (migrated to src/)
+bot.py
+config.py
+homebox_api.py
+database.py
+database_sqlite.py
+utils.py
+i18n.py
+migrate_to_sqlite.py
 
 # Environment variables
 .env
