@@ -616,7 +616,7 @@ class SettingsHandler(BaseHandler):
                 selected_locations = set()
                 for loc in all_locations:
                     if '[TGB]' in (loc.description or ''):
-                        selected_locations.add(loc.id)
+                        selected_locations.add(str(loc.id))
                 
                 await state.set_data({
                     'all_locations': all_locations,
@@ -708,7 +708,7 @@ class SettingsHandler(BaseHandler):
                 
                 for loc in all_locations:
                     has_marker = '[TGB]' in (loc.description or '')
-                    should_have_marker = loc.id in selected_locations
+                    should_have_marker = str(loc.id) in selected_locations
                     
                     if has_marker != should_have_marker:
                         try:
@@ -719,7 +719,7 @@ class SettingsHandler(BaseHandler):
                                 # Remove marker
                                 new_description = (loc.description or '').replace(' [TGB]', '').replace('[TGB]', '')
                             
-                            await self.homebox_service.update_location(loc.id, description=new_description)
+                            await self.homebox_service.update_location(loc.id, {'description': new_description})
                             updated_count += 1
                             
                         except Exception as e:

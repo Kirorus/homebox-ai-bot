@@ -978,7 +978,6 @@ class SearchHandler(BaseHandler):
             await self.handle_error(e, "show_locations_page", callback.from_user.id)
             await callback.answer(t('en', 'errors.occurred'))
     
-
     def create_locations_view_keyboard(self, bot_lang: str, current_page: int, total_pages: int) -> InlineKeyboardMarkup:
         """Create keyboard for locations view with pagination"""
         builder = InlineKeyboardBuilder()
@@ -1037,7 +1036,7 @@ class SearchHandler(BaseHandler):
                 selected_locations = set()
                 for loc in all_locations:
                     if '[TGB]' in (loc.description or ''):
-                        selected_locations.add(loc.id)
+                        selected_locations.add(str(loc.id))
                 
                 await state.set_data({
                     'all_locations': all_locations,
@@ -1134,7 +1133,7 @@ class SearchHandler(BaseHandler):
                     try:
                         current_description = location.description or ''
                         has_marker = '[TGB]' in current_description
-                        should_have_marker = location.id in selected_locations
+                        should_have_marker = str(location.id) in selected_locations
                         
                         # Only update if status changed
                         if has_marker != should_have_marker:
@@ -1290,9 +1289,6 @@ class SearchHandler(BaseHandler):
                 await self.handle_error(e, "back_to_location_management", callback.from_user.id)
                 await callback.answer(t('en', 'errors.occurred'))
     
-
-
-
     async def show_search_results(self, message: Message, state: FSMContext, items: list, page: int, lang: str, is_recent: bool = False):
         """Show search results with pagination"""
         try:
