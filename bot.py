@@ -171,7 +171,15 @@ async def analyze_image(image_path: str, locations: list, lang: str = 'ru', mode
     """Analyze image via OpenAI Vision to extract item metadata."""
     base64_image = encode_image(image_path)
     
-    locations_text = "\n".join([f"- {loc['name']}" for loc in locations])
+    # Create detailed location descriptions for better AI selection
+    locations_text = ""
+    for loc in locations:
+        location_name = loc['name']
+        location_desc = loc.get('description', '').strip()
+        if location_desc:
+            locations_text += f"- {location_name}: {location_desc}\n"
+        else:
+            locations_text += f"- {location_name}\n"
     
     # Add caption information to prompt if available
     caption_info = ""
@@ -186,7 +194,7 @@ async def analyze_image(image_path: str, locations: list, lang: str = 'ru', mode
 
 1. **Item Name**: A concise, descriptive name (max 50 chars). Be specific about brand, model, or type when visible.
 2. **Description**: A detailed description (max 200 chars) including material, color, condition, and any distinguishing features.
-3. **Storage Location**: Choose the most appropriate location from the available options based on the item's typical use and storage requirements.
+3. **Storage Location**: Choose the most appropriate location from the available options based on the item's typical use, storage requirements, and the location descriptions provided.
 
 **Analysis Guidelines:**
 - Look for brand names, model numbers, or text on the item
@@ -194,8 +202,10 @@ async def analyze_image(image_path: str, locations: list, lang: str = 'ru', mode
 - Think about where this item would logically be stored in a home
 - If it's a tool, consider the workspace; if it's clothing, consider the wardrobe area
 - For electronics, consider tech storage areas
+- **Pay special attention to location descriptions** - they contain important details about what types of items should be stored there
+- Match the item's purpose and characteristics with the most suitable location description
 
-**Available Locations:**
+**Available Locations (with descriptions):**
 {locations_text}{caption_info}
 
 **Important:** Respond ONLY with valid JSON in this exact format:
@@ -209,7 +219,7 @@ async def analyze_image(image_path: str, locations: list, lang: str = 'ru', mode
 
 1. **Название предмета**: Краткое, описательное название (до 50 символов). Будь конкретным в отношении бренда, модели или типа, когда это видно.
 2. **Описание**: Подробное описание (до 200 символов), включающее материал, цвет, состояние и отличительные особенности.
-3. **Место хранения**: Выбери наиболее подходящее место из доступных вариантов, основываясь на типичном использовании предмета и требованиях к хранению.
+3. **Место хранения**: Выбери наиболее подходящее место из доступных вариантов, основываясь на типичном использовании предмета, требованиях к хранению и описаниях локаций.
 
 **Рекомендации по анализу:**
 - Ищи названия брендов, модели или текст на предмете
@@ -217,8 +227,10 @@ async def analyze_image(image_path: str, locations: list, lang: str = 'ru', mode
 - Думай о том, где логично хранить этот предмет в доме
 - Если это инструмент, подумай о рабочем пространстве; если одежда - о гардеробе
 - Для электроники рассмотри области хранения техники
+- **Особое внимание удели описаниям локаций** - они содержат важную информацию о том, какие предметы там должны храниться
+- Сопоставь назначение и характеристики предмета с наиболее подходящим описанием локации
 
-**Доступные локации:**
+**Доступные локации (с описаниями):**
 {locations_text}{caption_info}
 
 **Важно:** Отвечай ТОЛЬКО валидным JSON в точном формате:
