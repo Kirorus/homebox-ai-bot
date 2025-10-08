@@ -9,7 +9,10 @@
     "error": "❌ Fehler",
     "success": "✅ Erfolgreich",
     "warning": "⚠️ Warnung",
-    "info": "ℹ️ Info"
+    "info": "ℹ️ Info",
+    "help": "❓ Hilfe",
+    "details": "Details",
+    "suggestion": "Vorschlag"
   },
   "start": {
     "welcome": "🏠 Willkommen beim HomeBox AI Bot!",
@@ -168,5 +171,26 @@
   },
   "restart": {
     "not_implemented": "Neustart-Funktion noch nicht implementiert"
+  },
+  "help": {
+    "title": "Hilfe & Anleitung",
+    "how_to_use": "So verwenden Sie es:",
+    "step1": "Senden Sie ein Foto eines Gegenstands",
+    "step2": "KI analysiert und schlägt Standort vor",
+    "step3": "Bearbeiten Sie Details bei Bedarf",
+    "step4": "Gegenstand wird zu HomeBox hinzugefügt",
+    "features": "Hauptfunktionen:",
+    "ai_analysis": "KI-Gegenstandserkennung",
+    "auto_location": "Automatische Standortvorschläge",
+    "reanalysis": "Neu-Analyse mit Hinweisen",
+    "multi_lang": "5-Sprachen-Unterstützung",
+    "tips": "Pro-Tipps:",
+    "tip1": "Fügen Sie Beschriftungen für Genauigkeit hinzu",
+    "tip2": "Verwenden Sie Neu-Analyse für bessere Ergebnisse",
+    "tip3": "Ändern Sie die Sprache in den Einstellungen",
+    "commands": "Verfügbare Befehle:",
+    "start_desc": "Bot starten",
+    "settings_desc": "Einstellungen öffnen",
+    "help_desc": "Diese Hilfe anzeigen"
   }
 }

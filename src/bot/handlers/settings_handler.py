@@ -424,6 +424,50 @@ class SettingsHandler(BaseHandler):
                 await self.handle_error(e, "quick_restart", callback.from_user.id)
                 await callback.answer(t('en', 'errors.occurred'), show_alert=True)
         
+        @self.router.callback_query(F.data == "quick_help")
+        async def quick_help_callback(callback: CallbackQuery, state: FSMContext):
+            """Show help information"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                help_text = f"""
+❓ **{t(bot_lang, 'help.title')}**
+
+**{t(bot_lang, 'help.how_to_use')}**
+1️⃣ {t(bot_lang, 'help.step1')}
+2️⃣ {t(bot_lang, 'help.step2')}
+3️⃣ {t(bot_lang, 'help.step3')}
+4️⃣ {t(bot_lang, 'help.step4')}
+
+**{t(bot_lang, 'help.features')}**
+• 🧠 {t(bot_lang, 'help.ai_analysis')}
+• 📍 {t(bot_lang, 'help.auto_location')}
+• 🔄 {t(bot_lang, 'help.reanalysis')}
+• 🌍 {t(bot_lang, 'help.multi_lang')}
+
+**{t(bot_lang, 'help.tips')}**
+• {t(bot_lang, 'help.tip1')}
+• {t(bot_lang, 'help.tip2')}
+• {t(bot_lang, 'help.tip3')}
+
+**{t(bot_lang, 'help.commands')}**
+• /start - {t(bot_lang, 'help.start_desc')}
+• /settings - {t(bot_lang, 'help.settings_desc')}
+• /help - {t(bot_lang, 'help.help_desc')}
+                """.strip()
+                
+                await callback.message.edit_text(
+                    help_text,
+                    reply_markup=self.keyboard_manager.settings_main_keyboard(bot_lang),
+                    parse_mode="Markdown"
+                )
+                await callback.answer()
+                
+            except Exception as e:
+                await self.handle_error(e, "quick_help", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+        
         @self.router.callback_query(F.data == "back_to_settings")
         async def back_to_settings_callback(callback: CallbackQuery, state: FSMContext):
             """Return to main settings menu"""

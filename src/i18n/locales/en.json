@@ -9,7 +9,10 @@
     "error": "❌ Error",
     "success": "✅ Success",
     "warning": "⚠️ Warning",
-    "info": "ℹ️ Info"
+    "info": "ℹ️ Info",
+    "help": "❓ Help",
+    "details": "Details",
+    "suggestion": "Suggestion"
   },
   "start": {
     "welcome": "🏠 Welcome to HomeBox AI Bot!",
@@ -168,5 +171,26 @@
   },
   "restart": {
     "not_implemented": "Restart function not implemented yet"
+  },
+  "help": {
+    "title": "Help & Guide",
+    "how_to_use": "How to use:",
+    "step1": "Send a photo of any item",
+    "step2": "AI analyzes and suggests location",
+    "step3": "Edit details if needed",
+    "step4": "Item is added to HomeBox",
+    "features": "Key features:",
+    "ai_analysis": "AI-powered item recognition",
+    "auto_location": "Automatic location suggestion",
+    "reanalysis": "Re-analysis with hints",
+    "multi_lang": "5 language support",
+    "tips": "Pro tips:",
+    "tip1": "Add captions to improve accuracy",
+    "tip2": "Use re-analysis for better results",
+    "tip3": "Change language in settings",
+    "commands": "Available commands:",
+    "start_desc": "Start the bot",
+    "settings_desc": "Open settings",
+    "help_desc": "Show this help"
   }
 }

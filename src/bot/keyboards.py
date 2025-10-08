@@ -53,31 +53,32 @@ class KeyboardManager:
     
     @staticmethod
     def settings_main_keyboard(bot_lang: str) -> InlineKeyboardMarkup:
-        """Create main settings keyboard"""
+        """Create main settings keyboard with improved layout"""
         builder = InlineKeyboardBuilder()
 
-        # First row - languages
+        # First row - languages (compact)
         builder.row(
-            InlineKeyboardButton(text=t(bot_lang, 'settings.bot_lang_title'), callback_data="settings_bot_lang"),
-            InlineKeyboardButton(text=t(bot_lang, 'settings.gen_lang_title'), callback_data="settings_gen_lang")
+            InlineKeyboardButton(text=f"🌐 {t(bot_lang, 'settings.bot_lang_title')}", callback_data="settings_bot_lang"),
+            InlineKeyboardButton(text=f"📝 {t(bot_lang, 'settings.gen_lang_title')}", callback_data="settings_gen_lang")
         )
 
-        # Second row - model
+        # Second row - model and stats
         builder.row(
-            InlineKeyboardButton(text=t(bot_lang, 'settings.choose_model'), callback_data="settings_model")
+            InlineKeyboardButton(text=f"🧠 {t(bot_lang, 'settings.choose_model')}", callback_data="settings_model"),
+            InlineKeyboardButton(text=f"📊 {t(bot_lang, 'settings.stats')}", callback_data="quick_stats")
         )
 
         # Third row - quick actions
         builder.row(
-            InlineKeyboardButton(text=f"📊 {t(bot_lang, 'settings.stats')}", callback_data="quick_stats"),
-            InlineKeyboardButton(text=f"🔄 {t(bot_lang, 'settings.restart')}", callback_data="quick_restart")
+            InlineKeyboardButton(text=f"🔄 {t(bot_lang, 'settings.restart')}", callback_data="quick_restart"),
+            InlineKeyboardButton(text=f"❓ {t(bot_lang, 'common.help')}", callback_data="quick_help")
         )
 
         return builder.as_markup()
     
     @staticmethod
     def confirmation_keyboard(bot_lang: str) -> InlineKeyboardMarkup:
-        """Create confirmation keyboard"""
+        """Create confirmation keyboard with improved layout"""
         builder = InlineKeyboardBuilder()
         
         # First row - re-analyze (most important action)
@@ -85,29 +86,21 @@ class KeyboardManager:
             InlineKeyboardButton(text=t(bot_lang, 'buttons.reanalyze'), callback_data="reanalyze")
         )
         
-        # Second row - edit name
+        # Second row - edit actions (grouped)
         builder.row(
-            InlineKeyboardButton(text=t(bot_lang, 'buttons.edit_name'), callback_data="edit_name")
-        )
-        
-        # Third row - edit description
-        builder.row(
+            InlineKeyboardButton(text=t(bot_lang, 'buttons.edit_name'), callback_data="edit_name"),
             InlineKeyboardButton(text=t(bot_lang, 'buttons.edit_description'), callback_data="edit_description")
         )
         
-        # Fourth row - edit location
+        # Third row - location edit
         builder.row(
             InlineKeyboardButton(text=t(bot_lang, 'buttons.edit_location'), callback_data="edit_location")
         )
         
-        # Fifth row - confirm action
+        # Fourth row - main actions
         builder.row(
-            InlineKeyboardButton(text=t(bot_lang, 'buttons.confirm'), callback_data="confirm")
-        )
-        
-        # Sixth row - cancel action
-        builder.row(
-            InlineKeyboardButton(text=t(bot_lang, 'buttons.cancel'), callback_data="cancel")
+            InlineKeyboardButton(text=f"✅ {t(bot_lang, 'buttons.confirm')}", callback_data="confirm"),
+            InlineKeyboardButton(text=f"❌ {t(bot_lang, 'buttons.cancel')}", callback_data="cancel")
         )
         
         return builder.as_markup()

@@ -121,13 +121,63 @@ class BaseHandler(ABC):
         progress_bar = create_progress_bar(step, total_steps)
         step_name = t(lang, f'processing.steps.{step}')
         
+        # Add animated loading indicator
+        loading_icons = ["⏳", "🔄", "⚡", "✨"]
+        loading_icon = loading_icons[step % len(loading_icons)]
+        
         return f"""
-{current_action}
+{loading_icon} **{current_action}**
 
 {progress_bar} **{step_name}**
 
 {t(lang, 'processing.please_wait')}
         """.strip()
+    
+    def create_loading_message(self, lang: str, action: str) -> str:
+        """Create animated loading message"""
+        loading_icons = ["⏳", "🔄", "⚡", "✨", "🌟", "💫"]
+        import random
+        icon = random.choice(loading_icons)
+        
+        return f"""
+{icon} **{action}**
+
+{t(lang, 'processing.please_wait')}
+        """.strip()
+    
+    def create_success_message(self, lang: str, title: str, message: str, details: str = None) -> str:
+        """Create success message with formatting"""
+        success_icons = ["✅", "🎉", "✨", "🌟", "💫", "🔥"]
+        import random
+        icon = random.choice(success_icons)
+        
+        result = f"""
+{icon} **{title}**
+
+{message}
+        """.strip()
+        
+        if details:
+            result += f"\n\n**{t(lang, 'common.details')}:**\n{details}"
+        
+        return result
+    
+    def create_error_message(self, lang: str, title: str, message: str, suggestion: str = None) -> str:
+        """Create error message with formatting"""
+        error_icons = ["❌", "⚠️", "🚫", "💥", "🔥"]
+        import random
+        icon = random.choice(error_icons)
+        
+        result = f"""
+{icon} **{title}**
+
+{message}
+        """.strip()
+        
+        if suggestion:
+            result += f"\n\n**{t(lang, 'common.suggestion')}:**\n{suggestion}"
+        
+        return result
     
     def create_detailed_stats_message(self, lang: str, bot_stats: dict, user_stats: dict, user_settings: dict) -> str:
         """Create detailed statistics message"""
