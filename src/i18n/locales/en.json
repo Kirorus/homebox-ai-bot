@@ -40,7 +40,8 @@
     "choose_model_prompt": "Select a model for image analysis:",
     "bot_lang_prompt": "Select bot interface language:",
     "gen_lang_prompt": "Select language for description generation:",
-    "what_change": "What would you like to change?"
+    "what_change": "What would you like to change?",
+    "location_management": "Location Management"
   },
   "languages": {
     "ru": "🇷🇺 Русский",
@@ -215,5 +216,21 @@
     "no_image_for_reanalysis": "❌ **No image**\n\nThis item has no image for reanalysis.",
     "image_download_failed": "❌ **Download failed**\n\nFailed to download image for reanalysis.",
     "reanalysis_successful": "✅ **Reanalysis completed!**\n\n💡 **Your hint:** *{hint}*\n\n📦 **New name:** {new_name}\n📝 **New description:** {new_description}\n📍 **New location:** {new_location}"
+  },
+  "locations": {
+    "management_menu": "🏷️ **Location Management**\n\nChoose an action:",
+    "mark_locations": "Mark Locations",
+    "view_all": "View All",
+    "select_locations": "🏷️ **Select Locations for Marking**\n\n✅ - marked with [TGB]\n⬜ - without marker\n\nSelect locations to modify:",
+    "apply_markers": "Apply",
+    "cancel": "Cancel",
+    "applying_markers": "🔄 Applying markers...",
+    "markers_applied": "✅ **Markers Applied!**\n\nUpdated locations: **{count}**",
+    "no_changes": "ℹ️ **No Changes**\n\nAll selected locations already have the correct status.",
+    "some_errors": "Some errors",
+    "errors": "Errors",
+    "marking_cancelled": "❌ **Marking Cancelled**",
+    "all_locations_summary": "📋 **All Locations**\n\nTotal locations: **{total}**\nWith [TGB] marker: **{with_markers}**\nWithout marker: **{without_markers}**",
+    "page_info": "Page {page} of {total}"
   }
 }

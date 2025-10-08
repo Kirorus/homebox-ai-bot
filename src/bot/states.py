@@ -24,3 +24,9 @@ class SearchStates(StatesGroup):
     editing_item_name = State()
     editing_item_description = State()
     waiting_for_reanalysis_hint = State()
+
+
+class LocationStates(StatesGroup):
+    """States for location management workflow"""
+    viewing_locations = State()
+    selecting_locations_for_marking = State()

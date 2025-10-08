@@ -9,7 +9,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 
 from .base_handler import BaseHandler
-from bot.states import SearchStates
+from bot.states import SearchStates, LocationStates
 from bot.keyboards import KeyboardManager
 from i18n.i18n_manager import t
 
@@ -936,6 +936,363 @@ class SearchHandler(BaseHandler):
                 await self.handle_error(e, "handle_item_reanalysis_hint", message.from_user.id)
                 await message.answer(t('en', 'errors.occurred'))
     
+    async def show_locations_page(self, callback: CallbackQuery, state: FSMContext, bot_lang: str, page: int, with_markers: int, without_markers: int):
+        """Show a page of locations list"""
+        try:
+            data = await state.get_data()
+            locations_list = data.get('all_locations_list', [])
+            total_pages = data.get('total_pages', 1)
+            
+            page_size = 20
+            start = page * page_size
+            end = min(start + page_size, len(locations_list))
+            
+            # Create page content
+            page_locations = locations_list[start:end]
+            locations_text = "\n".join(page_locations)
+            
+            # Build message text
+            summary_text = t(bot_lang, 'locations.all_locations_summary').format(
+                total=len(locations_list),
+                with_markers=with_markers,
+                without_markers=without_markers
+            )
+            
+            if total_pages > 1:
+                page_info = f"\n\n📄 {t(bot_lang, 'locations.page_info').format(page=page+1, total=total_pages)}"
+            else:
+                page_info = ""
+            
+            text = f"{summary_text}{page_info}\n\n{locations_text}"
+            
+            # Create keyboard
+            keyboard = self.create_locations_view_keyboard(bot_lang, page, total_pages)
+            
+            await callback.message.edit_text(
+                text,
+                reply_markup=keyboard,
+                parse_mode="Markdown"
+            )
+            
+        except Exception as e:
+            await self.handle_error(e, "show_locations_page", callback.from_user.id)
+            await callback.answer(t('en', 'errors.occurred'))
+    
+
+    def create_locations_view_keyboard(self, bot_lang: str, current_page: int, total_pages: int) -> InlineKeyboardMarkup:
+        """Create keyboard for locations view with pagination"""
+        builder = InlineKeyboardBuilder()
+        
+        # Navigation buttons
+        if total_pages > 1:
+            nav_buttons = []
+            if current_page > 0:
+                nav_buttons.append(InlineKeyboardButton(text=t(bot_lang, 'common.previous'), callback_data=f"locations_view_page_{current_page-1}"))
+            if current_page < total_pages - 1:
+                nav_buttons.append(InlineKeyboardButton(text=t(bot_lang, 'common.next'), callback_data=f"locations_view_page_{current_page+1}"))
+            
+            if nav_buttons:
+                builder.row(*nav_buttons)
+        
+        # Back button
+        builder.row(InlineKeyboardButton(text=t(bot_lang, 'common.back'), callback_data="back_to_location_management"))
+        
+        return builder.as_markup()
+        
+        # Location management handlers
+        @self.router.callback_query(F.data == "location_management")
+        async def show_location_management(callback: CallbackQuery, state: FSMContext):
+            """Show location management menu"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                text = t(bot_lang, 'locations.management_menu')
+                keyboard = self.keyboard_manager.location_management_keyboard(bot_lang)
+                
+                await callback.message.edit_text(
+                    text,
+                    reply_markup=keyboard,
+                    parse_mode="Markdown"
+                )
+                
+            except Exception as e:
+                await self.handle_error(e, "show_location_management", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+        
+        @self.router.callback_query(F.data == "mark_locations")
+        async def start_location_marking(callback: CallbackQuery, state: FSMContext):
+            """Start location marking process"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Get all locations
+                all_locations = await self.homebox_service.get_locations()
+                if not all_locations:
+                    await callback.answer(t(bot_lang, 'errors.no_locations'))
+                    return
+                
+                # Store locations and selected locations in state
+                selected_locations = set()
+                for loc in all_locations:
+                    if '[TGB]' in (loc.description or ''):
+                        selected_locations.add(loc.id)
+                
+                await state.set_data({
+                    'all_locations': all_locations,
+                    'selected_locations': selected_locations,
+                    'current_page': 0
+                })
+                
+                text = t(bot_lang, 'locations.select_locations')
+                keyboard = self.keyboard_manager.locations_selection_keyboard(all_locations, bot_lang, 0, selected_locations=selected_locations)
+                
+                await callback.message.edit_text(
+                    text,
+                    reply_markup=keyboard,
+                    parse_mode="Markdown"
+                )
+                
+                await state.set_state(LocationStates.selecting_locations_for_marking)
+                
+            except Exception as e:
+                await self.handle_error(e, "start_location_marking", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+        
+        @self.router.callback_query(F.data.startswith("toggle_location_"), LocationStates.selecting_locations_for_marking)
+        async def toggle_location_selection(callback: CallbackQuery, state: FSMContext):
+            """Toggle location selection"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                location_id = callback.data.replace("toggle_location_", "")
+                data = await state.get_data()
+                all_locations = data['all_locations']
+                selected_locations = data['selected_locations']
+                current_page = data.get('current_page', 0)
+                
+                if location_id in selected_locations:
+                    selected_locations.remove(location_id)
+                else:
+                    selected_locations.add(location_id)
+                
+                await state.update_data(selected_locations=selected_locations)
+                
+                # Update keyboard to reflect new selection
+                keyboard = self.keyboard_manager.locations_selection_keyboard(all_locations, bot_lang, current_page, selected_locations=selected_locations)
+                
+                await callback.message.edit_reply_markup(reply_markup=keyboard)
+                await callback.answer()
+                
+            except Exception as e:
+                await self.handle_error(e, "toggle_location_selection", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+        
+        @self.router.callback_query(F.data.startswith("location_page_"), LocationStates.selecting_locations_for_marking)
+        async def change_location_page(callback: CallbackQuery, state: FSMContext):
+            """Change location selection page"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                page = int(callback.data.replace("location_page_", ""))
+                data = await state.get_data()
+                all_locations = data['all_locations']
+                selected_locations = data.get('selected_locations', set())
+                
+                await state.update_data(current_page=page)
+                
+                keyboard = self.keyboard_manager.locations_selection_keyboard(all_locations, bot_lang, page, selected_locations=selected_locations)
+                
+                await callback.message.edit_reply_markup(reply_markup=keyboard)
+                await callback.answer()
+                
+            except Exception as e:
+                await self.handle_error(e, "change_location_page", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+        
+        @self.router.callback_query(F.data == "apply_location_markers", LocationStates.selecting_locations_for_marking)
+        async def apply_location_markers(callback: CallbackQuery, state: FSMContext):
+            """Apply location markers"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                data = await state.get_data()
+                all_locations = data['all_locations']
+                selected_locations = data['selected_locations']
+                
+                # Show processing message
+                processing_msg = await callback.message.edit_text(t(bot_lang, 'locations.applying_markers'))
+                
+                updated_count = 0
+                errors = []
+                
+                for location in all_locations:
+                    try:
+                        current_description = location.description or ''
+                        has_marker = '[TGB]' in current_description
+                        should_have_marker = location.id in selected_locations
+                        
+                        # Only update if status changed
+                        if has_marker != should_have_marker:
+                            if should_have_marker:
+                                new_description = f"{current_description} [TGB]".strip()
+                            else:
+                                new_description = current_description.replace('[TGB]', '').strip()
+                            
+                            success = await self.homebox_service.update_location(location.id, {
+                                'description': new_description
+                            })
+                            
+                            if success:
+                                updated_count += 1
+                            else:
+                                errors.append(f"{location.name}: {self.homebox_service.last_error}")
+                    
+                    except Exception as e:
+                        errors.append(f"{location.name}: {str(e)}")
+                
+                # Show result
+                if updated_count > 0:
+                    result_text = t(bot_lang, 'locations.markers_applied').format(count=updated_count)
+                    if errors:
+                        result_text += f"\n\n{t(bot_lang, 'locations.some_errors')}:\n" + "\n".join(errors[:5])
+                else:
+                    result_text = t(bot_lang, 'locations.no_changes')
+                    if errors:
+                        result_text += f"\n\n{t(bot_lang, 'locations.errors')}:\n" + "\n".join(errors[:5])
+                
+                keyboard = self.keyboard_manager.location_management_keyboard(bot_lang)
+                
+                await processing_msg.edit_text(
+                    result_text,
+                    reply_markup=keyboard,
+                    parse_mode="Markdown"
+                )
+                
+                await state.clear()
+                
+            except Exception as e:
+                await self.handle_error(e, "apply_location_markers", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+        
+        @self.router.callback_query(F.data == "cancel_location_marking", LocationStates.selecting_locations_for_marking)
+        async def cancel_location_marking(callback: CallbackQuery, state: FSMContext):
+            """Cancel location marking"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                keyboard = self.keyboard_manager.location_management_keyboard(bot_lang)
+                
+                await callback.message.edit_text(
+                    t(bot_lang, 'locations.marking_cancelled'),
+                    reply_markup=keyboard,
+                    parse_mode="Markdown"
+                )
+                
+                await state.clear()
+                
+            except Exception as e:
+                await self.handle_error(e, "cancel_location_marking", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+        
+        @self.router.callback_query(F.data == "view_all_locations")
+        async def view_all_locations(callback: CallbackQuery, state: FSMContext):
+            """View all locations with their marker status"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Get all locations
+                all_locations = await self.homebox_service.get_locations()
+                if not all_locations:
+                    await callback.answer(t(bot_lang, 'errors.no_locations'))
+                    return
+                
+                # Count locations with and without markers
+                with_markers = sum(1 for loc in all_locations if '[TGB]' in (loc.description or ''))
+                without_markers = len(all_locations) - with_markers
+                
+                # Create detailed list of locations
+                locations_list = []
+                for loc in all_locations:
+                    has_marker = '[TGB]' in (loc.description or '')
+                    marker_icon = "✅" if has_marker else "⬜"
+                    locations_list.append(f"{marker_icon} {loc.name}")
+                
+                # Split into pages if too long
+                page_size = 20  # Number of locations per page
+                total_pages = (len(locations_list) + page_size - 1) // page_size
+                
+                # Store in state for pagination
+                await state.set_data({
+                    'all_locations_list': locations_list,
+                    'locations_page': 0,
+                    'total_pages': total_pages,
+                    'with_markers': with_markers,
+                    'without_markers': without_markers
+                })
+                
+                # Show first page
+                await self.show_locations_page(callback, state, bot_lang, 0, with_markers, without_markers)
+                
+            except Exception as e:
+                await self.handle_error(e, "view_all_locations", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+        
+        @self.router.callback_query(F.data.startswith("locations_view_page_"))
+        async def change_locations_view_page(callback: CallbackQuery, state: FSMContext):
+            """Change locations view page"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                page = int(callback.data.replace("locations_view_page_", ""))
+                data = await state.get_data()
+                
+                # Get original counts from when we first loaded
+                with_markers = data.get('with_markers', 0)
+                without_markers = data.get('without_markers', 0)
+                
+                await state.update_data(locations_page=page)
+                
+                await self.show_locations_page(callback, state, bot_lang, page, with_markers, without_markers)
+                await callback.answer()
+                
+            except Exception as e:
+                await self.handle_error(e, "change_locations_view_page", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+        
+        @self.router.callback_query(F.data == "back_to_location_management")
+        async def back_to_location_management(callback: CallbackQuery, state: FSMContext):
+            """Return to location management menu"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                text = t(bot_lang, 'locations.management_menu')
+                keyboard = self.keyboard_manager.location_management_keyboard(bot_lang)
+                
+                await callback.message.edit_text(
+                    text,
+                    reply_markup=keyboard,
+                    parse_mode="Markdown"
+                )
+                
+                await state.clear()
+                await callback.answer()
+                
+            except Exception as e:
+                await self.handle_error(e, "back_to_location_management", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+    
+
+
+
     async def show_search_results(self, message: Message, state: FSMContext, items: list, page: int, lang: str, is_recent: bool = False):
         """Show search results with pagination"""
         try:

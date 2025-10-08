@@ -68,7 +68,12 @@ class KeyboardManager:
             InlineKeyboardButton(text=f"📊 {t(bot_lang, 'settings.stats')}", callback_data="quick_stats")
         )
 
-        # Third row - quick actions
+        # Third row - location management
+        builder.row(
+            InlineKeyboardButton(text=f"🏷️ {t(bot_lang, 'settings.location_management')}", callback_data="location_management")
+        )
+
+        # Fourth row - quick actions
         builder.row(
             InlineKeyboardButton(text=f"🔄 {t(bot_lang, 'settings.restart')}", callback_data="quick_restart")
         )
@@ -199,6 +204,67 @@ class KeyboardManager:
         # Back button with short callback data
         builder.row(
             InlineKeyboardButton(text=t(lang, 'common.back'), callback_data="mov_back")
+        )
+        
+        return builder.as_markup()
+    
+    @staticmethod
+    def location_management_keyboard(lang: str) -> InlineKeyboardMarkup:
+        """Create location management keyboard"""
+        builder = InlineKeyboardBuilder()
+        
+        builder.row(
+            InlineKeyboardButton(text=f"🏷️ {t(lang, 'locations.mark_locations')}", callback_data="mark_locations")
+        )
+        builder.row(
+            InlineKeyboardButton(text=f"📋 {t(lang, 'locations.view_all')}", callback_data="view_all_locations")
+        )
+        builder.row(
+            InlineKeyboardButton(text=t(lang, 'common.back'), callback_data="back_to_settings")
+        )
+        
+        return builder.as_markup()
+    
+    @staticmethod
+    def locations_selection_keyboard(locations: List[Location], lang: str, page: int = 0, page_size: int = 10, selected_locations: set = None) -> InlineKeyboardMarkup:
+        """Create location selection keyboard for marking"""
+        builder = InlineKeyboardBuilder()
+        
+        start = page * page_size
+        end = min(start + page_size, len(locations))
+        
+        if selected_locations is None:
+            selected_locations = set()
+            
+        for loc in locations[start:end]:
+            # Show marker status based on current selection
+            is_selected = str(loc.id) in selected_locations
+            marker_icon = "✅" if is_selected else "⬜"
+            display_name = f"{marker_icon} {loc.name}"
+            
+            builder.row(
+                InlineKeyboardButton(
+                    text=display_name,
+                    callback_data=f"toggle_location_{loc.id}"
+                )
+            )
+        
+        # Navigation
+        total_pages = (len(locations) + page_size - 1) // page_size
+        if total_pages > 1:
+            nav = []
+            if page > 0:
+                nav.append(InlineKeyboardButton(text=t(lang, 'common.previous'), callback_data=f"location_page_{page-1}"))
+            if end < len(locations):
+                nav.append(InlineKeyboardButton(text=t(lang, 'common.next'), callback_data=f"location_page_{page+1}"))
+            
+            if nav:
+                builder.row(*nav)
+        
+        # Action buttons
+        builder.row(
+            InlineKeyboardButton(text=f"✅ {t(lang, 'locations.apply_markers')}", callback_data="apply_location_markers"),
+            InlineKeyboardButton(text=f"❌ {t(lang, 'locations.cancel')}", callback_data="cancel_location_marking")
         )
         
         return builder.as_markup()

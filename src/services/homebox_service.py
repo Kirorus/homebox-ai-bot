@@ -516,6 +516,94 @@ class HomeBoxService:
         """Update item location in HomeBox"""
         return await self.update_item(item_id, {'location_id': new_location_id})
     
+    @retry_async(max_attempts=3, delay=2.0, exceptions=(aiohttp.ClientError, asyncio.TimeoutError))
+    async def update_location(self, location_id: str, updates: Dict[str, Any]) -> bool:
+        """Update location fields in HomeBox"""
+        try:
+            session = await self._get_session()
+            
+            logger.info(f"Updating location {location_id} with fields: {list(updates.keys())}")
+            
+            # First get the current location to preserve other fields
+            current_location = await self.get_location_by_id(location_id)
+            if not current_location:
+                self.last_error = f"Location {location_id} not found"
+                logger.error(self.last_error)
+                return False
+            
+            # Prepare update data - merge current data with updates
+            update_data = {
+                'name': current_location.name,
+                'description': current_location.description or '',
+                'parentId': current_location.parent_id
+            }
+            
+            # Apply updates
+            for key, value in updates.items():
+                if key == 'description':
+                    update_data['description'] = value
+                elif key == 'name':
+                    update_data['name'] = value
+                elif key == 'parent_id':
+                    update_data['parentId'] = value
+            
+            async with session.put(
+                f'{self.base_url}/api/v1/locations/{location_id}',
+                headers=self.headers,
+                json=update_data
+            ) as response:
+                if response.status not in [200, 204]:
+                    try:
+                        body = await response.text()
+                    except Exception:
+                        body = ''
+                    self.last_error = f'UPDATE location failed HTTP {response.status}; body: {body[:500]}'
+                    logger.error(f"Failed to update location: {self.last_error}")
+                    return False
+                
+                logger.info(f"Successfully updated location {location_id}")
+                return True
+                
+        except Exception as e:
+            error_msg = f'Exception in update_location: {str(e)}'
+            logger.error(error_msg)
+            return False
+    
+    async def get_location_by_id(self, location_id: str) -> Optional[Location]:
+        """Get specific location by ID"""
+        try:
+            session = await self._get_session()
+            
+            logger.info(f"Fetching location {location_id} from HomeBox")
+            
+            async with session.get(
+                f'{self.base_url}/api/v1/locations/{location_id}',
+                headers=self.headers
+            ) as response:
+                if response.status != 200:
+                    try:
+                        body = await response.text()
+                    except Exception:
+                        body = ''
+                    self.last_error = f'GET location {location_id} failed HTTP {response.status}; body: {body[:500]}'
+                    logger.error(f"Failed to fetch location {location_id}: {self.last_error}")
+                    return None
+                
+                try:
+                    location_data = await response.json()
+                    location = Location.from_dict(location_data)
+                    logger.info(f"Successfully fetched location {location_id}")
+                    return location
+                except Exception as e:
+                    self.last_error = f'Failed to parse location {location_id}: {e}'
+                    logger.error(self.last_error)
+                    return None
+                    
+        except Exception as e:
+            error_msg = f'Exception in get_location_by_id: {str(e)}'
+            logger.error(error_msg)
+            return None
+    
     async def download_item_image(self, item_id: str, image_id: str) -> Optional[str]:
         """Download item image and save to temporary file"""
         try:
