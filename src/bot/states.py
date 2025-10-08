@@ -30,3 +30,5 @@ class LocationStates(StatesGroup):
     """States for location management workflow"""
     viewing_locations = State()
     selecting_locations_for_marking = State()
+    selecting_locations_for_description = State()
+    confirming_description_update = State()

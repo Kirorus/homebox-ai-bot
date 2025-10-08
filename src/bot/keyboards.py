@@ -217,6 +217,9 @@ class KeyboardManager:
             InlineKeyboardButton(text=f"🏷️ {t(lang, 'locations.mark_locations')}", callback_data="mark_locations")
         )
         builder.row(
+            InlineKeyboardButton(text=f"🤖 {t(lang, 'locations.generate_descriptions')}", callback_data="generate_location_descriptions")
+        )
+        builder.row(
             InlineKeyboardButton(text=f"📋 {t(lang, 'locations.view_all')}", callback_data="view_all_locations")
         )
         builder.row(
@@ -265,6 +268,61 @@ class KeyboardManager:
         builder.row(
             InlineKeyboardButton(text=f"✅ {t(lang, 'locations.apply_markers')}", callback_data="apply_location_markers"),
             InlineKeyboardButton(text=f"❌ {t(lang, 'locations.cancel')}", callback_data="cancel_location_marking")
+        )
+        
+        return builder.as_markup()
+    
+    @staticmethod
+    def location_description_selection_keyboard(locations: List[Location], lang: str, page: int = 0, page_size: int = 10) -> InlineKeyboardMarkup:
+        """Create location selection keyboard for description generation (only [TGB] marked locations)"""
+        builder = InlineKeyboardBuilder()
+        
+        # Filter only locations with [TGB] marker
+        marked_locations = [loc for loc in locations if '[TGB]' in (loc.description or '')]
+        
+        start = page * page_size
+        end = min(start + page_size, len(marked_locations))
+        
+        for loc in marked_locations[start:end]:
+            display_name = f"📍 {loc.name}"
+            
+            builder.row(
+                InlineKeyboardButton(
+                    text=display_name,
+                    callback_data=f"generate_desc_{loc.id}"
+                )
+            )
+        
+        # Navigation
+        total_pages = (len(marked_locations) + page_size - 1) // page_size
+        if total_pages > 1:
+            nav = []
+            if page > 0:
+                nav.append(InlineKeyboardButton(text=t(lang, 'common.previous'), callback_data=f"desc_page_{page-1}"))
+            if end < len(marked_locations):
+                nav.append(InlineKeyboardButton(text=t(lang, 'common.next'), callback_data=f"desc_page_{page+1}"))
+            
+            if nav:
+                builder.row(*nav)
+        
+        # Action buttons
+        builder.row(
+            InlineKeyboardButton(text=f"❌ {t(lang, 'locations.cancel')}", callback_data="cancel_description_generation")
+        )
+        
+        return builder.as_markup()
+    
+    @staticmethod
+    def description_confirmation_keyboard(lang: str) -> InlineKeyboardMarkup:
+        """Create confirmation keyboard for description update"""
+        builder = InlineKeyboardBuilder()
+        
+        builder.row(
+            InlineKeyboardButton(text=f"✅ {t(lang, 'common.yes')}", callback_data="confirm_description_update"),
+            InlineKeyboardButton(text=f"❌ {t(lang, 'common.no')}", callback_data="reject_description_update")
+        )
+        builder.row(
+            InlineKeyboardButton(text=f"🔄 {t(lang, 'common.regenerate')}", callback_data="regenerate_description")
         )
         
         return builder.as_markup()

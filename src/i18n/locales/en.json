@@ -12,7 +12,11 @@
     "info": "ℹ️ Info",
     "help": "❓ Help",
     "details": "Details",
-    "suggestion": "Suggestion"
+    "suggestion": "Suggestion",
+    "yes": "Yes",
+    "no": "No",
+    "regenerate": "Regenerate",
+    "no_description": "No description"
   },
   "start": {
     "welcome": "🏠 Welcome to HomeBox AI Bot!",
@@ -220,6 +224,7 @@
   "locations": {
     "management_menu": "🏷️ **Location Management**\n\nChoose an action:",
     "mark_locations": "Mark Locations",
+    "generate_descriptions": "Generate Descriptions",
     "view_all": "View All",
     "select_locations": "🏷️ **Select Locations for Marking**\n\n✅ - marked with [TGB]\n⬜ - without marker\n\nSelect locations to modify:",
     "apply_markers": "Apply",
@@ -231,6 +236,15 @@
     "errors": "Errors",
     "marking_cancelled": "❌ **Marking Cancelled**",
     "all_locations_summary": "📋 **All Locations**\n\nTotal locations: **{total}**\nWith [TGB] marker: **{with_markers}**\nWithout marker: **{without_markers}**",
-    "page_info": "Page {page} of {total}"
+    "page_info": "Page {page} of {total}",
+    "select_for_description": "🤖 **Select Locations for Description Generation**\n\nSelect locations with [TGB] marker for automatic description generation based on items in them:",
+    "generating_description": "🤖 Generating description for location \"{location_name}\"...",
+    "description_generated": "✅ **Description Generated!**\n\n📍 **Location:** {location_name}\n📝 **New Description:** {description}",
+    "confirm_update_description": "❓ **Confirm Update**\n\n📍 **Location:** {location_name}\n📝 **Current Description:** {current_description}\n\n🤖 **Generated Description:** {new_description}\n\nUpdate this location's description?",
+    "description_updated": "✅ **Description Updated!**\n\n📍 **Location:** {location_name}",
+    "description_generation_cancelled": "❌ **Description Generation Cancelled**",
+    "no_items_in_location": "⚠️ **No Items**\n\nLocation \"{location_name}\" has no items to analyze.",
+    "description_generation_failed": "❌ **Generation Failed**\n\nFailed to generate description for location \"{location_name}\": {error}",
+    "no_marked_locations": "⚠️ **No Marked Locations**\n\nYou need locations with [TGB] marker for description generation."
   }
 }

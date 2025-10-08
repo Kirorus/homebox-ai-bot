@@ -649,6 +649,72 @@ class HomeBoxService:
             logger.error(f"Exception in download_item_image: {str(e)}")
             return None
     
+    @retry_async(max_attempts=3, delay=2.0, exceptions=(aiohttp.ClientError, asyncio.TimeoutError))
+    async def get_items_by_location(self, location_id: str) -> List[Item]:
+        """Get items from specific location"""
+        try:
+            session = await self._get_session()
+            
+            logger.info(f"Fetching items from location {location_id}")
+            
+            # Get all items and filter by location
+            all_items = []
+            page = 1
+            page_size = 50
+            
+            while True:
+                params = {
+                    'pageSize': page_size,
+                    'page': page
+                }
+                
+                async with session.get(
+                    f'{self.base_url}/api/v1/items',
+                    headers=self.headers,
+                    params=params
+                ) as response:
+                    if response.status != 200:
+                        try:
+                            body = await response.text()
+                        except Exception:
+                            body = ''
+                        self.last_error = f'GET items failed HTTP {response.status}; body: {body[:500]}'
+                        logger.error(f"Failed to fetch items: {self.last_error}")
+                        return []
+                    
+                    try:
+                        data = await response.json()
+                        items_data = data.get('data', [])
+                        
+                        if not items_data:
+                            break
+                        
+                        # Filter items by location
+                        location_items = [
+                            Item.from_dict(item_data) 
+                            for item_data in items_data 
+                            if item_data.get('locationId') == location_id
+                        ]
+                        all_items.extend(location_items)
+                        
+                        # Check if there are more pages
+                        if len(items_data) < page_size:
+                            break
+                        
+                        page += 1
+                        
+                    except Exception as e:
+                        logger.error(f"Failed to parse items data: {e}")
+                        break
+            
+            logger.info(f"Successfully fetched {len(all_items)} items from location {location_id}")
+            return all_items
+                
+        except Exception as e:
+            error_msg = f'Exception in get_items_by_location: {str(e)}'
+            logger.error(error_msg)
+            return []
+    
     async def _get_access_token(self) -> str:
         """Get access token for API calls"""
         if self.token:
