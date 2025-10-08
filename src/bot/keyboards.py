@@ -70,8 +70,7 @@ class KeyboardManager:
 
         # Third row - quick actions
         builder.row(
-            InlineKeyboardButton(text=f"🔄 {t(bot_lang, 'settings.restart')}", callback_data="quick_restart"),
-            InlineKeyboardButton(text=f"❓ {t(bot_lang, 'common.help')}", callback_data="quick_help")
+            InlineKeyboardButton(text=f"🔄 {t(bot_lang, 'settings.restart')}", callback_data="quick_restart")
         )
 
         return builder.as_markup()
