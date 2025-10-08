@@ -181,8 +181,6 @@
     "stats_desc": "View statistics",
     "search_desc": "Search items",
     "recent_desc": "Show recent items",
-    "test_items_desc": "Test items retrieval (debug)",
-    "test_search_desc": "Test search API (debug)",
     "help_desc": "Show this help"
   },
   "search": {

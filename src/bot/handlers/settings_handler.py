@@ -101,8 +101,6 @@ class SettingsHandler(BaseHandler):
 • /stats - {t(bot_lang, 'help.stats_desc')}
 • /search - {t(bot_lang, 'help.search_desc')}
 • /recent - {t(bot_lang, 'help.recent_desc')}
-• /test_items - {t(bot_lang, 'help.test_items_desc')}
-• /test_search - {t(bot_lang, 'help.test_search_desc')}
 • /help - {t(bot_lang, 'help.help_desc')}
                 """.strip()
                 

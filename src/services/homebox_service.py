@@ -462,12 +462,8 @@ class HomeBoxService:
     
     async def _get_access_token(self) -> str:
         """Get access token for API calls"""
-        # For now, return a hardcoded token
-        # TODO: Implement proper token management
-        return "GP36NSUB4IY35VVGDQDK5SQ66I"
+        if self.token:
+            # Remove 'Bearer ' prefix if present for URL parameter
+            return self.token.replace('Bearer ', '')
+        return ""
     
-    def get_thumbnail_url(self, thumbnail_id: str) -> str:
-        """Get thumbnail URL from thumbnail ID"""
-        if not thumbnail_id:
-            return ""
-        return f"{self.base_url}/images/{thumbnail_id}"

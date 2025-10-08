@@ -112,87 +112,6 @@ class SearchHandler(BaseHandler):
                 await self.handle_error(e, "search query", message.from_user.id)
                 await message.answer(t('en', 'errors.occurred'))
         
-        @self.router.message(Command("test_items"))
-        async def cmd_test_items(message: Message, state: FSMContext):
-            """Test command to get all items"""
-            try:
-                await self.log_user_action("test_items_command", message.from_user.id)
-                
-                # Check user authorization
-                if not await self.is_user_allowed(message.from_user.id):
-                    await message.answer(t('en', 'errors.access_denied'))
-                    return
-                
-                # Get user settings
-                user_settings = await self.get_user_settings(message.from_user.id)
-                bot_lang = user_settings.bot_lang
-                
-                # Show loading message
-                loading_msg = await message.answer(t(bot_lang, 'search.loading_recent'))
-                
-                # Get all items (first page)
-                logger.info("Testing get_items API call")
-                items = await self.homebox_service.get_items(limit=50, offset=0)
-                logger.info(f"get_items returned {len(items) if items else 0} items")
-                
-                if not items:
-                    await loading_msg.edit_text(t(bot_lang, 'search.no_items'))
-                    return
-                
-                # Show first few items for debugging
-                debug_text = f"🔍 **Debug: Found {len(items)} items**\n\n"
-                for i, item in enumerate(items[:5]):
-                    name = str(item.get('name', 'Unknown'))
-                    description = str(item.get('description', 'No description'))
-                    debug_text += f"**{i+1}.** {name}\n"
-                    debug_text += f"📝 {description[:50]}...\n\n"
-                
-                await loading_msg.edit_text(debug_text, parse_mode="Markdown")
-                
-            except Exception as e:
-                await self.handle_error(e, "test_items command", message.from_user.id)
-                await message.answer(t('en', 'errors.occurred'))
-        
-        @self.router.message(Command("test_search"))
-        async def cmd_test_search(message: Message, state: FSMContext):
-            """Test command to test search API"""
-            try:
-                await self.log_user_action("test_search_command", message.from_user.id)
-                
-                # Check user authorization
-                if not await self.is_user_allowed(message.from_user.id):
-                    await message.answer(t('en', 'errors.access_denied'))
-                    return
-                
-                # Get user settings
-                user_settings = await self.get_user_settings(message.from_user.id)
-                bot_lang = user_settings.bot_lang
-                
-                # Show loading message
-                loading_msg = await message.answer("🔍 Testing search API...")
-                
-                # Test search with a simple query
-                logger.info("Testing search_items API call")
-                items = await self.homebox_service.search_items("test", limit=10)
-                logger.info(f"search_items returned {len(items) if items else 0} items")
-                
-                if not items:
-                    await loading_msg.edit_text("❌ Search API returned no results")
-                    return
-                
-                # Show search results for debugging
-                debug_text = f"🔍 **Search Test: Found {len(items)} items**\n\n"
-                for i, item in enumerate(items[:3]):
-                    name = str(item.get('name', 'Unknown'))
-                    description = str(item.get('description', 'No description'))
-                    debug_text += f"**{i+1}.** {name}\n"
-                    debug_text += f"📝 {description[:50]}...\n\n"
-                
-                await loading_msg.edit_text(debug_text, parse_mode="Markdown")
-                
-            except Exception as e:
-                await self.handle_error(e, "test_search command", message.from_user.id)
-                await message.answer(t('en', 'errors.occurred'))
         
         @self.router.message(Command("recent"))
         async def cmd_recent(message: Message, state: FSMContext):
@@ -429,7 +348,6 @@ class SearchHandler(BaseHandler):
             
             # Collect items with images for media group
             media_group = []
-            items_with_images = []
             
             for i, item in enumerate(page_items):
                 # Ensure item is a dictionary
@@ -459,7 +377,6 @@ class SearchHandler(BaseHandler):
                 if image_id:
                     image_url = await self.homebox_service.get_image_url(image_id, item_id)
                     if image_url:
-                        items_with_images.append(item)
                         media_group.append(InputMediaPhoto(
                             media=image_url,
                             caption=f"**{start_idx + i + 1}.** {item_name}\n📍 {location_name}\n📝 {item_description}"
