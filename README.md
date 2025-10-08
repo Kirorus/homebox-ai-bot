@@ -147,14 +147,65 @@ OPENAI_MODEL=gpt-4o                                   # Default model
 - **Caption Support**: Item information displayed with each photo
 - **Error Handling**: Automatic fallback to text when images fail to load
 
+### 📦 Advanced Item Management
+
+#### Item Card Actions
+- **Move Items**: Relocate items between different storage locations
+- **Edit Names**: Update item names directly from the item card
+- **Edit Descriptions**: Modify item descriptions inline
+- **Reanalyze Items**: Re-run AI analysis with user hints for better recognition
+- **Location Filtering**: Only show relevant locations based on configured markers
+
+#### Item Movement
+- **Smart Location Selection**: Filter available locations based on markers
+- **One-Click Moving**: Simple interface for relocating items
+- **Progress Feedback**: Real-time updates during item movement
+- **Error Handling**: Graceful handling of movement failures
+
+#### Item Reanalysis
+- **AI-Powered Reanalysis**: Use AI vision to re-analyze existing items
+- **User Hints**: Provide additional context to improve recognition
+- **Image Processing**: Download and analyze item photos from HomeBox
+- **Automatic Updates**: Update item details based on new analysis
+- **Temporary File Management**: Automatic cleanup of downloaded images
+
+### 🏷️ Location Management System
+
+#### Location Marking
+- **TGB Tags**: Mark locations with `[TGB]` tags for easy identification
+- **Visual Selection**: Interactive interface to select/deselect locations
+- **Batch Operations**: Apply markers to multiple locations at once
+- **Status Tracking**: Visual indicators (✅/⬜) for marked/unmarked locations
+- **Pagination**: Navigate through large location lists
+
+#### Location Viewing
+- **Complete Overview**: View all locations with their marker status
+- **Summary Statistics**: Count of marked vs unmarked locations
+- **Pagination**: Handle large location lists with page navigation
+- **Quick Navigation**: Easy switching between location management functions
+
+#### Location Configuration
+- **Filter Modes**: Configure which locations are available for item creation
+- **Marker-Based Filtering**: Use `[TGB]` markers to filter available locations
+- **Settings Integration**: Location management accessible through settings menu
+- **Persistent Configuration**: Settings saved per user
+
 ### Available Commands
 
 #### User Commands
 - `/start` - Start the bot and begin item addition process
-- `/settings` - Configure language and AI model preferences
+- `/settings` - Configure language, AI model preferences, and location management
 - `/myid` or `/id` - Get your Telegram user ID
 - `/search` - Search for items in your HomeBox inventory
 - `/recent` - View recent items from your HomeBox
+
+#### Item Management Features
+- **Move Items**: Relocate items between storage locations from item details
+- **Edit Item Names**: Update item names directly from item cards
+- **Edit Descriptions**: Modify item descriptions inline
+- **Reanalyze Items**: Re-run AI analysis with user hints for better recognition
+- **Location Management**: Mark/unmark locations with `[TGB]` tags
+- **View All Locations**: Browse all locations with marker status
 
 #### Admin Commands
 - `/stats` - View bot statistics and usage information
@@ -289,6 +340,56 @@ src/
 4. Create HomeBox item → Upload photo
 5. Confirm success → Clean up temp files
 
+### 🆕 New Features in v2.1
+
+#### Advanced Item Management
+The bot now provides comprehensive item management capabilities directly from item cards:
+
+**Item Movement**
+- Move items between different storage locations
+- Smart location filtering based on configured markers
+- Real-time progress feedback during movement
+- Error handling for failed movements
+
+**Item Editing**
+- Edit item names directly from item details
+- Modify item descriptions inline
+- Changes are immediately saved to HomeBox
+- User-friendly editing interface
+
+**AI Reanalysis**
+- Re-run AI analysis on existing items with user hints
+- Download and analyze item photos from HomeBox
+- Provide additional context to improve recognition
+- Automatic cleanup of temporary files
+
+#### Location Management System
+Complete location management system with visual markers:
+
+**TGB Tag System**
+- Mark locations with `[TGB]` tags for easy identification
+- Visual selection interface with ✅/⬜ indicators
+- Batch operations for multiple locations
+- Pagination for large location lists
+
+**Location Viewing**
+- View all locations with their marker status
+- Summary statistics (marked vs unmarked)
+- Page navigation for large lists
+- Quick switching between management functions
+
+**Settings Integration**
+- Location management accessible through settings menu
+- Persistent configuration per user
+- Seamless integration with existing settings
+
+#### Technical Improvements
+- Fixed callback data length issues (64-byte limit)
+- Proper FSM state management
+- Enhanced error handling and logging
+- Optimized API calls and data flow
+- Improved user experience with pagination
+
 ### 🌍 Internationalization (i18n)
 
 The bot includes a professional internationalization system:
@@ -407,7 +508,13 @@ tail -f bot.log
 ## 🔮 Roadmap
 
 ### Planned Features
-- [ ] Complete settings and admin handlers
+- [x] **COMPLETED**: Advanced item management (move, edit, reanalyze)
+- [x] **COMPLETED**: Location management system with TGB tags
+- [x] **COMPLETED**: Item reanalysis with AI and user hints
+- [x] **COMPLETED**: Smart location filtering based on markers
+- [x] **COMPLETED**: Comprehensive location viewing and management
+- [x] **COMPLETED**: Enhanced settings interface with location management
+- [ ] Complete admin handlers
 - [ ] Batch photo processing (multiple items at once)
 - [ ] Advanced location highlighting with visual maps
 - [ ] Custom recognition prompts and templates
@@ -419,7 +526,6 @@ tail -f bot.log
 - [ ] Integration with additional storage providers
 - [ ] Real-time notifications and webhooks
 - [ ] Advanced search filters (by location, date, tags)
-- [ ] Item editing and management through bot
 - [ ] Bulk operations on search results
 
 ### Performance Improvements
@@ -438,7 +544,7 @@ tail -f bot.log
 - [ ] Memory usage optimization
 - [ ] Image compression and optimization
 
-### Current Status (v2.0)
+### Current Status (v2.1)
 - ✅ Core functionality fully implemented
 - ✅ Multi-language support (5 languages: EN, RU, DE, FR, ES)
 - ✅ 20+ AI model support
@@ -456,6 +562,13 @@ tail -f bot.log
 - ✅ Pagination and navigation controls
 - ✅ Media group support for multiple images
 - ✅ Fallback handling for missing images
+- ✅ **NEW**: Advanced item management (move, edit, reanalyze)
+- ✅ **NEW**: Location management system with TGB tags
+- ✅ **NEW**: Item reanalysis with AI and user hints
+- ✅ **NEW**: Smart location filtering based on markers
+- ✅ **NEW**: Comprehensive location viewing and management
+- ✅ **NEW**: Batch location marking operations
+- ✅ **NEW**: Enhanced settings interface with location management
 
 ## 📄 License
 
