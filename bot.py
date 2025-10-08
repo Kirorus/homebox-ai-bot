@@ -350,10 +350,10 @@ async def cmd_stats(message: Message):
     
     stats_text = (
         f"**{t(bot_lang, 'admin.stats.title')}**\n\n"
-        f"👥 {t(bot_lang, 'admin.stats.users', count=stats.get('users_registered', 0))}\n"
-        f"📦 {t(bot_lang, 'admin.stats.items', count=stats.get('items_processed', 0))}\n"
-        f"🔄 {t(bot_lang, 'admin.stats.sessions', count=len(items_data))}\n"
-        f"⏱️ {t(bot_lang, 'admin.stats.uptime', uptime=await get_uptime())}\n\n"
+        f"{t(bot_lang, 'admin.stats.users', count=stats.get('users_registered', 0))}\n"
+        f"{t(bot_lang, 'admin.stats.items', count=stats.get('items_processed', 0))}\n"
+        f"{t(bot_lang, 'admin.stats.sessions', count=len(items_data))}\n"
+        f"{t(bot_lang, 'admin.stats.uptime', uptime=await get_uptime())}\n\n"
         f"📈 Всего запросов: {stats.get('total_requests', 0)}"
     )
     
@@ -1393,10 +1393,10 @@ async def quick_stats(callback: CallbackQuery):
     
     stats_text = (
         f"**{t(bot_lang, 'admin.stats.title')}**\n\n"
-        f"👥 {t(bot_lang, 'admin.stats.users', count=stats.get('users_registered', 0))}\n"
-        f"📦 {t(bot_lang, 'admin.stats.items', count=stats.get('items_processed', 0))}\n"
-        f"⏱️ {t(bot_lang, 'admin.stats.uptime', uptime=uptime)}\n"
-        f"🔄 {t(bot_lang, 'admin.stats.sessions', count=len(items_data))}"
+        f"{t(bot_lang, 'admin.stats.users', count=stats.get('users_registered', 0))}\n"
+        f"{t(bot_lang, 'admin.stats.items', count=stats.get('items_processed', 0))}\n"
+        f"{t(bot_lang, 'admin.stats.uptime', uptime=uptime)}\n"
+        f"{t(bot_lang, 'admin.stats.sessions', count=len(items_data))}"
     )
     
     await callback.message.answer(stats_text, parse_mode="Markdown")
