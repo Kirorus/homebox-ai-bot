@@ -130,12 +130,28 @@
     "model_set": "Modèle défini"
   },
   "stats": {
-    "title": "Statistiques",
-    "users": "Utilisateurs",
-    "items_processed": "Objets traités",
-    "total_requests": "Total des demandes",
-    "uptime": "Temps de fonctionnement",
-    "unknown": "Inconnu"
+    "title": "📊 Statistiques du bot",
+    "users": "👥 Utilisateurs enregistrés",
+    "items_processed": "📦 Objets traités",
+    "total_requests": "🔄 Total des demandes",
+    "uptime": "⏰ Temps de fonctionnement",
+    "unknown": "Inconnu",
+    "user_activity": "👤 Votre activité",
+    "photos_analyzed": "📸 Photos analysées",
+    "reanalyses": "🔄 Réanalyses",
+    "last_activity": "🕒 Dernière activité",
+    "account_created": "📅 Compte créé",
+    "current_settings": "⚙️ Paramètres actuels",
+    "bot_language": "🤖 Langue du bot",
+    "gen_language": "📝 Langue de génération",
+    "ai_model": "🧠 Modèle IA",
+    "system_info": "🖥️ Informations système",
+    "database_size": "💾 Taille de la base de données",
+    "memory_usage": "🧠 Utilisation mémoire",
+    "version": "📋 Version",
+    "status": "🟢 Statut",
+    "online": "En ligne",
+    "offline": "Hors ligne"
   },
   "restart": {
     "not_implemented": "Fonction de redémarrage pas encore implémentée"

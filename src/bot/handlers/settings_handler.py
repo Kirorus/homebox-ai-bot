@@ -387,21 +387,18 @@ class SettingsHandler(BaseHandler):
         
         @self.router.callback_query(F.data == "quick_stats")
         async def quick_stats_callback(callback: CallbackQuery, state: FSMContext):
-            """Show quick statistics"""
+            """Show detailed statistics"""
             try:
                 user_settings = await self.get_user_settings(callback.from_user.id)
                 bot_lang = user_settings.bot_lang
                 
-                # Get bot statistics
-                stats = await self.database.get_bot_stats()
+                # Get bot and user statistics
+                bot_stats = await self.database.get_bot_stats()
+                user_stats = await self.database.get_user_stats(callback.from_user.id)
                 
-                stats_text = (
-                    f"📊 **{t(bot_lang, 'stats.title')}**\n\n"
-                    f"👥 **{t(bot_lang, 'stats.users')}:** {stats.get('users_registered', 0)}\n"
-                    f"📦 **{t(bot_lang, 'stats.items_processed')}:** {stats.get('items_processed', 0)}\n"
-                    f"🔄 **{t(bot_lang, 'stats.total_requests')}:** {stats.get('total_requests', 0)}\n"
-                    f"⏰ **{t(bot_lang, 'stats.uptime')}:** {stats.get('start_time', t(bot_lang, 'stats.unknown'))}\n\n"
-                    f"{t(bot_lang, 'settings.what_change')}"
+                # Create detailed stats message
+                stats_text = self.create_detailed_stats_message(
+                    bot_lang, bot_stats, user_stats, user_settings.to_dict()
                 )
                 
                 await callback.message.edit_text(

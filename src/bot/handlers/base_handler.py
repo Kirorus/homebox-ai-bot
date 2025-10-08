@@ -122,6 +122,115 @@ class BaseHandler(ABC):
 {t(lang, 'processing.please_wait')}
         """.strip()
     
+    def create_detailed_stats_message(self, lang: str, bot_stats: dict, user_stats: dict, user_settings: dict) -> str:
+        """Create detailed statistics message"""
+        import os
+        import psutil
+        from datetime import datetime
+        
+        # Format uptime
+        uptime = bot_stats.get('start_time', 'Unknown')
+        if uptime != 'Unknown':
+            try:
+                start_time = datetime.fromisoformat(uptime)
+                uptime_delta = datetime.now() - start_time
+                days = uptime_delta.days
+                hours, remainder = divmod(uptime_delta.seconds, 3600)
+                minutes, _ = divmod(remainder, 60)
+                uptime = f"{days}d {hours}h {minutes}m"
+            except:
+                uptime = "Unknown"
+        
+        # Format last activity
+        last_activity = user_stats.get('last_activity', 'Unknown')
+        if last_activity != 'Unknown':
+            try:
+                last_activity_dt = datetime.fromisoformat(last_activity)
+                last_activity_delta = datetime.now() - last_activity_dt
+                if last_activity_delta.days > 0:
+                    last_activity = f"{last_activity_delta.days} days ago"
+                elif last_activity_delta.seconds > 3600:
+                    hours = last_activity_delta.seconds // 3600
+                    last_activity = f"{hours} hours ago"
+                else:
+                    minutes = last_activity_delta.seconds // 60
+                    last_activity = f"{minutes} minutes ago"
+            except:
+                last_activity = "Unknown"
+        
+        # Format account created
+        account_created = user_stats.get('account_created', 'Unknown')
+        if account_created != 'Unknown':
+            try:
+                created_dt = datetime.fromisoformat(account_created)
+                account_created = created_dt.strftime("%Y-%m-%d")
+            except:
+                account_created = "Unknown"
+        
+        # Get system info
+        try:
+            process = psutil.Process()
+            memory_usage = f"{process.memory_info().rss / 1024 / 1024:.1f} MB"
+        except:
+            memory_usage = "Unknown"
+        
+        try:
+            db_size = os.path.getsize("../bot_data.db") / 1024 / 1024
+            db_size = f"{db_size:.1f} MB"
+        except:
+            db_size = "Unknown"
+        
+        # Language distribution
+        lang_dist = bot_stats.get('language_distribution', {})
+        lang_dist_text = ""
+        if lang_dist:
+            lang_names = {'ru': '🇷🇺 RU', 'en': '🇺🇸 EN', 'de': '🇩🇪 DE', 'fr': '🇫🇷 FR', 'es': '🇪🇸 ES'}
+            lang_items = []
+            for lang_code, count in sorted(lang_dist.items(), key=lambda x: x[1], reverse=True):
+                lang_name = lang_names.get(lang_code, lang_code.upper())
+                lang_items.append(f"{lang_name}: {count}")
+            lang_dist_text = "\n".join(lang_items)
+        
+        # Model distribution
+        model_dist = bot_stats.get('model_distribution', {})
+        model_dist_text = ""
+        if model_dist:
+            model_items = []
+            for model, count in sorted(model_dist.items(), key=lambda x: x[1], reverse=True):
+                model_items.append(f"`{model}`: {count}")
+            model_dist_text = "\n".join(model_items)
+        
+        return f"""
+{t(lang, 'stats.title')}
+
+**{t(lang, 'stats.user_activity')}**
+{t(lang, 'stats.photos_analyzed')}: {user_stats.get('photos_analyzed', 0)}
+{t(lang, 'stats.reanalyses')}: {user_stats.get('reanalyses', 0)}
+{t(lang, 'stats.last_activity')}: {last_activity}
+{t(lang, 'stats.account_created')}: {account_created}
+
+**{t(lang, 'stats.current_settings')}**
+{t(lang, 'stats.bot_language')}: {user_settings.get('bot_lang', 'Unknown').upper()}
+{t(lang, 'stats.gen_language')}: {user_settings.get('gen_lang', 'Unknown').upper()}
+{t(lang, 'stats.ai_model')}: `{user_settings.get('model', 'Unknown')}`
+
+**{t(lang, 'stats.users')}**: {bot_stats.get('users_registered', 0)}
+**{t(lang, 'stats.items_processed')}**: {bot_stats.get('items_processed', 0)}
+**{t(lang, 'stats.total_requests')}**: {bot_stats.get('total_requests', 0)}
+**{t(lang, 'stats.uptime')}**: {uptime}
+
+**{t(lang, 'stats.system_info')}**
+{t(lang, 'stats.database_size')}: {db_size}
+{t(lang, 'stats.memory_usage')}: {memory_usage}
+{t(lang, 'stats.status')}: {t(lang, 'stats.online')}
+
+**Language Distribution:**
+{lang_dist_text if lang_dist_text else "No data"}
+
+**Model Distribution:**
+{model_dist_text if model_dist_text else "No data"}
+        """.strip()
+    
     def register_handlers(self):
         """Register handlers - to be implemented by subclasses"""
         pass

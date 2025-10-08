@@ -121,6 +121,33 @@ class DatabaseService:
             async with db.execute("SELECT COUNT(*) FROM user_settings") as cursor:
                 stats['user_settings'] = (await cursor.fetchone())[0]
             
+            # Add user activity stats
+            async with db.execute("""
+                SELECT COUNT(*) FROM users 
+                WHERE last_activity > datetime('now', '-24 hours')
+            """) as cursor:
+                stats['active_users_24h'] = (await cursor.fetchone())[0]
+            
+            async with db.execute("""
+                SELECT COUNT(*) FROM users 
+                WHERE last_activity > datetime('now', '-7 days')
+            """) as cursor:
+                stats['active_users_7d'] = (await cursor.fetchone())[0]
+            
+            # Add language distribution
+            async with db.execute("""
+                SELECT bot_lang, COUNT(*) FROM user_settings 
+                GROUP BY bot_lang ORDER BY COUNT(*) DESC
+            """) as cursor:
+                stats['language_distribution'] = dict(await cursor.fetchall())
+            
+            # Add model distribution
+            async with db.execute("""
+                SELECT model, COUNT(*) FROM user_settings 
+                GROUP BY model ORDER BY COUNT(*) DESC
+            """) as cursor:
+                stats['model_distribution'] = dict(await cursor.fetchall())
+            
             return stats
     
     async def increment_requests(self):
@@ -144,3 +171,50 @@ class DatabaseService:
                        ?)
             """, (datetime.now().isoformat(),))
             await db.commit()
+    
+    async def get_user_stats(self, user_id: int) -> Dict[str, Any]:
+        """Get user-specific statistics"""
+        async with aiosqlite.connect(self.db_path) as db:
+            stats = {}
+            
+            # Get user info
+            async with db.execute("""
+                SELECT username, first_name, last_name, created_at, last_activity 
+                FROM users WHERE user_id = ?
+            """, (user_id,)) as cursor:
+                user_row = await cursor.fetchone()
+                if user_row:
+                    stats['username'] = user_row[0]
+                    stats['first_name'] = user_row[1]
+                    stats['last_name'] = user_row[2]
+                    stats['account_created'] = user_row[3]
+                    stats['last_activity'] = user_row[4]
+            
+            # Get user settings
+            async with db.execute("""
+                SELECT bot_lang, gen_lang, model, created_at, last_activity 
+                FROM user_settings WHERE user_id = ?
+            """, (user_id,)) as cursor:
+                settings_row = await cursor.fetchone()
+                if settings_row:
+                    stats['bot_lang'] = settings_row[0]
+                    stats['gen_lang'] = settings_row[1]
+                    stats['model'] = settings_row[2]
+                    stats['settings_created'] = settings_row[3]
+                    stats['settings_updated'] = settings_row[4]
+            
+            # Count user's photos analyzed (approximate from requests)
+            async with db.execute("""
+                SELECT COUNT(*) FROM bot_stats 
+                WHERE key LIKE 'user_%_photos' AND key LIKE ? 
+            """, (f'user_{user_id}_%',)) as cursor:
+                stats['photos_analyzed'] = (await cursor.fetchone())[0]
+            
+            # Count user's reanalyses (approximate from requests)
+            async with db.execute("""
+                SELECT COUNT(*) FROM bot_stats 
+                WHERE key LIKE 'user_%_reanalyses' AND key LIKE ? 
+            """, (f'user_{user_id}_%',)) as cursor:
+                stats['reanalyses'] = (await cursor.fetchone())[0]
+            
+            return stats

@@ -132,12 +132,28 @@
     "model_set": "Modelo establecido"
   },
   "stats": {
-    "title": "Estadísticas",
-    "users": "Usuarios",
-    "items_processed": "Objetos procesados",
-    "total_requests": "Total de solicitudes",
-    "uptime": "Tiempo de actividad",
-    "unknown": "Desconocido"
+    "title": "📊 Estadísticas del bot",
+    "users": "👥 Usuarios registrados",
+    "items_processed": "📦 Objetos procesados",
+    "total_requests": "🔄 Total de solicitudes",
+    "uptime": "⏰ Tiempo de actividad",
+    "unknown": "Desconocido",
+    "user_activity": "👤 Tu actividad",
+    "photos_analyzed": "📸 Fotos analizadas",
+    "reanalyses": "🔄 Reanálisis",
+    "last_activity": "🕒 Última actividad",
+    "account_created": "📅 Cuenta creada",
+    "current_settings": "⚙️ Configuración actual",
+    "bot_language": "🤖 Idioma del bot",
+    "gen_language": "📝 Idioma de generación",
+    "ai_model": "🧠 Modelo IA",
+    "system_info": "🖥️ Información del sistema",
+    "database_size": "💾 Tamaño de la base de datos",
+    "memory_usage": "🧠 Uso de memoria",
+    "version": "📋 Versión",
+    "status": "🟢 Estado",
+    "online": "En línea",
+    "offline": "Fuera de línea"
   },
   "restart": {
     "not_implemented": "Función de reinicio aún no implementada"

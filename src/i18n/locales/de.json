@@ -132,12 +132,28 @@
     "model_set": "Modell festgelegt"
   },
   "stats": {
-    "title": "Statistiken",
-    "users": "Benutzer",
-    "items_processed": "Verarbeitete Gegenstände",
-    "total_requests": "Gesamtanträge",
-    "uptime": "Betriebszeit",
-    "unknown": "Unbekannt"
+    "title": "📊 Bot-Statistiken",
+    "users": "👥 Registrierte Benutzer",
+    "items_processed": "📦 Verarbeitete Gegenstände",
+    "total_requests": "🔄 Gesamtanträge",
+    "uptime": "⏰ Betriebszeit",
+    "unknown": "Unbekannt",
+    "user_activity": "👤 Ihre Aktivität",
+    "photos_analyzed": "📸 Analysierte Fotos",
+    "reanalyses": "🔄 Neu-Analysen",
+    "last_activity": "🕒 Letzte Aktivität",
+    "account_created": "📅 Konto erstellt",
+    "current_settings": "⚙️ Aktuelle Einstellungen",
+    "bot_language": "🤖 Bot-Sprache",
+    "gen_language": "📝 Generierungssprache",
+    "ai_model": "🧠 KI-Modell",
+    "system_info": "🖥️ Systeminformationen",
+    "database_size": "💾 Datenbankgröße",
+    "memory_usage": "🧠 Speichernutzung",
+    "version": "📋 Version",
+    "status": "🟢 Status",
+    "online": "Online",
+    "offline": "Offline"
   },
   "restart": {
     "not_implemented": "Neustart-Funktion noch nicht implementiert"

@@ -132,12 +132,28 @@
     "model_set": "Model set"
   },
   "stats": {
-    "title": "Statistics",
-    "users": "Users",
-    "items_processed": "Items processed",
-    "total_requests": "Total requests",
-    "uptime": "Uptime",
-    "unknown": "Unknown"
+    "title": "📊 Bot Statistics",
+    "users": "👥 Registered Users",
+    "items_processed": "📦 Items Processed",
+    "total_requests": "🔄 Total Requests",
+    "uptime": "⏰ Uptime",
+    "unknown": "Unknown",
+    "user_activity": "👤 Your Activity",
+    "photos_analyzed": "📸 Photos Analyzed",
+    "reanalyses": "🔄 Re-analyses",
+    "last_activity": "🕒 Last Activity",
+    "account_created": "📅 Account Created",
+    "current_settings": "⚙️ Current Settings",
+    "bot_language": "🤖 Bot Language",
+    "gen_language": "📝 Generation Language",
+    "ai_model": "🧠 AI Model",
+    "system_info": "🖥️ System Info",
+    "database_size": "💾 Database Size",
+    "memory_usage": "🧠 Memory Usage",
+    "version": "📋 Version",
+    "status": "🟢 Status",
+    "online": "Online",
+    "offline": "Offline"
   },
   "restart": {
     "not_implemented": "Restart function not implemented yet"
