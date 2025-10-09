@@ -12,6 +12,23 @@ for p in (PROJECT_ROOT, SRC_DIR):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+# Force-load local packages to avoid name clashes with third-party modules named 'i18n' or 'utils'
+import importlib.util
+
+def _force_load_package(pkg_name: str, pkg_dir: str):
+    init_file = os.path.join(pkg_dir, "__init__.py")
+    if os.path.exists(init_file):
+        spec = importlib.util.spec_from_file_location(
+            pkg_name, init_file, submodule_search_locations=[pkg_dir]
+        )
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[pkg_name] = module
+        assert spec is not None and spec.loader is not None
+        spec.loader.exec_module(module)  # type: ignore[attr-defined]
+
+_force_load_package("i18n", os.path.join(SRC_DIR, "i18n"))
+_force_load_package("utils", os.path.join(SRC_DIR, "utils"))
+
 from utils.retry import retry_async
 from utils.rate_limiter import RateLimiter
 from i18n.utils import get_language_keyboard_data, format_item_info, format_error_message, format_success_message
