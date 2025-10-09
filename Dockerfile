@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
 COPY src/ ./src/
-COPY sample.env .env
+COPY env.example .env
 
 # Create necessary directories
 RUN mkdir -p /app/data /app/logs /app/temp
