@@ -601,16 +601,20 @@ class SearchHandler(BaseHandler):
                         reply_markup=None,
                         parse_mode="Markdown"
                     )
+                    prompt_msg_id = callback.message.message_id
+                    prompt_chat_id = callback.message.chat.id
                 except Exception as edit_error:
-                    await callback.message.answer(
+                    msg = await callback.message.answer(
                         edit_text,
                         reply_markup=None,
                         parse_mode="Markdown"
                     )
+                    prompt_msg_id = msg.message_id
+                    prompt_chat_id = msg.chat.id
                 
                 await callback.answer()
                 await state.set_state(SearchStates.editing_item_name)
-                await state.update_data(editing_item_id=item_id, current_item=item)
+                await state.update_data(editing_item_id=item_id, current_item=item, edit_prompt_message_id=prompt_msg_id, edit_prompt_chat_id=prompt_chat_id)
                 
             except Exception as e:
                 await self.handle_error(e, "start_edit_item_name", callback.from_user.id)
@@ -642,16 +646,20 @@ class SearchHandler(BaseHandler):
                         reply_markup=None,
                         parse_mode="Markdown"
                     )
+                    prompt_msg_id = callback.message.message_id
+                    prompt_chat_id = callback.message.chat.id
                 except Exception as edit_error:
-                    await callback.message.answer(
+                    msg = await callback.message.answer(
                         edit_text,
                         reply_markup=None,
                         parse_mode="Markdown"
                     )
+                    prompt_msg_id = msg.message_id
+                    prompt_chat_id = msg.chat.id
                 
                 await callback.answer()
                 await state.set_state(SearchStates.editing_item_description)
-                await state.update_data(editing_item_id=item_id, current_item=item)
+                await state.update_data(editing_item_id=item_id, current_item=item, edit_prompt_message_id=prompt_msg_id, edit_prompt_chat_id=prompt_chat_id)
                 
             except Exception as e:
                 await self.handle_error(e, "start_edit_item_description", callback.from_user.id)
@@ -922,8 +930,23 @@ class SearchHandler(BaseHandler):
                     await message.answer(t(bot_lang, 'errors.invalid_name'))
                     return
                 
-                # Show updating message
-                updating_msg = await message.answer(t(bot_lang, 'search.updating_item'))
+                # Prefer редактировать предыдущий prompt, если он сохранился
+                data = await state.get_data()
+                prompt_id = data.get('edit_prompt_message_id')
+                prompt_chat = data.get('edit_prompt_chat_id')
+                updating_msg = None
+                if prompt_id and prompt_chat == message.chat.id:
+                    try:
+                        await message.bot.edit_message_text(
+                            chat_id=prompt_chat,
+                            message_id=prompt_id,
+                            text=t(bot_lang, 'search.updating_item')
+                        )
+                        updating_msg = message  # placeholder to keep interface uniform
+                    except Exception:
+                        updating_msg = await message.answer(t(bot_lang, 'search.updating_item'))
+                else:
+                    updating_msg = await message.answer(t(bot_lang, 'search.updating_item'))
                 
                 # Update item in HomeBox
                 success = await self.homebox_service.update_item(item_id, {'name': new_name})
@@ -941,13 +964,27 @@ class SearchHandler(BaseHandler):
                             value=new_name
                         )
                         
+                        # Попробуем заменить текст в прежнем сообщении
                         try:
-                            await updating_msg.edit_text(
-                                success_text,
-                                reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
-                                parse_mode="Markdown"
-                            )
-                        except Exception as edit_error:
+                            if prompt_id and prompt_chat == message.chat.id:
+                                await message.bot.edit_message_text(
+                                    chat_id=prompt_chat,
+                                    message_id=prompt_id,
+                                    text=success_text,
+                                    parse_mode="Markdown"
+                                )
+                                await message.bot.edit_message_reply_markup(
+                                    chat_id=prompt_chat,
+                                    message_id=prompt_id,
+                                    reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id)
+                                )
+                            else:
+                                await updating_msg.edit_text(
+                                    success_text,
+                                    reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                                    parse_mode="Markdown"
+                                )
+                        except Exception:
                             await message.answer(
                                 success_text,
                                 reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
@@ -962,7 +999,13 @@ class SearchHandler(BaseHandler):
                     error_text = t(bot_lang, 'search.update_failed').format(
                         error=self.homebox_service.last_error or 'Unknown error'
                     )
-                    await updating_msg.edit_text(error_text)
+                    try:
+                        if prompt_id and prompt_chat == message.chat.id:
+                            await message.bot.edit_message_text(chat_id=prompt_chat, message_id=prompt_id, text=error_text)
+                        else:
+                            await updating_msg.edit_text(error_text)
+                    except Exception:
+                        await message.answer(error_text)
                 
             except Exception as e:
                 await self.handle_error(e, "handle_item_name_edit", message.from_user.id)
@@ -989,8 +1032,23 @@ class SearchHandler(BaseHandler):
                     await message.answer(t(bot_lang, 'errors.invalid_description'))
                     return
                 
-                # Show updating message
-                updating_msg = await message.answer(t(bot_lang, 'search.updating_item'))
+                # Предпочитаем редактировать предыдущий prompt
+                data = await state.get_data()
+                prompt_id = data.get('edit_prompt_message_id')
+                prompt_chat = data.get('edit_prompt_chat_id')
+                updating_msg = None
+                if prompt_id and prompt_chat == message.chat.id:
+                    try:
+                        await message.bot.edit_message_text(
+                            chat_id=prompt_chat,
+                            message_id=prompt_id,
+                            text=t(bot_lang, 'search.updating_item')
+                        )
+                        updating_msg = message
+                    except Exception:
+                        updating_msg = await message.answer(t(bot_lang, 'search.updating_item'))
+                else:
+                    updating_msg = await message.answer(t(bot_lang, 'search.updating_item'))
                 
                 # Update item in HomeBox
                 success = await self.homebox_service.update_item(item_id, {'description': new_description})
@@ -1005,12 +1063,25 @@ class SearchHandler(BaseHandler):
                         )
                         
                         try:
-                            await updating_msg.edit_text(
-                                success_text,
-                                reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
-                                parse_mode="Markdown"
-                            )
-                        except Exception as edit_error:
+                            if prompt_id and prompt_chat == message.chat.id:
+                                await message.bot.edit_message_text(
+                                    chat_id=prompt_chat,
+                                    message_id=prompt_id,
+                                    text=success_text,
+                                    parse_mode="Markdown"
+                                )
+                                await message.bot.edit_message_reply_markup(
+                                    chat_id=prompt_chat,
+                                    message_id=prompt_id,
+                                    reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id)
+                                )
+                            else:
+                                await updating_msg.edit_text(
+                                    success_text,
+                                    reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                                    parse_mode="Markdown"
+                                )
+                        except Exception:
                             await message.answer(
                                 success_text,
                                 reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
@@ -1025,7 +1096,13 @@ class SearchHandler(BaseHandler):
                     error_text = t(bot_lang, 'search.update_failed').format(
                         error=self.homebox_service.last_error or 'Unknown error'
                     )
-                    await updating_msg.edit_text(error_text)
+                    try:
+                        if prompt_id and prompt_chat == message.chat.id:
+                            await message.bot.edit_message_text(chat_id=prompt_chat, message_id=prompt_id, text=error_text)
+                        else:
+                            await updating_msg.edit_text(error_text)
+                    except Exception:
+                        await message.answer(error_text)
                 
             except Exception as e:
                 await self.handle_error(e, "handle_item_description_edit", message.from_user.id)
