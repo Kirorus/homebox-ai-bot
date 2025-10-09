@@ -447,6 +447,31 @@ class HomeBoxService:
             error_msg = f'Exception in get_item_by_id: {str(e)}'
             logger.error(error_msg)
             return None
+
+    @retry_async(max_attempts=3, delay=2.0, exceptions=(aiohttp.ClientError, asyncio.TimeoutError))
+    async def delete_item(self, item_id: str) -> bool:
+        """Delete item by ID in HomeBox"""
+        try:
+            session = await self._get_session()
+            logger.info(f"Deleting item {item_id} from HomeBox")
+            async with session.delete(
+                f'{self.base_url}/api/v1/items/{item_id}',
+                headers=self.headers
+            ) as response:
+                if response.status not in [200, 204]:
+                    try:
+                        body = await response.text()
+                    except Exception:
+                        body = ''
+                    self.last_error = f'DELETE item failed HTTP {response.status}; body: {body[:500]}'
+                    logger.error(f"Failed to delete item {item_id}: {self.last_error}")
+                    return False
+                logger.info(f"Successfully deleted item {item_id}")
+                return True
+        except Exception as e:
+            error_msg = f'Exception in delete_item: {str(e)}'
+            logger.error(error_msg)
+            return False
     
     async def get_image_url(self, image_id: str, item_id: str) -> str:
         """Get image URL from image ID and item ID"""

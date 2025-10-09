@@ -175,10 +175,22 @@ class KeyboardManager:
             )
             builder.row(InlineKeyboardButton(text=t(lang, 'buttons.reanalyze'), callback_data=f"reanalyze_item_{item_id}"))
             builder.row(InlineKeyboardButton(text=f"📦 {t(lang, 'search.move_item')}", callback_data=f"move_item_{item_id}"))
+            builder.row(InlineKeyboardButton(text=f"🗑️ {t(lang, 'search.delete_item')}", callback_data=f"delete_item_{item_id}"))
         
         # Navigation buttons
         builder.row(InlineKeyboardButton(text=t(lang, 'search.back_to_results'), callback_data="search_back"))
         builder.row(InlineKeyboardButton(text=t(lang, 'search.new_search'), callback_data="search_new"))
+        return builder.as_markup()
+
+    @staticmethod
+    def delete_confirmation_keyboard(lang: str, item_id: str) -> InlineKeyboardMarkup:
+        """Create delete confirmation keyboard for an item"""
+        builder = InlineKeyboardBuilder()
+        builder.row(
+            InlineKeyboardButton(text=f"✅ {t(lang, 'common.yes')}", callback_data=f"confirm_delete_{item_id}"),
+            InlineKeyboardButton(text=f"❌ {t(lang, 'common.no')}", callback_data=f"cancel_delete_{item_id}")
+        )
+        builder.row(InlineKeyboardButton(text=t(lang, 'search.back_to_results'), callback_data="search_back"))
         return builder.as_markup()
     
     @staticmethod

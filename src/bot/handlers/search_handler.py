@@ -7,6 +7,7 @@ from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from .base_handler import BaseHandler
 from bot.states import SearchStates, LocationStates
@@ -178,20 +179,23 @@ class SearchHandler(BaseHandler):
                 if image_url:
                     try:
                         await callback.message.delete()
-                        await callback.message.answer_photo(
+                        msg = await callback.message.answer_photo(
                             photo=image_url,
                             caption=details_text,
                             reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
                             parse_mode="Markdown"
                         )
+                        # Store details message reference for later edits (e.g., after deletion)
+                        await state.update_data(current_item=item, details_message_id=msg.message_id, details_chat_id=msg.chat.id)
                     except Exception as photo_error:
                         logger.warning(f"Failed to send photo for item {item_id}: {photo_error}")
                         # Fallback to text message
-                        await callback.message.answer(
+                        msg = await callback.message.answer(
                             details_text,
                             reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
                             parse_mode="Markdown"
                         )
+                        await state.update_data(current_item=item, details_message_id=msg.message_id, details_chat_id=msg.chat.id)
                 else:
                     # No image, send text only
                     try:
@@ -200,12 +204,14 @@ class SearchHandler(BaseHandler):
                             reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
                             parse_mode="Markdown"
                         )
+                        await state.update_data(current_item=item, details_message_id=callback.message.message_id, details_chat_id=callback.message.chat.id)
                     except Exception as edit_error:
-                        await callback.message.answer(
+                        msg = await callback.message.answer(
                             details_text,
                             reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
                             parse_mode="Markdown"
                         )
+                        await state.update_data(current_item=item, details_message_id=msg.message_id, details_chat_id=msg.chat.id)
                 
                 await callback.answer()
                 await state.set_state(SearchStates.viewing_item_details)
@@ -676,6 +682,135 @@ class SearchHandler(BaseHandler):
                 
             except Exception as e:
                 await self.handle_error(e, "start_reanalyze_item", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+        
+        @self.router.callback_query(F.data.startswith("delete_item_"))
+        async def start_delete_item(callback: CallbackQuery, state: FSMContext):
+            """Ask for confirmation before deleting an item (separate message)"""
+            try:
+                item_id = callback.data.split("_", 2)[2]
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Persist current item and message refs for later
+                try:
+                    current_item = await self.homebox_service.get_item_by_id(item_id)
+                except Exception:
+                    current_item = None
+                await state.update_data(
+                    deleting_item_id=item_id,
+                    current_item=current_item or {}
+                )
+                
+                confirm_text = t(bot_lang, 'search.confirm_delete')
+                await callback.message.answer(
+                    confirm_text,
+                    reply_markup=self.keyboard_manager.delete_confirmation_keyboard(bot_lang, item_id),
+                    parse_mode="Markdown"
+                )
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "start_delete_item", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+        
+        @self.router.callback_query(F.data.startswith("confirm_delete_"))
+        async def confirm_delete_item(callback: CallbackQuery, state: FSMContext):
+            """Perform item deletion; delete prompt; mark original card as deleted"""
+            try:
+                item_id = callback.data.split("_", 2)[2]
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Delete the confirmation prompt message
+                try:
+                    await callback.message.delete()
+                except Exception:
+                    pass
+                
+                success = await self.homebox_service.delete_item(item_id)
+                if success:
+                    data = await state.get_data()
+                    details_message_id = data.get('details_message_id')
+                    details_chat_id = data.get('details_chat_id')
+                    current_item = data.get('current_item', {}) or {}
+                    
+                    # Prepare minimal deleted caption
+                    name = str(current_item.get('name', ''))
+                    location = current_item.get('location', {})
+                    if isinstance(location, dict):
+                        location_name = str(location.get('name', ''))
+                    else:
+                        location_name = ''
+                    deleted_caption = (f"🗑️ УДАЛЕНО\n\n" +
+                                       (f"📦 {name}\n" if name else "") +
+                                       (f"📍 {location_name}" if location_name else "")).strip()
+                    
+                    if details_message_id and details_chat_id:
+                        # Try caption edit first (if it was a photo), fallback to text edit
+                        try:
+                            await callback.message.bot.edit_message_caption(
+                                chat_id=details_chat_id,
+                                message_id=details_message_id,
+                                caption=deleted_caption,
+                                reply_markup=None,
+                                parse_mode="Markdown"
+                            )
+                        except Exception:
+                            try:
+                                await callback.message.bot.edit_message_text(
+                                    text=deleted_caption,
+                                    chat_id=details_chat_id,
+                                    message_id=details_message_id,
+                                    reply_markup=None,
+                                    parse_mode="Markdown"
+                                )
+                            except Exception:
+                                pass
+                    await state.clear()
+                else:
+                    error_text = t(bot_lang, 'search.delete_failed').format(
+                        error=self.homebox_service.last_error or 'Unknown error'
+                    )
+                    try:
+                        await callback.message.answer(error_text)
+                    except Exception:
+                        pass
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "confirm_delete_item", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+        
+        @self.router.callback_query(F.data.startswith("cancel_delete_"))
+        async def cancel_delete_item(callback: CallbackQuery, state: FSMContext):
+            """Return to item details without deleting"""
+            try:
+                item_id = callback.data.split("_", 2)[2]
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                item = await self.homebox_service.get_item_by_id(item_id)
+                if not item:
+                    await callback.answer(t(bot_lang, 'search.item_not_found'), show_alert=True)
+                    return
+                
+                details_text = self.format_item_details(item, bot_lang)
+                try:
+                    await callback.message.edit_text(
+                        details_text,
+                        reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                        parse_mode="Markdown"
+                    )
+                except Exception:
+                    await callback.message.answer(
+                        details_text,
+                        reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                        parse_mode="Markdown"
+                    )
+                await callback.answer()
+                await state.set_state(SearchStates.viewing_item_details)
+                await state.update_data(current_item=item)
+            except Exception as e:
+                await self.handle_error(e, "cancel_delete_item", callback.from_user.id)
                 await callback.answer(t('en', 'errors.occurred'), show_alert=True)
         
         @self.router.message(SearchStates.editing_item_name, F.text)
