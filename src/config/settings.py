@@ -125,7 +125,7 @@ class Settings:
                 location_marker=os.getenv('LOCATION_MARKER', '[TGB]')
             ),
             bot=BotSettings(
-                token=os.getenv('BOT_TOKEN', ''),
+                token=os.getenv('TELEGRAM_BOT_TOKEN', ''),
                 allowed_user_ids=allowed_user_ids,
                 debug_mode=os.getenv('DEBUG', 'false').lower() == 'true',
                 log_level=os.getenv('LOG_LEVEL', 'INFO')

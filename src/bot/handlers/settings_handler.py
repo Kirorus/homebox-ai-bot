@@ -214,6 +214,35 @@ class SettingsHandler(BaseHandler):
                 await self.handle_error(e, "stats command", message.from_user.id)
                 await message.answer(t('en', 'errors.occurred'))
         
+        @self.router.message(Command("myid", "id"))
+        async def cmd_myid(message: Message, state: FSMContext):
+            """Handle /myid and /id commands - show user ID (works for all users)"""
+            try:
+                await self.log_user_action("myid_command", message.from_user.id)
+                
+                # Get user info
+                user = message.from_user
+                user_id = user.id
+                username = user.username or "Not set"
+                first_name = user.first_name or "Not set"
+                last_name = user.last_name or "Not set"
+                
+                # Create response message
+                response_text = (
+                    f"🆔 **Your Telegram Information:**\n\n"
+                    f"**User ID:** `{user_id}`\n"
+                    f"**Username:** @{username}\n"
+                    f"**First Name:** {first_name}\n"
+                    f"**Last Name:** {last_name}\n\n"
+                    f"Use this ID to add yourself to the bot's allowed users list."
+                )
+                
+                await message.answer(response_text, parse_mode="Markdown")
+                
+            except Exception as e:
+                await self.handle_error(e, "myid command", message.from_user.id)
+                await message.answer(t('en', 'errors.occurred'))
+        
         @self.router.callback_query(F.data == "settings_bot_lang")
         async def settings_bot_lang_callback(callback: CallbackQuery, state: FSMContext):
             """Handle bot language settings"""
