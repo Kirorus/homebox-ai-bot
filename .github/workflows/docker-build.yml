@@ -60,8 +60,13 @@ jobs:
     - name: Image digest
       run: echo ${{ steps.build.outputs.digest }}
 
+    - name: Wait for Docker Hub to register repository (avoid 403)
+      if: github.event_name != 'pull_request'
+      run: sleep 20
+
     - name: Update Docker Hub description from readme.md
       if: github.event_name != 'pull_request'
+      continue-on-error: true
       uses: peter-evans/dockerhub-description@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
