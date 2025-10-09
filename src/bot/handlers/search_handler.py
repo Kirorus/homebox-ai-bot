@@ -393,7 +393,7 @@ class SearchHandler(BaseHandler):
                         ),
                         parse_mode="Markdown"
                     )
-                except Exception as edit_error:
+                except Exception:
                     await callback.message.answer(
                         move_text,
                         reply_markup=self.keyboard_manager.move_item_location_keyboard(
@@ -447,8 +447,12 @@ class SearchHandler(BaseHandler):
                 
                 new_location_id = location_mapping[location_index]
                 
-                # Show moving message
-                moving_msg = await callback.message.answer(t(bot_lang, 'search.moving_item'))
+                # Show moving message in-place
+                try:
+                    await callback.message.edit_text(t(bot_lang, 'search.moving_item'))
+                    moving_msg = callback.message
+                except Exception:
+                    moving_msg = await callback.message.answer(t(bot_lang, 'search.moving_item'))
                 
                 # Update item location
                 success = await self.homebox_service.update_item_location(item_id, new_location_id)
@@ -477,7 +481,7 @@ class SearchHandler(BaseHandler):
                             reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
                             parse_mode="Markdown"
                         )
-                    except Exception as edit_error:
+                    except Exception:
                         await callback.message.answer(
                             success_text,
                             reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
@@ -499,7 +503,7 @@ class SearchHandler(BaseHandler):
                             reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
                             parse_mode="Markdown"
                         )
-                    except Exception as edit_error:
+                    except Exception:
                         await callback.message.answer(
                             error_text,
                             reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
