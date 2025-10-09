@@ -1,6 +1,16 @@
+import os
+import sys
 import asyncio
 import time
 import pytest
+
+# Ensure project root and src are on sys.path in CI
+CURRENT_DIR = os.path.dirname(__file__)
+PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "../../"))
+SRC_DIR = os.path.join(PROJECT_ROOT, "src")
+for p in (PROJECT_ROOT, SRC_DIR):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 from utils.retry import retry_async
 from utils.rate_limiter import RateLimiter
