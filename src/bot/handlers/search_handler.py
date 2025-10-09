@@ -77,7 +77,7 @@ class SearchHandler(BaseHandler):
                     await message.answer(t(bot_lang, 'search.empty_query'))
                     return
                 
-                # Show searching message
+                # Show searching message (we will try to edit this in-place)
                 searching_msg = await message.answer(t(bot_lang, 'search.searching'))
                 
                 # Search items
@@ -98,7 +98,8 @@ class SearchHandler(BaseHandler):
                 
                 # Show search results
                 try:
-                    await self.show_search_results(message, state, items, 0, bot_lang)
+                    # Prefer editing the placeholder message instead of sending a new one
+                    await self.show_search_results(searching_msg, state, items, 0, bot_lang)
                     await state.set_state(SearchStates.viewing_search_results)
                 except Exception as e:
                     # If editing fails, send a new message
@@ -129,7 +130,7 @@ class SearchHandler(BaseHandler):
                 user_settings = await self.get_user_settings(message.from_user.id)
                 bot_lang = user_settings.bot_lang
                 
-                # Show loading message
+                # Show loading message (will be edited in place)
                 loading_msg = await message.answer(t(bot_lang, 'search.loading_recent'))
                 
                 # Get recent items (first page)
@@ -143,7 +144,7 @@ class SearchHandler(BaseHandler):
                 await state.update_data(search_results=items, current_page=0)
                 
                 # Show recent items
-                await self.show_search_results(message, state, items, 0, bot_lang, is_recent=True)
+                await self.show_search_results(loading_msg, state, items, 0, bot_lang, is_recent=True)
                 await state.set_state(SearchStates.viewing_search_results)
                 
             except Exception as e:
@@ -1591,23 +1592,32 @@ class SearchHandler(BaseHandler):
             
             if media_group and len(media_group) <= 10:  # Telegram limit is 10 media per group
                 try:
-                    await message.delete()
+                    # Try to edit message in place where possible
+                    try:
+                        # If original message was text, replace it by sending media group and then editing last caption
+                        await message.edit_text(
+                            results_text,
+                            reply_markup=keyboard,
+                            parse_mode="Markdown"
+                        )
+                    except Exception:
+                        pass
                     await message.answer_media_group(media_group)
-                    # Send pagination info separately
+                    # Send pagination info with keyboard below the media group
                     await message.answer(
                         f"📄 {t(lang, 'search.page_info')}: {page + 1}/{total_pages}",
                         reply_markup=keyboard
                     )
                 except Exception as media_error:
                     logger.warning(f"Failed to send media group: {media_error}")
-                    # Fallback to text message
+                    # Fallback to text message edited in place
                     try:
                         await message.edit_text(
                             results_text,
                             reply_markup=keyboard,
                             parse_mode="Markdown"
                         )
-                    except Exception as edit_error:
+                    except Exception:
                         await message.answer(
                             results_text,
                             reply_markup=keyboard,
