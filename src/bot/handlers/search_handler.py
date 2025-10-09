@@ -1856,25 +1856,25 @@ class SearchHandler(BaseHandler):
             
             if media_group and len(media_group) <= 10:  # Telegram limit is 10 media per group
                 try:
-                    # Delete placeholder and send only media group + one pager message
-                    try:
-                        await message.delete()
-                    except Exception:
-                        # If we cannot delete (no rights/old message), try to clear it
-                        try:
-                            await message.edit_text(" ", reply_markup=None)
-                        except Exception:
-                            pass
+                    # Send media group for the page and update pager message by editing it
                     sent_group = await message.answer_media_group(media_group)
                     try:
                         media_ids = [m.message_id for m in (sent_group or [])]
                         await state.update_data(last_results_media_ids=media_ids)
                     except Exception:
                         pass
-                    await message.answer(
-                        f"📄 {t(lang, 'search.page_info')}: {page + 1}/{total_pages}",
-                        reply_markup=keyboard
-                    )
+                    # Edit the existing pager message instead of deleting/sending a new one
+                    try:
+                        await message.edit_text(
+                            f"📄 {t(lang, 'search.page_info')}: {page + 1}/{total_pages}",
+                            reply_markup=keyboard
+                        )
+                    except Exception:
+                        # Fallback to sending if edit is not possible
+                        await message.answer(
+                            f"📄 {t(lang, 'search.page_info')}: {page + 1}/{total_pages}",
+                            reply_markup=keyboard
+                        )
                 except Exception as media_error:
                     logger.warning(f"Failed to send media group: {media_error}")
                     # Fallback to text message edited in place
