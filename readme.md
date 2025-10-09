@@ -85,3 +85,4 @@ src/
 
 ## 📝 License
 MIT
+<!-- ci: refresh docker hub description -->
