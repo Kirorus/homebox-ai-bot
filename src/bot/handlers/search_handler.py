@@ -293,6 +293,31 @@ class SearchHandler(BaseHandler):
                 user_settings = await self.get_user_settings(callback.from_user.id)
                 bot_lang = user_settings.bot_lang
                 
+                # Remove current details message before showing results again
+                try:
+                    # If we tracked a specific details message, try deleting it
+                    tracked_details_id = data.get('details_message_id')
+                    tracked_details_chat = data.get('details_chat_id')
+                    if tracked_details_id and tracked_details_chat:
+                        try:
+                            await callback.message.bot.delete_message(chat_id=tracked_details_chat, message_id=tracked_details_id)
+                        except Exception:
+                            pass
+                        try:
+                            await state.update_data(details_message_id=None, details_chat_id=None)
+                        except Exception:
+                            pass
+                    # Also try deleting the message that triggered the callback (usually the details message)
+                    try:
+                        await callback.message.delete()
+                    except Exception:
+                        try:
+                            await callback.message.edit_text(" ", reply_markup=None)
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+                
                 await self.show_search_results(
                     callback.message, state, search_results, current_page, bot_lang
                 )
