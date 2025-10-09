@@ -189,6 +189,23 @@ class SearchHandler(BaseHandler):
                 user_settings = await self.get_user_settings(callback.from_user.id)
                 bot_lang = user_settings.bot_lang
                 
+                # Clean up previously shown search results media group (photos)
+                try:
+                    data_for_cleanup = await state.get_data()
+                    prev_media_ids = data_for_cleanup.get('last_results_media_ids', []) or []
+                    if prev_media_ids:
+                        for mid in prev_media_ids:
+                            try:
+                                await callback.message.bot.delete_message(chat_id=callback.message.chat.id, message_id=mid)
+                            except Exception:
+                                pass
+                        try:
+                            await state.update_data(last_results_media_ids=[])
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+                
                 # Get item details
                 item = await self.homebox_service.get_item_by_id(item_id)
                 
