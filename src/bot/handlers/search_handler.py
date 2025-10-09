@@ -47,11 +47,16 @@ class SearchHandler(BaseHandler):
                 bot_lang = user_settings.bot_lang
                 
                 search_text = t(bot_lang, 'search.enter_query')
-                await message.answer(
+                prompt_msg = await message.answer(
                     search_text,
                     reply_markup=self.keyboard_manager.search_cancel_keyboard(bot_lang)
                 )
                 await state.set_state(SearchStates.waiting_for_search_query)
+                # Remember prompt message to remove it after user sends the query
+                try:
+                    await state.update_data(search_prompt_message_id=prompt_msg.message_id, search_prompt_chat_id=prompt_msg.chat.id)
+                except Exception:
+                    pass
                 
             except Exception as e:
                 await self.handle_error(e, "search command", message.from_user.id)
@@ -77,6 +82,28 @@ class SearchHandler(BaseHandler):
                     await message.answer(t(bot_lang, 'search.empty_query'))
                     return
                 
+                # Try to delete the prompt message shown before entering query
+                try:
+                    data = await state.get_data()
+                    prompt_id = data.get('search_prompt_message_id')
+                    prompt_chat = data.get('search_prompt_chat_id')
+                    if prompt_id and prompt_chat == message.chat.id:
+                        try:
+                            await message.bot.delete_message(chat_id=prompt_chat, message_id=prompt_id)
+                        except Exception:
+                            # Fallback: clear text if deletion fails
+                            try:
+                                await message.bot.edit_message_text(chat_id=prompt_chat, message_id=prompt_id, text=" ")
+                            except Exception:
+                                pass
+                        # Clear stored prompt refs
+                        try:
+                            await state.update_data(search_prompt_message_id=None, search_prompt_chat_id=None)
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+
                 # Show searching message (we will try to edit this in-place)
                 searching_msg = await message.answer(t(bot_lang, 'search.searching'))
                 
@@ -303,14 +330,30 @@ class SearchHandler(BaseHandler):
         async def cancel_search(callback: CallbackQuery, state: FSMContext):
             """Cancel search operation"""
             try:
-                await state.clear()
-                user_settings = await self.get_user_settings(callback.from_user.id)
-                bot_lang = user_settings.bot_lang
-                
+                # Read state first to know what to clean up
+                data = await state.get_data()
+                media_ids = data.get('last_results_media_ids', []) or []
+
+                # Try to delete previously sent media messages (photos)
+                if media_ids:
+                    for mid in media_ids:
+                        try:
+                            await callback.message.bot.delete_message(chat_id=callback.message.chat.id, message_id=mid)
+                        except Exception:
+                            pass
+
+                # Delete the current pager/text message to leave no trace
                 try:
-                    await callback.message.edit_text(t(bot_lang, 'search.cancelled'))
-                except:
-                    await callback.message.answer(t(bot_lang, 'search.cancelled'))
+                    await callback.message.delete()
+                except Exception:
+                    # Fallback: clear text and keyboard silently
+                    try:
+                        await callback.message.edit_text(" ", reply_markup=None)
+                    except Exception:
+                        pass
+
+                # Clear state and silently answer callback
+                await state.clear()
                 await callback.answer()
                 
             except Exception as e:
@@ -330,11 +373,20 @@ class SearchHandler(BaseHandler):
                         search_text,
                         reply_markup=self.keyboard_manager.search_cancel_keyboard(bot_lang)
                     )
+                    # Track prompt message to delete it once user enters query
+                    try:
+                        await state.update_data(search_prompt_message_id=callback.message.message_id, search_prompt_chat_id=callback.message.chat.id)
+                    except Exception:
+                        pass
                 except Exception as edit_error:
-                    await callback.message.answer(
+                    msg = await callback.message.answer(
                         search_text,
                         reply_markup=self.keyboard_manager.search_cancel_keyboard(bot_lang)
                     )
+                    try:
+                        await state.update_data(search_prompt_message_id=msg.message_id, search_prompt_chat_id=msg.chat.id)
+                    except Exception:
+                        pass
                 await callback.answer()
                 await state.set_state(SearchStates.waiting_for_search_query)
                 
