@@ -1135,24 +1135,44 @@ class SearchHandler(BaseHandler):
                 
                 hint = message.text.strip()
                 
-                # Show processing message (prefer edit of the previous prompt)
+                # Show processing message (edit prompt in-place if possible)
                 data2 = await state.get_data()
                 prompt_id = data2.get('reanalyze_prompt_message_id')
                 prompt_chat = data2.get('reanalyze_prompt_chat_id')
                 processing_text = t(bot_lang, 'reanalysis.processing')
-                processing_msg = None
+                target_chat_id = message.chat.id
+                target_message_id = None
+                # Try to edit the existing prompt message
                 if prompt_id and prompt_chat == message.chat.id:
                     try:
                         await message.bot.edit_message_text(chat_id=prompt_chat, message_id=prompt_id, text=processing_text)
+                        target_chat_id = prompt_chat
+                        target_message_id = prompt_id
                     except Exception:
-                        processing_msg = await message.answer(processing_text)
-                else:
-                    processing_msg = await message.answer(processing_text)
+                        pass
+                # If editing failed or no prompt, send a new processing message
+                if target_message_id is None:
+                    tmp_msg = await message.answer(processing_text)
+                    target_chat_id = tmp_msg.chat.id
+                    target_message_id = tmp_msg.message_id
+                
+                async def edit_target(text: str, reply_markup=None, parse_mode: str | None = None):
+                    try:
+                        await message.bot.edit_message_text(
+                            chat_id=target_chat_id,
+                            message_id=target_message_id,
+                            text=text,
+                            reply_markup=reply_markup,
+                            parse_mode=parse_mode
+                        )
+                    except Exception:
+                        # As a last resort, send a new message (should be rare)
+                        await message.answer(text, reply_markup=reply_markup, parse_mode=parse_mode)
                 
                 # Get all locations for reanalysis
                 all_locations = await self.homebox_service.get_locations()
                 if not all_locations:
-                    await processing_msg.edit_text(t(bot_lang, 'errors.no_locations'))
+                    await edit_target(t(bot_lang, 'errors.no_locations'))
                     return
                 
                 # Filter locations
@@ -1165,13 +1185,13 @@ class SearchHandler(BaseHandler):
                 # Check if item has an image
                 image_id = current_item.get('imageId', '')
                 if not image_id:
-                    await processing_msg.edit_text(t(bot_lang, 'search.no_image_for_reanalysis'))
+                    await edit_target(t(bot_lang, 'search.no_image_for_reanalysis'))
                     return
                 
                 # Download item image for reanalysis
                 image_path = await self.homebox_service.download_item_image(item_id, image_id)
                 if not image_path:
-                    await processing_msg.edit_text(t(bot_lang, 'search.image_download_failed'))
+                    await edit_target(t(bot_lang, 'search.image_download_failed'))
                     return
                 
                 try:
@@ -1195,7 +1215,7 @@ class SearchHandler(BaseHandler):
                         suggested_location = allowed_locations[0] if allowed_locations else None
                     
                     if not suggested_location:
-                        await processing_msg.edit_text(t(bot_lang, 'errors.no_locations'))
+                        await edit_target(t(bot_lang, 'errors.no_locations'))
                         return
                     
                     # Update item with new analysis
@@ -1217,49 +1237,21 @@ class SearchHandler(BaseHandler):
                                 new_description=analysis.description,
                                 new_location=suggested_location.name
                             )
-                            try:
-                                if prompt_id and prompt_chat == message.chat.id:
-                                    await message.bot.edit_message_text(
-                                        chat_id=prompt_chat,
-                                        message_id=prompt_id,
-                                        text=success_text,
-                                        parse_mode="Markdown",
-                                        reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id)
-                                    )
-                                else:
-                                    await processing_msg.edit_text(
-                                        success_text,
-                                        reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
-                                        parse_mode="Markdown"
-                                    )
-                            except Exception:
-                                await message.answer(
-                                    success_text,
-                                    reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
-                                    parse_mode="Markdown"
-                                )
+                            await edit_target(
+                                success_text,
+                                reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                                parse_mode="Markdown"
+                            )
                             await state.set_state(SearchStates.viewing_item_details)
                             await state.update_data(current_item=updated_item)
                         else:
                             # Item not found anymore
-                            try:
-                                if prompt_id and prompt_chat == message.chat.id:
-                                    await message.bot.edit_message_text(chat_id=prompt_chat, message_id=prompt_id, text=t(bot_lang, 'search.item_not_found'))
-                                else:
-                                    await processing_msg.edit_text(t(bot_lang, 'search.item_not_found'))
-                            except Exception:
-                                await message.answer(t(bot_lang, 'search.item_not_found'))
+                            await edit_target(t(bot_lang, 'search.item_not_found'))
                     else:
                         error_text = t(bot_lang, 'search.update_failed').format(
                             error=self.homebox_service.last_error or 'Unknown error'
                         )
-                        try:
-                            if prompt_id and prompt_chat == message.chat.id:
-                                await message.bot.edit_message_text(chat_id=prompt_chat, message_id=prompt_id, text=error_text)
-                            else:
-                                await processing_msg.edit_text(error_text)
-                        except Exception:
-                            await message.answer(error_text)
+                        await edit_target(error_text)
                 
                 finally:
                     # Clean up temporary image file
