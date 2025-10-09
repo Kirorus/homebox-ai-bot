@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   homebox-ai-bot:
-    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKERHUB_NAMESPACE}/homebox-ai-bot:${DOCKER_IMAGE_TAG:-latest}
+    image: kirorus/homebox-ai-bot:latest
     pull_policy: always
     container_name: homebox-ai-bot
     restart: unless-stopped
