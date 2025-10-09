@@ -6,7 +6,7 @@ import logging
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, FSInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from .base_handler import BaseHandler
@@ -721,51 +721,124 @@ class SearchHandler(BaseHandler):
                 user_settings = await self.get_user_settings(callback.from_user.id)
                 bot_lang = user_settings.bot_lang
                 
+                # Prepare resources BEFORE deletion (download + watermark)
+                data = await state.get_data()
+                details_message_id = data.get('details_message_id')
+                details_chat_id = data.get('details_chat_id')
+                current_item = data.get('current_item', {}) or {}
+
+                # Build minimal deleted caption
+                name = str(current_item.get('name', ''))
+                location = current_item.get('location', {})
+                if isinstance(location, dict):
+                    location_name = str(location.get('name', ''))
+                else:
+                    location_name = ''
+                deleted_caption = (f"🗑️ УДАЛЕНО\n\n" +
+                                   (f"📦 {name}\n" if name else "") +
+                                   (f"📍 {location_name}" if location_name else "")).strip()
+
+                image_id = current_item.get('imageId', '')
+                original_item_id = current_item.get('id', item_id)
+                image_path = None
+                watermarked_path = None
+                if image_id and original_item_id:
+                    try:
+                        image_path = await self.homebox_service.download_item_image(original_item_id, image_id)
+                        if image_path:
+                            watermarked_path = self.image_service.add_diagonal_watermark(image_path, text="УДАЛЕНО")
+                    except Exception:
+                        image_path = None
+                        watermarked_path = None
+
                 # Delete the confirmation prompt message
                 try:
                     await callback.message.delete()
                 except Exception:
                     pass
-                
+
+                # Now delete the item in HomeBox
                 success = await self.homebox_service.delete_item(item_id)
                 if success:
-                    data = await state.get_data()
-                    details_message_id = data.get('details_message_id')
-                    details_chat_id = data.get('details_chat_id')
-                    current_item = data.get('current_item', {}) or {}
-                    
-                    # Prepare minimal deleted caption
-                    name = str(current_item.get('name', ''))
-                    location = current_item.get('location', {})
-                    if isinstance(location, dict):
-                        location_name = str(location.get('name', ''))
-                    else:
-                        location_name = ''
-                    deleted_caption = (f"🗑️ УДАЛЕНО\n\n" +
-                                       (f"📦 {name}\n" if name else "") +
-                                       (f"📍 {location_name}" if location_name else "")).strip()
-                    
                     if details_message_id and details_chat_id:
-                        # Try caption edit first (if it was a photo), fallback to text edit
-                        try:
-                            await callback.message.bot.edit_message_caption(
-                                chat_id=details_chat_id,
-                                message_id=details_message_id,
-                                caption=deleted_caption,
-                                reply_markup=None,
-                                parse_mode="Markdown"
-                            )
-                        except Exception:
+                        # Replace media with watermarked file if possible
+                        if watermarked_path:
                             try:
-                                await callback.message.bot.edit_message_text(
-                                    text=deleted_caption,
+                                media = InputMediaPhoto(media=FSInputFile(watermarked_path), caption=deleted_caption, parse_mode="Markdown")
+                                await callback.message.bot.edit_message_media(
                                     chat_id=details_chat_id,
                                     message_id=details_message_id,
+                                    media=media,
+                                    reply_markup=None
+                                )
+                            except Exception:
+                                # Some Telegram clients/media cannot be replaced reliably – fall back to resend
+                                try:
+                                    # Delete old card and send new photo
+                                    await callback.message.bot.delete_message(chat_id=details_chat_id, message_id=details_message_id)
+                                except Exception:
+                                    pass
+                                try:
+                                    await callback.message.bot.send_photo(
+                                        chat_id=details_chat_id,
+                                        photo=FSInputFile(watermarked_path),
+                                        caption=deleted_caption,
+                                        reply_markup=None,
+                                        parse_mode="Markdown"
+                                    )
+                                except Exception:
+                                    # Final fallback: caption/text edit
+                                    try:
+                                        await callback.message.bot.edit_message_caption(
+                                            chat_id=details_chat_id,
+                                            message_id=details_message_id,
+                                            caption=deleted_caption,
+                                            reply_markup=None,
+                                            parse_mode="Markdown"
+                                        )
+                                    except Exception:
+                                        try:
+                                            await callback.message.bot.edit_message_text(
+                                                text=deleted_caption,
+                                                chat_id=details_chat_id,
+                                                message_id=details_message_id,
+                                                reply_markup=None,
+                                                parse_mode="Markdown"
+                                            )
+                                        except Exception:
+                                            pass
+                        else:
+                            # No watermarked image - just update caption/text
+                            try:
+                                await callback.message.bot.edit_message_caption(
+                                    chat_id=details_chat_id,
+                                    message_id=details_message_id,
+                                    caption=deleted_caption,
                                     reply_markup=None,
                                     parse_mode="Markdown"
                                 )
                             except Exception:
-                                pass
+                                try:
+                                    await callback.message.bot.edit_message_text(
+                                        text=deleted_caption,
+                                        chat_id=details_chat_id,
+                                        message_id=details_message_id,
+                                        reply_markup=None,
+                                        parse_mode="Markdown"
+                                    )
+                                except Exception:
+                                    pass
+
+                    # Cleanup temp files
+                    try:
+                        for p in [image_path, watermarked_path]:
+                            if p:
+                                import os
+                                if os.path.exists(p):
+                                    os.remove(p)
+                    except Exception:
+                        pass
+
                     await state.clear()
                 else:
                     error_text = t(bot_lang, 'search.delete_failed').format(
