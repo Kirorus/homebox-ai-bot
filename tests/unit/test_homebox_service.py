@@ -28,9 +28,13 @@ class TestHomeBoxService:
     @pytest.mark.asyncio
     async def test_initialize_with_token(self, homebox_service: HomeBoxService):
         """Test initialization with existing token"""
-        with patch.object(homebox_service, '_get_session', new_callable=AsyncMock) as mock_session:
+        # Provide a pre-existing token to avoid login
+        homebox_service.token = "test_homebox_token"
+        with patch.object(homebox_service, '_get_session', new_callable=AsyncMock) as mock_session, \
+             patch.object(homebox_service, '_login', new_callable=AsyncMock) as mock_login:
             await homebox_service.initialize()
             mock_session.assert_called_once()
+            mock_login.assert_not_called()
     
     @pytest.mark.asyncio
     async def test_initialize_with_login(self, homebox_service: HomeBoxService):
@@ -164,7 +168,8 @@ class TestHomeBoxService:
     def test_service_initialization(self, homebox_service: HomeBoxService):
         """Test that service initializes correctly"""
         assert homebox_service.base_url == "http://localhost:7745"
-        assert homebox_service.token == "test_homebox_token"
+        # Token is obtained on login; not provided via settings anymore
+        assert homebox_service.token is None
         assert homebox_service.settings is not None
         assert homebox_service.settings.location_filter_mode == "marker"
         assert homebox_service.settings.location_marker == "[TGB]"

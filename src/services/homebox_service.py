@@ -46,7 +46,8 @@ class HomeBoxService:
     async def initialize(self):
         """Initialize the service"""
         await self._get_session()
-        if self.username and self.password:
+        # Only perform login when no token is currently available
+        if self.token is None and self.username and self.password:
             await self._login()
     
     async def _get_session(self) -> aiohttp.ClientSession:
