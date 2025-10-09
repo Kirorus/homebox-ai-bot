@@ -156,10 +156,10 @@ class ImageService:
                             continue
                     return None
 
-                # Target width ~ 90% of diagonal to avoid overflow after rotation/cropping
+                # Target width ~ 75% of diagonal to avoid overflow after rotation/cropping
                 import math
-                target_width = math.hypot(width, height) * 0.82
-                font_size = max(24, int(min(width, height) * 0.16))
+                target_width = math.hypot(width, height) * 0.75
+                font_size = max(24, int(min(width, height) * 0.15))
                 font = load_font(font_size)
                 # If no TTF font available, fallback once and continue (cannot scale default)
                 scalable = font is not None
@@ -175,7 +175,7 @@ class ImageService:
                     text_w = max(1, bbox[2] - bbox[0])
                     if text_w >= target_width:
                         break
-                    factor = min(1.6, max(1.08, (target_width / text_w)))
+                    factor = min(1.5, max(1.06, (target_width / text_w)))
                     new_size = min(10000, max(font_size + 1, int(font_size * factor)))
                     new_font = load_font(new_size)
                     if new_font is None:

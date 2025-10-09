@@ -98,6 +98,8 @@
     "photo_processing": "Beim Verarbeiten Ihres Fotos ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder senden Sie ein anderes Foto.",
     "invalid_model": "Ungültiges Modell"
   },
+  "deleted_caption_title": "🗑️ GELÖSCHT",
+  "deleted_watermark": "GELÖSCHT",
   "processing": {
     "photo": "📸 Ihr Foto wird verarbeitet...",
     "analyzing": "🔍 Bildanalyse...",

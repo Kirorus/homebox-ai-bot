@@ -734,7 +734,7 @@ class SearchHandler(BaseHandler):
                     location_name = str(location.get('name', ''))
                 else:
                     location_name = ''
-                deleted_caption = (f"🗑️ УДАЛЕНО\n\n" +
+                deleted_caption = (f"{t(bot_lang, 'deleted_caption_title')}\n\n" +
                                    (f"📦 {name}\n" if name else "") +
                                    (f"📍 {location_name}" if location_name else "")).strip()
 
@@ -746,7 +746,8 @@ class SearchHandler(BaseHandler):
                     try:
                         image_path = await self.homebox_service.download_item_image(original_item_id, image_id)
                         if image_path:
-                            watermarked_path = self.image_service.add_diagonal_watermark(image_path, text="УДАЛЕНО")
+                            wm_text = t(bot_lang, 'deleted_watermark') or 'DELETED'
+                            watermarked_path = self.image_service.add_diagonal_watermark(image_path, text=wm_text)
                     except Exception:
                         image_path = None
                         watermarked_path = None

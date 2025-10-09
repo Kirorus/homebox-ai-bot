@@ -98,6 +98,8 @@
     "photo_processing": "Ocurrió un error al procesar tu foto. Por favor intenta de nuevo o envía otra foto.",
     "invalid_model": "Modelo inválido"
   },
+  "deleted_caption_title": "🗑️ ELIMINADO",
+  "deleted_watermark": "ELIMINADO",
   "processing": {
     "photo": "📸 Procesando tu foto...",
     "analyzing": "🔍 Analizando imagen...",

@@ -137,6 +137,8 @@
     "gen_lang_set_es": "Idioma de generación establecido: Español",
     "model_set": "Model set"
   },
+  "deleted_caption_title": "🗑️ DELETED",
+  "deleted_watermark": "DELETED",
   "stats": {
     "title": "📊 Bot Statistics",
     "users": "👥 Registered Users",
