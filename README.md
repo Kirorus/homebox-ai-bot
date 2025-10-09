@@ -1,4 +1,5 @@
 # HomeBox AI Bot
+[![codecov](https://codecov.io/gh/Kirorus/homebox-ai-bot/branch/main/graph/badge.svg)](https://codecov.io/gh/Kirorus/homebox-ai-bot)
 
 An intelligent Telegram bot that uses AI vision to automatically add items to your HomeBox inventory. Simply send a photo of an item, and the bot will recognize it, suggest a name and description, recommend the best storage location, and add it to your HomeBox with the photo attached.
 

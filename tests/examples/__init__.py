@@ -1,0 +1,3 @@
+"""
+Example tests for demonstration
+"""
