@@ -156,10 +156,10 @@ class ImageService:
                             continue
                     return None
 
-                # Target width is larger than diagonal to ensure edge-to-edge after rotation
+                # Target width ~ diagonal with a small safety margin to avoid overflow
                 import math
-                target_width = math.hypot(width, height) * 2.4
-                font_size = max(24, int(min(width, height) * 0.22))
+                target_width = math.hypot(width, height) * 1.06  # ~6% reserve
+                font_size = max(24, int(min(width, height) * 0.20))
                 font = load_font(font_size)
                 # If no TTF font available, fallback once and continue (cannot scale default)
                 scalable = font is not None
@@ -167,15 +167,15 @@ class ImageService:
                     font = ImageFont.load_default()
 
                 # Increase font size until it spans the diagonal or until a safety cap
-                # Scale font size multiplicatively using width measurements
+                # Scale font size multiplicatively using width measurements, with conservative growth
                 attempts = 0
                 while scalable and attempts < 10:
-                    stroke_w = max(4, int(font_size * 0.12))
+                    stroke_w = max(3, min(18, int(font_size * 0.10)))
                     bbox = draw.textbbox((0, 0), text, font=font, stroke_width=stroke_w)
                     text_w = max(1, bbox[2] - bbox[0])
                     if text_w >= target_width:
                         break
-                    factor = min(3.0, (target_width / text_w) * 1.05)
+                    factor = min(1.6, max(1.08, (target_width / text_w)))
                     new_size = min(10000, max(font_size + 1, int(font_size * factor)))
                     new_font = load_font(new_size)
                     if new_font is None:
@@ -184,17 +184,30 @@ class ImageService:
                     font = new_font
                     attempts += 1
 
-                # Final stroke width after size selection
-                stroke_w = max(3, int(font_size * 0.12))
+                # If we overshot too much, gently step down
+                if scalable:
+                    for _ in range(3):
+                        stroke_w = max(3, min(18, int(font_size * 0.10)))
+                        bbox = draw.textbbox((0, 0), text, font=font, stroke_width=stroke_w)
+                        text_w = max(1, bbox[2] - bbox[0])
+                        if text_w <= target_width * 1.02:
+                            break
+                        reduce_size = max(1, int(font_size * 0.92))
+                        new_font = load_font(reduce_size)
+                        if new_font is None:
+                            break
+                        font_size = reduce_size
+                        font = new_font
 
-                # Draw the text centered before rotation; nudge slightly so corners reach edges
+                # Final stroke width after size selection
+                stroke_w = max(3, min(18, int(font_size * 0.10)))
+
+                # Draw the text centered before rotation
                 bbox = draw.textbbox((0, 0), text, font=font, stroke_width=stroke_w)
                 text_w = bbox[2] - bbox[0]
                 text_h = bbox[3] - bbox[1]
                 x = (width - text_w) // 2
                 y = (height - text_h) // 2
-                x -= int(width * 0.02)
-                y -= int(height * 0.02)
 
                 # Semi-transparent red text with white stroke (bold)
                 draw.text(
