@@ -1708,18 +1708,16 @@ class SearchHandler(BaseHandler):
             
             if media_group and len(media_group) <= 10:  # Telegram limit is 10 media per group
                 try:
-                    # Try to edit message in place where possible
+                    # Delete placeholder and send only media group + one pager message
                     try:
-                        # If original message was text, replace it by sending media group and then editing last caption
-                        await message.edit_text(
-                            results_text,
-                            reply_markup=keyboard,
-                            parse_mode="Markdown"
-                        )
+                        await message.delete()
                     except Exception:
-                        pass
+                        # If we cannot delete (no rights/old message), try to clear it
+                        try:
+                            await message.edit_text(" ", reply_markup=None)
+                        except Exception:
+                            pass
                     await message.answer_media_group(media_group)
-                    # Send pagination info with keyboard below the media group
                     await message.answer(
                         f"📄 {t(lang, 'search.page_info')}: {page + 1}/{total_pages}",
                         reply_markup=keyboard
