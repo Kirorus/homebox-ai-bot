@@ -156,10 +156,10 @@ class ImageService:
                             continue
                     return None
 
-                # Target width ~ 75% of diagonal to avoid overflow after rotation/cropping
+                # Target width ~ 65% of diagonal to avoid any end-letter clipping after rotation
                 import math
-                target_width = math.hypot(width, height) * 0.75
-                font_size = max(24, int(min(width, height) * 0.15))
+                target_width = math.hypot(width, height) * 0.65
+                font_size = max(24, int(min(width, height) * 0.14))
                 font = load_font(font_size)
                 # If no TTF font available, fallback once and continue (cannot scale default)
                 scalable = font is not None
@@ -175,7 +175,7 @@ class ImageService:
                     text_w = max(1, bbox[2] - bbox[0])
                     if text_w >= target_width:
                         break
-                    factor = min(1.5, max(1.06, (target_width / text_w)))
+                    factor = min(1.4, max(1.05, (target_width / text_w)))
                     new_size = min(10000, max(font_size + 1, int(font_size * factor)))
                     new_font = load_font(new_size)
                     if new_font is None:
@@ -202,12 +202,19 @@ class ImageService:
                 # Final stroke width after size selection
                 stroke_w = max(3, min(18, int(font_size * 0.10)))
 
-                # Draw the text centered before rotation
+                # Draw the text centered before rotation with padding to avoid glyph clipping
+                padding = max(8, int(min(width, height) * 0.02))
                 bbox = draw.textbbox((0, 0), text, font=font, stroke_width=stroke_w)
                 text_w = bbox[2] - bbox[0]
                 text_h = bbox[3] - bbox[1]
                 x = (width - text_w) // 2
                 y = (height - text_h) // 2
+                # Expand overlay to give extra space for stroke at ends
+                if padding > 0:
+                    overlay = Image.new("RGBA", (width + padding * 2, height + padding * 2), (255, 255, 255, 0))
+                    draw = ImageDraw.Draw(overlay)
+                    x += padding
+                    y += padding
 
                 # Semi-transparent red text with white stroke (bold)
                 draw.text(
