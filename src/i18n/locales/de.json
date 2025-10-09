@@ -208,6 +208,12 @@
     "cancelled": "Suche abgebrochen",
     "new_search": "🔍 Neue Suche",
     "cancel": "❌ Abbrechen",
-    "back_to_results": "⬅️ Zurück zu Ergebnissen"
+    "back_to_results": "⬅️ Zurück zu Ergebnissen",
+    "move_item": "Verschieben",
+    "delete_item": "Löschen",
+    "confirm_delete": "❓ Sind Sie sicher, dass Sie diesen Gegenstand löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "deleting_item": "🗑️ Gegenstand wird gelöscht...",
+    "item_deleted_successfully": "✅ Gegenstand gelöscht.",
+    "delete_failed": "❌ Löschen fehlgeschlagen\n\nGegenstand konnte nicht gelöscht werden.\nFehler: {error}"
   }
 }

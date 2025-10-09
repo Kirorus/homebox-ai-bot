@@ -208,6 +208,12 @@
     "cancelled": "Búsqueda cancelada",
     "new_search": "🔍 Nueva búsqueda",
     "cancel": "❌ Cancelar",
-    "back_to_results": "⬅️ Volver a resultados"
+    "back_to_results": "⬅️ Volver a resultados",
+    "move_item": "Mover",
+    "delete_item": "Eliminar",
+    "confirm_delete": "❓ ¿Está seguro de que desea eliminar este objeto? Esta acción no se puede deshacer.",
+    "deleting_item": "🗑️ Eliminando objeto...",
+    "item_deleted_successfully": "✅ Objeto eliminado.",
+    "delete_failed": "❌ Fallo al eliminar\n\nNo se pudo eliminar el objeto.\nError: {error}"
   }
 }

@@ -206,6 +206,12 @@
     "cancelled": "Recherche annulée",
     "new_search": "🔍 Nouvelle recherche",
     "cancel": "❌ Annuler",
-    "back_to_results": "⬅️ Retour aux résultats"
+    "back_to_results": "⬅️ Retour aux résultats",
+    "move_item": "Déplacer",
+    "delete_item": "Supprimer",
+    "confirm_delete": "❓ Êtes-vous sûr de vouloir supprimer cet objet ? Cette action est irréversible.",
+    "deleting_item": "🗑️ Suppression de l'objet...",
+    "item_deleted_successfully": "✅ Objet supprimé.",
+    "delete_failed": "❌ Échec de la suppression\n\nImpossible de supprimer l'objet.\nErreur : {error}"
   }
 }
