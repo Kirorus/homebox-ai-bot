@@ -107,9 +107,9 @@ migrate_to_sqlite.py
 *.backup
 *_backup.*
 
-# Test files
-test_*.py
-*_test.py
+# Test files (do NOT ignore tests)
+# test_*.py
+# *_test.py
 
 # Documentation build
 docs/_build/
