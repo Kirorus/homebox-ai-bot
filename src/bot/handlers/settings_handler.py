@@ -606,14 +606,71 @@ class SettingsHandler(BaseHandler):
         
         @self.router.callback_query(F.data == "quick_restart")
         async def quick_restart_callback(callback: CallbackQuery, state: FSMContext):
-            """Restart bot (placeholder)"""
+            """Restart bot"""
             try:
                 user_settings = await self.get_user_settings(callback.from_user.id)
                 bot_lang = user_settings.bot_lang
-                await callback.answer(t(bot_lang, 'restart.not_implemented'), show_alert=True)
+                
+                # Log restart attempt
+                await self.log_user_action("restart_attempt", callback.from_user.id)
+                
+                # Create confirmation keyboard
+                from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+                from aiogram.utils.keyboard import InlineKeyboardBuilder
+                
+                builder = InlineKeyboardBuilder()
+                builder.add(InlineKeyboardButton(
+                    text=t(bot_lang, 'common.yes'),
+                    callback_data="restart_confirm"
+                ))
+                builder.add(InlineKeyboardButton(
+                    text=t(bot_lang, 'common.cancel'),
+                    callback_data="settings_main"
+                ))
+                builder.adjust(2)
+                
+                await callback.message.edit_text(
+                    t(bot_lang, 'restart.confirm'),
+                    reply_markup=builder.as_markup()
+                )
+                await callback.answer()
                 
             except Exception as e:
                 await self.handle_error(e, "quick_restart", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+        
+        @self.router.callback_query(F.data == "restart_confirm")
+        async def restart_confirm_callback(callback: CallbackQuery, state: FSMContext):
+            """Confirm bot restart"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Log restart confirmation
+                await self.log_user_action("restart_confirmed", callback.from_user.id)
+                
+                # Show restarting message
+                await callback.message.edit_text(
+                    f"🔄 {t(bot_lang, 'restart.restarting')}",
+                    parse_mode="Markdown"
+                )
+                await callback.answer(t(bot_lang, 'restart.success'))
+                
+                # Import and use ProcessManager
+                from utils.process_manager import ProcessManager
+                process_manager = ProcessManager()
+                
+                # Initiate restart
+                restart_success = process_manager.restart_bot()
+                
+                if not restart_success:
+                    await callback.message.edit_text(
+                        f"❌ {t(bot_lang, 'restart.error')}",
+                        parse_mode="Markdown"
+                    )
+                
+            except Exception as e:
+                await self.handle_error(e, "restart_confirm", callback.from_user.id)
                 await callback.answer(t('en', 'errors.occurred'), show_alert=True)
         
         

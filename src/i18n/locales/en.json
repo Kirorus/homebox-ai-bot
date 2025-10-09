@@ -162,7 +162,11 @@
     "offline": "Offline"
   },
   "restart": {
-    "not_implemented": "Restart function not implemented yet"
+    "not_implemented": "Restart function not implemented yet",
+    "confirm": "Are you sure you want to restart the bot?",
+    "restarting": "Restarting bot...",
+    "success": "Bot restart initiated. Please wait a moment.",
+    "error": "Failed to restart bot"
   },
   "help": {
     "title": "Help & Guide",
