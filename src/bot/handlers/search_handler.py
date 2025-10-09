@@ -178,13 +178,26 @@ class SearchHandler(BaseHandler):
                 # Try to send photo with caption, fallback to text only
                 if image_url:
                     try:
+                        # Prefer uploading file directly to Telegram for reliability on iOS
+                        image_id = item.get('imageId', '')
+                        dl_path = None
+                        if image_id:
+                            dl_path = await self.homebox_service.download_item_image(item_id, image_id)
                         await callback.message.delete()
-                        msg = await callback.message.answer_photo(
-                            photo=image_url,
-                            caption=details_text,
-                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
-                            parse_mode="Markdown"
-                        )
+                        if dl_path:
+                            msg = await callback.message.answer_photo(
+                                photo=FSInputFile(dl_path),
+                                caption=details_text,
+                                reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                                parse_mode="Markdown"
+                            )
+                        else:
+                            msg = await callback.message.answer_photo(
+                                photo=image_url,
+                                caption=details_text,
+                                reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                                parse_mode="Markdown"
+                            )
                         # Store details message reference for later edits (e.g., after deletion)
                         await state.update_data(current_item=item, details_message_id=msg.message_id, details_chat_id=msg.chat.id)
                     except Exception as photo_error:
@@ -1524,6 +1537,7 @@ class SearchHandler(BaseHandler):
             
             # Collect items with images for media group
             media_group = []
+            temp_files = []
             
             for i, item in enumerate(page_items):
                 # Ensure item is a dictionary
@@ -1551,10 +1565,15 @@ class SearchHandler(BaseHandler):
                 
                 # Add to media group if has image
                 if image_id:
-                    image_url = await self.homebox_service.get_image_url(image_id, item_id)
-                    if image_url:
+                    # Download and upload to Telegram to avoid client-side fetch issues
+                    try:
+                        image_path = await self.homebox_service.download_item_image(item_id, image_id)
+                    except Exception:
+                        image_path = None
+                    if image_path:
+                        temp_files.append(image_path)
                         media_group.append(InputMediaPhoto(
-                            media=image_url,
+                            media=FSInputFile(image_path),
                             caption=f"**{start_idx + i + 1}.** {item_name}\n📍 {location_name}\n📝 {item_description}"
                         ))
             
@@ -1594,6 +1613,15 @@ class SearchHandler(BaseHandler):
                             reply_markup=keyboard,
                             parse_mode="Markdown"
                         )
+                finally:
+                    # Cleanup temp files used for media group
+                    try:
+                        import os
+                        for p in temp_files:
+                            if p and os.path.exists(p):
+                                os.remove(p)
+                    except Exception:
+                        pass
             else:
                 # No images or too many, send text only
                 try:
