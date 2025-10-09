@@ -6,6 +6,7 @@ import asyncio
 import pytest
 import tempfile
 import os
+import re
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 from typing import AsyncGenerator, Generator
@@ -190,3 +191,29 @@ def temp_image_file() -> Generator[str, None, None]:
     # Cleanup
     if os.path.exists(tmp.name):
         os.unlink(tmp.name)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_stray_test_artifacts() -> Generator[None, None, None]:
+    """Automatically remove stray files created during tests.
+
+    Historically, some tests or fixtures could accidentally create files with
+    names like "<async_generator object temp_db at 0x...>" in the repository
+    root. This fixture ensures such artifacts are cleaned up after the test
+    session finishes, keeping the workspace tidy and preventing accidental
+    commits of these files.
+    """
+    yield
+
+    cwd = Path.cwd()
+    for entry in cwd.iterdir():
+        if not entry.is_file():
+            continue
+        name = entry.name
+        # Remove files that look like leaked async generator reprs from fixtures
+        if name.startswith("<async_generator object temp_db"):
+            try:
+                entry.unlink()
+            except Exception:
+                # Best-effort cleanup; ignore failures
+                pass
