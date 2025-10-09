@@ -81,7 +81,11 @@
     "prompt": "Senden Sie zusätzliche Informationen zur Verbesserung der Analyse:",
     "hint_placeholder": "z.B. 'Das ist eine Vintage-Kamera aus den 1980ern' oder 'Es ist aus Holz und Metall'",
     "processing": "Neu analysieren mit Ihrem Hinweis...",
-    "success": "Analyse mit Ihrem Hinweis aktualisiert!"
+    "success": "Analyse mit Ihrem Hinweis aktualisiert!",
+    "step_prepare": "Kontext und Orte vorbereiten...",
+    "step_download": "Bild wird heruntergeladen...",
+    "step_analyze": "Mit KI analysieren...",
+    "step_update": "Gegenstand wird aktualisiert..."
   },
   "buttons": {
     "edit_name": "🏷️ Name",

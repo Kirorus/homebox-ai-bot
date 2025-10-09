@@ -81,7 +81,11 @@
     "prompt": "Envoyez des informations supplémentaires pour améliorer l'analyse :",
     "hint_placeholder": "ex. 'C'est un appareil photo vintage des années 1980' ou 'C'est fait de bois et de métal'",
     "processing": "Réanalyse avec votre indice...",
-    "success": "Analyse mise à jour avec votre indice !"
+    "success": "Analyse mise à jour avec votre indice !",
+    "step_prepare": "Préparation du contexte et des emplacements...",
+    "step_download": "Téléchargement de l'image...",
+    "step_analyze": "Analyse avec l'IA...",
+    "step_update": "Mise à jour de l'objet..."
   },
   "buttons": {
     "edit_name": "🏷️ Nom",

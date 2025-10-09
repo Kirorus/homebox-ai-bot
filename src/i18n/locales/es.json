@@ -81,7 +81,11 @@
     "prompt": "Envía información adicional para mejorar el análisis:",
     "hint_placeholder": "ej. 'Esta es una cámara vintage de los años 80' o 'Está hecha de madera y metal'",
     "processing": "Reanalizando con tu pista...",
-    "success": "¡Análisis actualizado con tu pista!"
+    "success": "¡Análisis actualizado con tu pista!",
+    "step_prepare": "Preparando contexto y ubicaciones...",
+    "step_download": "Descargando imagen...",
+    "step_analyze": "Analizando con IA...",
+    "step_update": "Actualizando objeto..."
   },
   "buttons": {
     "edit_name": "🏷️ Nombre",

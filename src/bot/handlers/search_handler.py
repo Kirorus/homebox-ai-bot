@@ -1168,8 +1168,22 @@ class SearchHandler(BaseHandler):
                     except Exception:
                         # As a last resort, send a new message (should be rare)
                         await message.answer(text, reply_markup=reply_markup, parse_mode=parse_mode)
+
+                # Simple progress bar helpers
+                def build_progress_bar(current: int, total: int, width: int = 10) -> str:
+                    if total <= 0:
+                        total = 1
+                    filled = int(width * max(0, min(current, total)) / total)
+                    return "" + ("█" * filled) + ("░" * (width - filled))
+
+                async def show_progress(current: int, total: int, label_key: str):
+                    percent = int(100 * max(0, min(current, total)) / total)
+                    bar = build_progress_bar(current, total)
+                    label = t(bot_lang, label_key)
+                    await edit_target(f"{t(bot_lang, 'reanalysis.processing')}\n\n[{bar}] {percent}%\n{label}")
                 
                 # Get all locations for reanalysis
+                await show_progress(1, 4, 'reanalysis.step_prepare')
                 all_locations = await self.homebox_service.get_locations()
                 if not all_locations:
                     await edit_target(t(bot_lang, 'errors.no_locations'))
@@ -1189,6 +1203,7 @@ class SearchHandler(BaseHandler):
                     return
                 
                 # Download item image for reanalysis
+                await show_progress(2, 4, 'reanalysis.step_download')
                 image_path = await self.homebox_service.download_item_image(item_id, image_id)
                 if not image_path:
                     await edit_target(t(bot_lang, 'search.image_download_failed'))
@@ -1196,6 +1211,7 @@ class SearchHandler(BaseHandler):
                 
                 try:
                     # Perform AI reanalysis with hint
+                    await show_progress(3, 4, 'reanalysis.step_analyze')
                     analysis = await self.ai_service.analyze_image(
                         image_path=image_path,
                         location_manager=location_manager,
@@ -1219,6 +1235,7 @@ class SearchHandler(BaseHandler):
                         return
                     
                     # Update item with new analysis
+                    await show_progress(4, 4, 'reanalysis.step_update')
                     update_data = {
                         'name': analysis.name,
                         'description': analysis.description,
