@@ -236,7 +236,7 @@
     "reanalysis_not_implemented": "ℹ️ **Reanalysis not implemented yet**\n\nYour hint: *{hint}*\n\nThis feature will be added in future versions.",
     "no_image_for_reanalysis": "❌ **No image**\n\nThis item has no image for reanalysis.",
     "image_download_failed": "❌ **Download failed**\n\nFailed to download image for reanalysis.",
-    "reanalysis_successful": "✅ **Reanalysis completed!**\n\n💡 **Your hint:** *{hint}*\n\n📦 **New name:** {new_name}\n📝 **New description:** {new_description}\n📍 **New location:** {new_location}"
+    "reanalysis_successful": "✅ **Reanalysis results**\n\n💡 **Your hint:** *{hint}*\n\n📦 **New name:** {new_name}\n📝 **New description:** {new_description}\n📍 **New location:** {new_location}\n\nPlease confirm to apply these changes."
   },
   "locations": {
     "management_menu": "🏷️ **Location Management**\n\nChoose an action:",

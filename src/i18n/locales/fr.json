@@ -233,7 +233,7 @@
     "moving_item": "🔄 Déplacement de l'objet...",
     "no_image_for_reanalysis": "❌ **Aucune image**\n\nCet objet n'a pas d'image pour la réanalyse.",
     "reanalysis_not_implemented": "ℹ️ **Réanalyse non encore implémentée**\n\nVotre indice : *{hint}*\n\nCette fonctionnalité sera ajoutée plus tard.",
-    "reanalysis_successful": "✅ **Réanalyse terminée !**\n\n💡 **Votre indice :** *{hint}*\n\n📦 **Nouveau nom :** {new_name}\n📝 **Nouvelle description :** {new_description}\n📍 **Nouvel emplacement :** {new_location}",
+    "reanalysis_successful": "✅ **Résultats de la réanalyse**\n\n💡 **Votre indice :** *{hint}*\n\n📦 **Nouveau nom :** {new_name}\n📝 **Nouvelle description :** {new_description}\n📍 **Nouvel emplacement :** {new_location}\n\nVeuillez confirmer pour appliquer ces modifications.",
     "select_new_location": "📦 **{item_name}**\n\n📍 Emplacement actuel : **{current_location}**\n\n🗂️ Seuls les emplacements avec le marqueur [TGB] sont affichés\n\nSélectionnez un nouvel emplacement :",
     "update_failed": "❌ **Échec de la mise à jour**\n\nImpossible de mettre à jour l'objet.\nErreur : {error}",
     "updating_item": "🔄 Mise à jour de l'objet..."

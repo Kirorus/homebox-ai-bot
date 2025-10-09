@@ -233,7 +233,7 @@
     "moving_item": "🔄 Gegenstand wird verschoben...",
     "no_image_for_reanalysis": "❌ **Kein Bild**\n\nDieser Gegenstand hat kein Bild für die Neu-Analyse.",
     "reanalysis_not_implemented": "ℹ️ **Neu-Analyse noch nicht implementiert**\n\nIhr Hinweis: *{hint}*\n\nDiese Funktion wird später hinzugefügt.",
-    "reanalysis_successful": "✅ **Neu-Analyse abgeschlossen!**\n\n💡 **Ihr Hinweis:** *{hint}*\n\n📦 **Neuer Name:** {new_name}\n📝 **Neue Beschreibung:** {new_description}\n📍 **Neuer Standort:** {new_location}",
+    "reanalysis_successful": "✅ **Ergebnisse der Neu-Analyse**\n\n💡 **Ihr Hinweis:** *{hint}*\n\n📦 **Neuer Name:** {new_name}\n📝 **Neue Beschreibung:** {new_description}\n📍 **Neuer Standort:** {new_location}\n\nBitte bestätigen, um die Änderungen anzuwenden.",
     "select_new_location": "📦 **{item_name}**\n\n📍 Aktueller Standort: **{current_location}**\n\n🗂️ Es werden nur verfügbare Standorte mit [TGB]-Marker angezeigt\n\nWählen Sie einen neuen Standort:",
     "update_failed": "❌ **Aktualisierung fehlgeschlagen**\n\nGegenstand konnte nicht aktualisiert werden.\nFehler: {error}",
     "updating_item": "🔄 Gegenstand wird aktualisiert..."

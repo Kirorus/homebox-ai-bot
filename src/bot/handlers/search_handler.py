@@ -742,6 +742,75 @@ class SearchHandler(BaseHandler):
             except Exception as e:
                 await self.handle_error(e, "start_delete_item", callback.from_user.id)
                 await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+
+        @self.router.callback_query(F.data.startswith("confirm_reanalysis_"))
+        async def confirm_reanalysis_apply(callback: CallbackQuery, state: FSMContext):
+            """Apply proposed reanalysis changes after user confirmation"""
+            try:
+                item_id = callback.data.split("_", 2)[2]
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                data = await state.get_data()
+                proposed = data.get('proposed_update')
+                if not proposed:
+                    await callback.answer(t(bot_lang, 'search.item_not_found'), show_alert=True)
+                    return
+                # Apply update
+                success = await self.homebox_service.update_item(item_id, proposed)
+                if success:
+                    updated_item = await self.homebox_service.get_item_by_id(item_id)
+                    details_text = self.format_item_details(updated_item, bot_lang)
+                    try:
+                        await callback.message.edit_text(
+                            details_text,
+                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                            parse_mode="Markdown"
+                        )
+                    except Exception:
+                        await callback.message.answer(
+                            details_text,
+                            reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                            parse_mode="Markdown"
+                        )
+                    await state.update_data(current_item=updated_item, proposed_update=None)
+                    await callback.answer()
+                else:
+                    await callback.answer(t(bot_lang, 'search.update_failed').format(error=self.homebox_service.last_error or 'Unknown error'), show_alert=True)
+            except Exception as e:
+                await self.handle_error(e, "confirm_reanalysis_apply", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+
+        @self.router.callback_query(F.data.startswith("reject_reanalysis_"))
+        async def reject_reanalysis_apply(callback: CallbackQuery, state: FSMContext):
+            """Reject proposed reanalysis changes and keep original item details"""
+            try:
+                item_id = callback.data.split("_", 2)[2]
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                # Reload current item to show unchanged details
+                item = await self.homebox_service.get_item_by_id(item_id)
+                if not item:
+                    await callback.answer(t(bot_lang, 'search.item_not_found'), show_alert=True)
+                    return
+                details_text = self.format_item_details(item, bot_lang)
+                try:
+                    await callback.message.edit_text(
+                        details_text,
+                        reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                        parse_mode="Markdown"
+                    )
+                except Exception:
+                    await callback.message.answer(
+                        details_text,
+                        reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                        parse_mode="Markdown"
+                    )
+                await state.update_data(proposed_update=None, current_item=item)
+                await state.set_state(SearchStates.viewing_item_details)
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "reject_reanalysis_apply", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
         
         @self.router.callback_query(F.data.startswith("confirm_delete_"))
         async def confirm_delete_item(callback: CallbackQuery, state: FSMContext):
@@ -1245,25 +1314,28 @@ class SearchHandler(BaseHandler):
                     success = await self.homebox_service.update_item(item_id, update_data)
                     
                     if success:
-                        # Get updated item
-                        updated_item = await self.homebox_service.get_item_by_id(item_id)
-                        if updated_item:
-                            success_text = t(bot_lang, 'search.reanalysis_successful').format(
-                                hint=hint,
-                                new_name=analysis.name,
-                                new_description=analysis.description,
-                                new_location=suggested_location.name
-                            )
-                            await edit_target(
-                                success_text,
-                                reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
-                                parse_mode="Markdown"
-                            )
-                            await state.set_state(SearchStates.viewing_item_details)
-                            await state.update_data(current_item=updated_item)
-                        else:
-                            # Item not found anymore
-                            await edit_target(t(bot_lang, 'search.item_not_found'))
+                        # Build review message and ask for confirmation before applying
+                        review_text = t(bot_lang, 'search.reanalysis_successful').format(
+                            hint=hint,
+                            new_name=analysis.name,
+                            new_description=analysis.description,
+                            new_location=suggested_location.name
+                        )
+                        await edit_target(
+                            review_text,
+                            reply_markup=self.keyboard_manager.reanalysis_confirmation_keyboard(bot_lang, item_id),
+                            parse_mode="Markdown"
+                        )
+                        # Store proposed changes for confirmation step
+                        await state.set_state(SearchStates.viewing_item_details)
+                        await state.update_data(
+                            proposed_update={
+                                'name': analysis.name,
+                                'description': analysis.description,
+                                'location_id': suggested_location.id
+                            },
+                            reanalyzing_item_id=item_id
+                        )
                     else:
                         error_text = t(bot_lang, 'search.update_failed').format(
                             error=self.homebox_service.last_error or 'Unknown error'

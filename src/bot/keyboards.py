@@ -192,6 +192,16 @@ class KeyboardManager:
         )
         builder.row(InlineKeyboardButton(text=t(lang, 'search.back_to_results'), callback_data="search_back"))
         return builder.as_markup()
+
+    @staticmethod
+    def reanalysis_confirmation_keyboard(lang: str, item_id: str) -> InlineKeyboardMarkup:
+        """Create confirmation keyboard for applying reanalysis changes"""
+        builder = InlineKeyboardBuilder()
+        builder.row(
+            InlineKeyboardButton(text=f"✅ {t(lang, 'common.confirm')}", callback_data=f"confirm_reanalysis_{item_id}"),
+            InlineKeyboardButton(text=f"❌ {t(lang, 'common.cancel')}", callback_data=f"reject_reanalysis_{item_id}")
+        )
+        return builder.as_markup()
     
     @staticmethod
     def move_item_location_keyboard(locations: List[Location], current_location_id: str, lang: str, item_id: str) -> InlineKeyboardMarkup:

@@ -233,7 +233,7 @@
     "moving_item": "🔄 Moviendo objeto...",
     "no_image_for_reanalysis": "❌ **Sin imagen**\n\nEste objeto no tiene imagen para el reanálisis.",
     "reanalysis_not_implemented": "ℹ️ **Reanálisis aún no implementado**\n\nTu pista: *{hint}*\n\nEsta función se añadirá más adelante.",
-    "reanalysis_successful": "✅ **¡Reanálisis completado!**\n\n💡 **Tu pista:** *{hint}*\n\n📦 **Nuevo nombre:** {new_name}\n📝 **Nueva descripción:** {new_description}\n📍 **Nueva ubicación:** {new_location}",
+    "reanalysis_successful": "✅ **Resultados del reanálisis**\n\n💡 **Tu pista:** *{hint}*\n\n📦 **Nuevo nombre:** {new_name}\n📝 **Nueva descripción:** {new_description}\n📍 **Nueva ubicación:** {new_location}\n\nConfirma para aplicar estos cambios.",
     "select_new_location": "📦 **{item_name}**\n\n📍 Ubicación actual: **{current_location}**\n\n🗂️ Solo se muestran ubicaciones con marcador [TGB]\n\nSeleccione una nueva ubicación:",
     "update_failed": "❌ **Error de actualización**\n\nNo se pudo actualizar el objeto.\nError: {error}",
     "updating_item": "🔄 Actualizando objeto..."
