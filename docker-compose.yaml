@@ -17,7 +17,6 @@ services:
       
       # HomeBox Configuration
       - HOMEBOX_URL=${HOMEBOX_URL}
-      - HOMEBOX_TOKEN=${HOMEBOX_TOKEN}
       - HOMEBOX_USER=${HOMEBOX_USER}
       - HOMEBOX_PASSWORD=${HOMEBOX_PASSWORD}
       

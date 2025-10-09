@@ -42,7 +42,6 @@ class AISettings:
 class HomeBoxSettings:
     """HomeBox API configuration"""
     url: str
-    token: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
     location_filter_mode: str = 'marker'
@@ -56,9 +55,9 @@ class HomeBoxSettings:
         # Ensure URL doesn't end with slash
         self.url = self.url.rstrip('/')
         
-        # Validate authentication
-        if not self.token and not (self.username and self.password):
-            raise ValueError("Either token or username/password must be provided")
+        # Validate authentication (username/password only)
+        if not (self.username and self.password):
+            raise ValueError("Username and password must be provided for HomeBox authentication")
         
         # Validate filter mode
         if self.location_filter_mode not in ['marker', 'all', 'none']:
@@ -118,7 +117,6 @@ class Settings:
             ),
             homebox=HomeBoxSettings(
                 url=os.getenv('HOMEBOX_URL', ''),
-                token=os.getenv('HOMEBOX_TOKEN'),
                 username=os.getenv('HOMEBOX_USER'),
                 password=os.getenv('HOMEBOX_PASSWORD'),
                 location_filter_mode=os.getenv('LOCATION_FILTER_MODE', 'marker'),

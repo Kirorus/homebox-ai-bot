@@ -58,7 +58,7 @@ def test_settings() -> Settings:
         ),
         homebox=HomeBoxSettings(
             url="http://localhost:7745",
-            token="test_homebox_token",
+            # token removed; login uses username/password
             username="test_user",
             password="test_pass"
         )

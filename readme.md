@@ -34,7 +34,6 @@ OPENAI_API_KEY=your_openai_api_key
 OPENAI_BASE_URL=https://bothub.chat/api/v2/openai/v1
 
 HOMEBOX_URL=http://your-homebox-url:7745
-HOMEBOX_TOKEN=your_homebox_token
 HOMEBOX_USER=your_homebox_username
 HOMEBOX_PASSWORD=your_homebox_password
 
@@ -43,7 +42,7 @@ ALLOWED_USER_IDS=123456789,987654321
 
 Notes:
 - Use `OPENAI_BASE_URL` for compatible providers (e.g., Bothub)
-- If `HOMEBOX_TOKEN` is missing, username/password is used
+- Authentication uses HOMEBOX_USER and HOMEBOX_PASSWORD
 - If `ALLOWED_USER_IDS` is empty, bot allows all users
 
 ## 🐳 Docker

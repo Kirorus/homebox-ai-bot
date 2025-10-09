@@ -20,14 +20,15 @@ class HomeBoxService:
     def __init__(self, settings: HomeBoxSettings):
         self.settings = settings
         self.base_url = settings.url
-        self.token = settings.token
+        # Runtime token obtained via login; not from static settings
+        self.token: Optional[str] = None
         self.username = settings.username
         self.password = settings.password
         self.last_error: Optional[str] = None
         self._session: Optional[aiohttp.ClientSession] = None
         self._session_lock = asyncio.Lock()
+        # Headers will include Authorization after successful login
         self.headers = {
-            'Authorization': self._build_auth_header(self.token),
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         }
@@ -45,7 +46,7 @@ class HomeBoxService:
     async def initialize(self):
         """Initialize the service"""
         await self._get_session()
-        if not self.token and (self.username and self.password):
+        if self.username and self.password:
             await self._login()
     
     async def _get_session(self) -> aiohttp.ClientSession:
