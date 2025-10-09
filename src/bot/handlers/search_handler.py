@@ -1712,6 +1712,21 @@ class SearchHandler(BaseHandler):
     async def show_search_results(self, message: Message, state: FSMContext, items: list, page: int, lang: str, is_recent: bool = False):
         """Show search results with pagination"""
         try:
+            # Clean up media from previous page to avoid clutter
+            try:
+                data_for_cleanup = await state.get_data()
+                prev_media_ids = data_for_cleanup.get('last_results_media_ids', []) or []
+                if prev_media_ids:
+                    for mid in prev_media_ids:
+                        try:
+                            await message.bot.delete_message(chat_id=message.chat.id, message_id=mid)
+                        except Exception:
+                            pass
+                    # Reset stored media ids after cleanup
+                    await state.update_data(last_results_media_ids=[])
+            except Exception:
+                pass
+
             # Ensure items is a list
             if not isinstance(items, list):
                 logger.error(f"show_search_results: items is not a list, type={type(items)}, value={items}")
@@ -1798,7 +1813,12 @@ class SearchHandler(BaseHandler):
                             await message.edit_text(" ", reply_markup=None)
                         except Exception:
                             pass
-                    await message.answer_media_group(media_group)
+                    sent_group = await message.answer_media_group(media_group)
+                    try:
+                        media_ids = [m.message_id for m in (sent_group or [])]
+                        await state.update_data(last_results_media_ids=media_ids)
+                    except Exception:
+                        pass
                     await message.answer(
                         f"📄 {t(lang, 'search.page_info')}: {page + 1}/{total_pages}",
                         reply_markup=keyboard
@@ -1841,6 +1861,11 @@ class SearchHandler(BaseHandler):
                         reply_markup=keyboard,
                         parse_mode="Markdown"
                     )
+                # Ensure no leftover media ids remain
+                try:
+                    await state.update_data(last_results_media_ids=[])
+                except Exception:
+                    pass
             
         except Exception as e:
             await self.handle_error(e, "show_search_results", message.from_user.id)
