@@ -12,7 +12,11 @@
     "info": "ℹ️ Info",
     "help": "❓ Aide",
     "details": "Détails",
-    "suggestion": "Suggestion"
+    "suggestion": "Suggestion",
+    "no": "TODO: No",
+    "no_description": "TODO: No description",
+    "regenerate": "TODO: Regenerate",
+    "yes": "TODO: Yes"
   },
   "start": {
     "welcome": "🏠 Bienvenue dans HomeBox AI Bot !",
@@ -40,7 +44,8 @@
     "choose_model_prompt": "Sélectionnez un modèle pour l'analyse d'images :",
     "bot_lang_prompt": "Sélectionnez la langue de l'interface du bot :",
     "gen_lang_prompt": "Sélectionnez la langue pour la génération de descriptions :",
-    "what_change": "Que souhaitez-vous modifier ?"
+    "what_change": "Que souhaitez-vous modifier ?",
+    "location_management": "TODO: Location Management"
   },
   "languages": {
     "ru": "🇷🇺 Русский",
@@ -130,7 +135,9 @@
     "gen_lang_set_en": "Generation language set: English",
     "gen_lang_set_de": "Generierungssprache eingestellt: Deutsch",
     "gen_lang_set_fr": "Langue de génération définie : Français",
-    "model_set": "Modèle défini"
+    "model_set": "Modèle défini",
+    "bot_lang_set_es": "TODO: Idioma del bot establecido: Español",
+    "gen_lang_set_es": "TODO: Idioma de generación establecido: Español"
   },
   "stats": {
     "title": "📊 Statistiques du bot",
@@ -214,6 +221,43 @@
     "confirm_delete": "❓ Êtes-vous sûr de vouloir supprimer cet objet ? Cette action est irréversible.",
     "deleting_item": "🗑️ Suppression de l'objet...",
     "item_deleted_successfully": "✅ Objet supprimé.",
-    "delete_failed": "❌ Échec de la suppression\n\nImpossible de supprimer l'objet.\nErreur : {error}"
+    "delete_failed": "❌ Échec de la suppression\n\nImpossible de supprimer l'objet.\nErreur : {error}",
+    "image_download_failed": "TODO: ❌ **Download failed**\n\nFailed to download image for reanalysis.",
+    "item_moved_successfully": "TODO: ✅ **Item moved successfully!**\n\n📦 **{item_name}**\n📍 New location: **{new_location}**",
+    "item_updated_successfully": "TODO: ✅ **{field} updated!**\n\nNew value: **{value}**",
+    "move_failed": "TODO: ❌ **Move failed**\n\nFailed to move item.\nError: {error}",
+    "moving_item": "TODO: 🔄 Moving item...",
+    "no_image_for_reanalysis": "TODO: ❌ **No image**\n\nThis item has no image for reanalysis.",
+    "reanalysis_not_implemented": "TODO: ℹ️ **Reanalysis not implemented yet**\n\nYour hint: *{hint}*\n\nThis feature will be added in future versions.",
+    "reanalysis_successful": "TODO: ✅ **Reanalysis completed!**\n\n💡 **Your hint:** *{hint}*\n\n📦 **New name:** {new_name}\n📝 **New description:** {new_description}\n📍 **New location:** {new_location}",
+    "select_new_location": "TODO: 📦 **{item_name}**\n\n📍 Current location: **{current_location}**\n\n🗂️ Showing only available locations with [TGB] marker\n\nSelect new location for moving:",
+    "update_failed": "TODO: ❌ **Update failed**\n\nFailed to update item.\nError: {error}",
+    "updating_item": "TODO: 🔄 Updating item..."
+  },
+  "locations": {
+    "all_locations_summary": "TODO: 📋 **All Locations**\n\nTotal locations: **{total}**\nWith [TGB] marker: **{with_markers}**\nWithout marker: **{without_markers}**",
+    "apply_markers": "TODO: Apply",
+    "applying_markers": "TODO: 🔄 Applying markers...",
+    "cancel": "TODO: Cancel",
+    "confirm_update_description": "TODO: ❓ **Confirm Update**\n\n📍 **Location:** {location_name}\n📝 **Current Description:** {current_description}\n\n🤖 **Generated Description:** {new_description}\n\nUpdate this location's description?",
+    "description_generated": "TODO: ✅ **Description Generated!**\n\n📍 **Location:** {location_name}\n📝 **New Description:** {description}",
+    "description_generation_cancelled": "TODO: ❌ **Description Generation Cancelled**",
+    "description_generation_failed": "TODO: ❌ **Generation Failed**\n\nFailed to generate description for location \"{location_name}\": {error}",
+    "description_updated": "TODO: ✅ **Description Updated!**\n\n📍 **Location:** {location_name}",
+    "errors": "TODO: Errors",
+    "generate_descriptions": "TODO: Generate Descriptions",
+    "generating_description": "TODO: 🤖 Generating description for location \"{location_name}\"...",
+    "management_menu": "TODO: 🏷️ **Location Management**\n\nChoose an action:",
+    "mark_locations": "TODO: Mark Locations",
+    "markers_applied": "TODO: ✅ **Markers Applied!**\n\nUpdated locations: **{count}**",
+    "marking_cancelled": "TODO: ❌ **Marking Cancelled**",
+    "no_changes": "TODO: ℹ️ **No Changes**\n\nAll selected locations already have the correct status.",
+    "no_items_in_location": "TODO: ⚠️ **No Items**\n\nLocation \"{location_name}\" has no items to analyze.",
+    "no_marked_locations": "TODO: ⚠️ **No Marked Locations**\n\nYou need locations with [TGB] marker for description generation.",
+    "page_info": "TODO: Page {page} of {total}",
+    "select_for_description": "TODO: 🤖 **Select Locations for Description Generation**\n\nSelect locations with [TGB] marker for automatic description generation based on items in them:",
+    "select_locations": "TODO: 🏷️ **Select Locations for Marking**\n\n✅ - marked with [TGB]\n⬜ - without marker\n\nSelect locations to modify:",
+    "some_errors": "TODO: Some errors",
+    "view_all": "TODO: View All"
   }
 }
