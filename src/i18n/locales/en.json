@@ -162,7 +162,13 @@
     "offline": "Offline"
   },
   "restart": {
-    "not_implemented": "Restart function not implemented yet"
+    "confirm_title": "🔄 Bot Restart",
+    "confirm_message": "Are you sure you want to restart the bot?",
+    "confirm_yes": "Yes, restart",
+    "confirm_no": "Cancel",
+    "restarting": "🔄 Restarting bot...",
+    "restarted": "✅ Bot restarted successfully!",
+    "error": "❌ Error restarting bot"
   },
   "help": {
     "title": "Help & Guide",

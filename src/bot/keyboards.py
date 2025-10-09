@@ -313,6 +313,18 @@ class KeyboardManager:
         return builder.as_markup()
     
     @staticmethod
+    def restart_confirmation_keyboard(lang: str) -> InlineKeyboardMarkup:
+        """Create restart confirmation keyboard"""
+        builder = InlineKeyboardBuilder()
+        
+        builder.row(
+            InlineKeyboardButton(text=f"✅ {t(lang, 'restart.confirm_yes')}", callback_data="confirm_restart"),
+            InlineKeyboardButton(text=f"❌ {t(lang, 'restart.confirm_no')}", callback_data="cancel_restart")
+        )
+        
+        return builder.as_markup()
+    
+    @staticmethod
     def description_confirmation_keyboard(lang: str) -> InlineKeyboardMarkup:
         """Create confirmation keyboard for description update"""
         builder = InlineKeyboardBuilder()

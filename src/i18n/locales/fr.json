@@ -155,7 +155,13 @@
     "offline": "Hors ligne"
   },
   "restart": {
-    "not_implemented": "Fonction de redémarrage pas encore implémentée"
+    "confirm_title": "🔄 Redémarrage du bot",
+    "confirm_message": "Êtes-vous sûr de vouloir redémarrer le bot ?",
+    "confirm_yes": "Oui, redémarrer",
+    "confirm_no": "Annuler",
+    "restarting": "🔄 Redémarrage du bot...",
+    "restarted": "✅ Bot redémarré avec succès !",
+    "error": "❌ Erreur lors du redémarrage du bot"
   },
   "help": {
     "title": "Aide & Guide",

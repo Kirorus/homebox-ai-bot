@@ -3,6 +3,10 @@ Settings handling logic
 """
 
 import logging
+import subprocess
+import os
+import sys
+import asyncio
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -606,14 +610,126 @@ class SettingsHandler(BaseHandler):
         
         @self.router.callback_query(F.data == "quick_restart")
         async def quick_restart_callback(callback: CallbackQuery, state: FSMContext):
-            """Restart bot (placeholder)"""
+            """Show restart confirmation dialog"""
             try:
                 user_settings = await self.get_user_settings(callback.from_user.id)
                 bot_lang = user_settings.bot_lang
-                await callback.answer(t(bot_lang, 'restart.not_implemented'), show_alert=True)
+                
+                # Show confirmation dialog
+                confirm_text = (
+                    f"**{t(bot_lang, 'restart.confirm_title')}**\n\n"
+                    f"{t(bot_lang, 'restart.confirm_message')}"
+                )
+                
+                keyboard = self.keyboard_manager.restart_confirmation_keyboard(bot_lang)
+                
+                await callback.message.edit_text(
+                    confirm_text,
+                    reply_markup=keyboard,
+                    parse_mode="Markdown"
+                )
+                await callback.answer()
                 
             except Exception as e:
                 await self.handle_error(e, "quick_restart", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+        
+        @self.router.callback_query(F.data == "confirm_restart")
+        async def confirm_restart_callback(callback: CallbackQuery, state: FSMContext):
+            """Confirm and execute bot restart"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Log the restart action first
+                await self.log_user_action("bot_restart", callback.from_user.id, {"user_id": callback.from_user.id})
+                
+                # Execute restart script
+                try:
+                    # Get the project root directory (go up from handlers/settings_handler.py -> handlers -> bot -> src -> project_root)
+                    current_dir = os.path.dirname(os.path.abspath(__file__))
+                    project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+                    restart_script = os.path.join(project_root, "src", "restart_bot.sh")
+                    
+                    logger.info(f"Current dir: {current_dir}")
+                    logger.info(f"Project root: {project_root}")
+                    logger.info(f"Restart script path: {restart_script}")
+                    logger.info(f"Script exists: {os.path.exists(restart_script)}")
+                    
+                    # Check if script exists
+                    if not os.path.exists(restart_script):
+                        raise FileNotFoundError(f"Restart script not found: {restart_script}")
+                    
+                    # Make sure script is executable
+                    os.chmod(restart_script, 0o755)
+                    
+                    # Send restarting message first
+                    await callback.message.edit_text(
+                        f"**{t(bot_lang, 'restart.restarting')}**",
+                        parse_mode="Markdown"
+                    )
+                    
+                    # Give time for message to be sent
+                    import asyncio
+                    await asyncio.sleep(0.5)
+                    
+                    # Execute restart script in background
+                    logger.info("Starting restart script...")
+                    process = subprocess.Popen([restart_script], cwd=project_root)
+                    logger.info(f"Restart script started with PID: {process.pid}")
+                    
+                    # Give a bit more time for the script to start
+                    await asyncio.sleep(1)
+                    
+                    # Stop the bot gracefully instead of sys.exit()
+                    logger.info("Bot restart initiated successfully")
+                    # We'll let the restart script handle the process termination
+                    # This avoids the SystemExit exception in the event loop
+                    
+                except Exception as restart_error:
+                    logger.error(f"Failed to restart bot: {restart_error}")
+                    # Escape special characters for HTML
+                    error_msg = str(restart_error).replace('<', '&lt;').replace('>', '&gt;')
+                    try:
+                        await callback.message.edit_text(
+                            f"<b>{t(bot_lang, 'restart.error')}</b>: {error_msg}",
+                            parse_mode="HTML"
+                        )
+                    except Exception as msg_error:
+                        # If we can't send the error message, just log it
+                        logger.error(f"Failed to send error message: {msg_error}")
+                
+            except Exception as e:
+                await self.handle_error(e, "confirm_restart", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+        
+        @self.router.callback_query(F.data == "cancel_restart")
+        async def cancel_restart_callback(callback: CallbackQuery, state: FSMContext):
+            """Cancel restart and return to settings"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                
+                # Return to main settings menu
+                model_name = escape_html(user_settings.model)
+                
+                settings_text = (
+                    f"⚙️ <b>{t(bot_lang, 'settings.title')}</b>\n\n"
+                    f"🤖 <b>{t(bot_lang, 'settings.bot_lang')}:</b> {user_settings.bot_lang.upper()}\n"
+                    f"📝 <b>{t(bot_lang, 'settings.gen_lang')}:</b> {user_settings.gen_lang.upper()}\n"
+                    f"🧠 <b>{t(bot_lang, 'settings.model')}:</b> <code>{model_name}</code>\n\n"
+                    f"{t(bot_lang, 'settings.what_change')}"
+                )
+                
+                await callback.message.edit_text(
+                    settings_text,
+                    reply_markup=self.keyboard_manager.settings_main_keyboard(bot_lang),
+                    parse_mode="HTML"
+                )
+                await callback.answer()
+                
+            except Exception as e:
+                await self.handle_error(e, "cancel_restart", callback.from_user.id)
                 await callback.answer(t('en', 'errors.occurred'), show_alert=True)
         
         

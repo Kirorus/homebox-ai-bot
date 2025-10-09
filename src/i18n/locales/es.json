@@ -157,7 +157,13 @@
     "offline": "Fuera de línea"
   },
   "restart": {
-    "not_implemented": "Función de reinicio aún no implementada"
+    "confirm_title": "🔄 Reinicio del bot",
+    "confirm_message": "¿Está seguro de que desea reiniciar el bot?",
+    "confirm_yes": "Sí, reiniciar",
+    "confirm_no": "Cancelar",
+    "restarting": "🔄 Reiniciando bot...",
+    "restarted": "✅ ¡Bot reiniciado exitosamente!",
+    "error": "❌ Error al reiniciar el bot"
   },
   "help": {
     "title": "Ayuda y Guía",

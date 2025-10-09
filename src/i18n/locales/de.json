@@ -157,7 +157,13 @@
     "offline": "Offline"
   },
   "restart": {
-    "not_implemented": "Neustart-Funktion noch nicht implementiert"
+    "confirm_title": "🔄 Bot-Neustart",
+    "confirm_message": "Sind Sie sicher, dass Sie den Bot neu starten möchten?",
+    "confirm_yes": "Ja, neu starten",
+    "confirm_no": "Abbrechen",
+    "restarting": "🔄 Bot wird neu gestartet...",
+    "restarted": "✅ Bot erfolgreich neu gestartet!",
+    "error": "❌ Fehler beim Neustart des Bots"
   },
   "help": {
     "title": "Hilfe & Anleitung",
