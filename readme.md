@@ -13,6 +13,7 @@ Smart Telegram bot that uses AI vision to add items to your HomeBox inventory fr
 ### 1) Docker (recommended)
 ```bash
 cp env.example .env
+export DOCKERHUB_NAMESPACE=your_dockerhub_username   # or set in .env
 docker-compose up -d
 
 # Logs
@@ -46,16 +47,12 @@ Notes:
 - If `ALLOWED_USER_IDS` is empty, bot allows all users
 
 ## 🐳 Docker
+- Pulls published image `${DOCKERHUB_NAMESPACE}/homebox-ai-bot:${DOCKER_IMAGE_TAG}`
 - Single service `docker-compose.yaml` (bot only)
 - Volumes: `./data`, `./logs`, `./temp`
 - Healthcheck and log rotation configured
 
-Build locally:
-```bash
-./scripts/docker-build.sh -n homebox-ai-bot -t local
-```
-
-Deploy via compose:
+Run via compose:
 ```bash
 ./scripts/docker-deploy.sh           # up -d
 ./scripts/docker-deploy.sh --logs    # follow logs

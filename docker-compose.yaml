@@ -2,9 +2,8 @@ version: '3.8'
 
 services:
   homebox-ai-bot:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${DOCKER_REGISTRY:-docker.io}/${DOCKERHUB_NAMESPACE}/homebox-ai-bot:${DOCKER_IMAGE_TAG:-latest}
+    pull_policy: always
     container_name: homebox-ai-bot
     restart: unless-stopped
     environment:
