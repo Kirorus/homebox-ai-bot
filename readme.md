@@ -1,5 +1,7 @@
 # HomeBox AI Bot
 
+[![CI](https://github.com/Kirorus/homebox-ai-bot/actions/workflows/tests.yml/badge.svg)](https://github.com/Kirorus/homebox-ai-bot/actions/workflows/tests.yml) [![Docker Build](https://github.com/Kirorus/homebox-ai-bot/actions/workflows/docker-build.yml/badge.svg)](https://github.com/Kirorus/homebox-ai-bot/actions/workflows/docker-build.yml) [![codecov](https://codecov.io/gh/Kirorus/homebox-ai-bot/branch/main/graph/badge.svg)](https://app.codecov.io/gh/Kirorus/homebox-ai-bot) [![Docker Pulls](https://img.shields.io/docker/pulls/kirorus/homebox-ai-bot.svg)](https://hub.docker.com/r/kirorus/homebox-ai-bot) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Smart Telegram bot that uses AI vision to add items to your HomeBox inventory from photos. Send a photo → get name, description, and suggested storage location → confirm → item is created in HomeBox with the photo attached.
 
 ## ✨ Highlights
