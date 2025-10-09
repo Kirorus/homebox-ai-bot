@@ -695,16 +695,20 @@ class SearchHandler(BaseHandler):
                         reply_markup=None,
                         parse_mode="Markdown"
                     )
+                    prompt_msg_id = callback.message.message_id
+                    prompt_chat_id = callback.message.chat.id
                 except Exception as edit_error:
-                    await callback.message.answer(
+                    msg = await callback.message.answer(
                         reanalyze_text,
                         reply_markup=None,
                         parse_mode="Markdown"
                     )
+                    prompt_msg_id = msg.message_id
+                    prompt_chat_id = msg.chat.id
                 
                 await callback.answer()
                 await state.set_state(SearchStates.waiting_for_reanalysis_hint)
-                await state.update_data(reanalyzing_item_id=item_id, current_item=item)
+                await state.update_data(reanalyzing_item_id=item_id, current_item=item, reanalyze_prompt_message_id=prompt_msg_id, reanalyze_prompt_chat_id=prompt_chat_id)
                 
             except Exception as e:
                 await self.handle_error(e, "start_reanalyze_item", callback.from_user.id)
@@ -1131,8 +1135,19 @@ class SearchHandler(BaseHandler):
                 
                 hint = message.text.strip()
                 
-                # Show processing message
-                processing_msg = await message.answer(t(bot_lang, 'reanalysis.processing'))
+                # Show processing message (prefer edit of the previous prompt)
+                data2 = await state.get_data()
+                prompt_id = data2.get('reanalyze_prompt_message_id')
+                prompt_chat = data2.get('reanalyze_prompt_chat_id')
+                processing_text = t(bot_lang, 'reanalysis.processing')
+                processing_msg = None
+                if prompt_id and prompt_chat == message.chat.id:
+                    try:
+                        await message.bot.edit_message_text(chat_id=prompt_chat, message_id=prompt_id, text=processing_text)
+                    except Exception:
+                        processing_msg = await message.answer(processing_text)
+                else:
+                    processing_msg = await message.answer(processing_text)
                 
                 # Get all locations for reanalysis
                 all_locations = await self.homebox_service.get_locations()
@@ -1202,29 +1217,49 @@ class SearchHandler(BaseHandler):
                                 new_description=analysis.description,
                                 new_location=suggested_location.name
                             )
-                            
                             try:
-                                await processing_msg.edit_text(
-                                    success_text,
-                                    reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
-                                    parse_mode="Markdown"
-                                )
-                            except Exception as edit_error:
+                                if prompt_id and prompt_chat == message.chat.id:
+                                    await message.bot.edit_message_text(
+                                        chat_id=prompt_chat,
+                                        message_id=prompt_id,
+                                        text=success_text,
+                                        parse_mode="Markdown",
+                                        reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id)
+                                    )
+                                else:
+                                    await processing_msg.edit_text(
+                                        success_text,
+                                        reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                                        parse_mode="Markdown"
+                                    )
+                            except Exception:
                                 await message.answer(
                                     success_text,
                                     reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
                                     parse_mode="Markdown"
                                 )
-                            
                             await state.set_state(SearchStates.viewing_item_details)
                             await state.update_data(current_item=updated_item)
                         else:
-                            await processing_msg.edit_text(t(bot_lang, 'search.item_not_found'))
+                            # Item not found anymore
+                            try:
+                                if prompt_id and prompt_chat == message.chat.id:
+                                    await message.bot.edit_message_text(chat_id=prompt_chat, message_id=prompt_id, text=t(bot_lang, 'search.item_not_found'))
+                                else:
+                                    await processing_msg.edit_text(t(bot_lang, 'search.item_not_found'))
+                            except Exception:
+                                await message.answer(t(bot_lang, 'search.item_not_found'))
                     else:
                         error_text = t(bot_lang, 'search.update_failed').format(
                             error=self.homebox_service.last_error or 'Unknown error'
                         )
-                        await processing_msg.edit_text(error_text)
+                        try:
+                            if prompt_id and prompt_chat == message.chat.id:
+                                await message.bot.edit_message_text(chat_id=prompt_chat, message_id=prompt_id, text=error_text)
+                            else:
+                                await processing_msg.edit_text(error_text)
+                        except Exception:
+                            await message.answer(error_text)
                 
                 finally:
                     # Clean up temporary image file
