@@ -32,3 +32,11 @@ class LocationStates(StatesGroup):
     selecting_locations_for_marking = State()
     selecting_locations_for_description = State()
     confirming_description_update = State()
+    
+    # Creation flow
+    creating_location_name = State()
+    creating_location_description = State()
+    creating_location_ai_hint = State()
+    confirming_ai_description = State()
+    selecting_parent_location = State()
+    confirming_location_creation = State()

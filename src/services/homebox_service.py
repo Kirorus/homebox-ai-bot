@@ -171,6 +171,50 @@ class HomeBoxService:
         return LocationManager(filtered_locations)
     
     @retry_async(max_attempts=3, delay=2.0, exceptions=(aiohttp.ClientError, asyncio.TimeoutError))
+    async def create_location(self, name: str, description: Optional[str] = None, parent_id: Optional[str] = None) -> Optional[Location]:
+        """Create a new location in HomeBox.
+        Only include optional fields when provided to avoid unintended defaults server-side.
+        """
+        try:
+            session = await self._get_session()
+            logger.info(f"Creating location: name='{name}', parent={parent_id}")
+            if not name or not name.strip():
+                self.last_error = 'Location name is required'
+                logger.error(self.last_error)
+                return None
+            payload: Dict[str, Any] = { 'name': name.strip() }
+            if description is not None and description.strip():
+                payload['description'] = description.strip()
+            if parent_id:
+                payload['parentId'] = parent_id
+            async with session.post(
+                f"{self.base_url}/api/v1/locations",
+                headers=self.headers,
+                json=payload
+            ) as response:
+                if response.status not in [200, 201]:
+                    try:
+                        body = await response.text()
+                    except Exception:
+                        body = ''
+                    self.last_error = f"CREATE location failed HTTP {response.status}; body: {body[:500]}"
+                    logger.error(f"Failed to create location: {self.last_error}")
+                    return None
+                try:
+                    data = await response.json()
+                    location = Location.from_dict(data)
+                    logger.info(f"Successfully created location with ID: {location.id}")
+                    return location
+                except Exception as e:
+                    self.last_error = f"Failed to parse created location: {e}"
+                    logger.error(self.last_error)
+                    return None
+        except Exception as e:
+            error_msg = f"Exception in create_location: {str(e)}"
+            logger.error(error_msg)
+            return None
+    
+    @retry_async(max_attempts=3, delay=2.0, exceptions=(aiohttp.ClientError, asyncio.TimeoutError))
     async def create_item(self, item: Item) -> Dict:
         """Create a new item in HomeBox"""
         try:

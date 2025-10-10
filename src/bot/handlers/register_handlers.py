@@ -8,6 +8,7 @@ from .photo_handler import PhotoHandler
 from .settings_handler import SettingsHandler
 from .admin_handler import AdminHandler
 from .search_handler import SearchHandler
+from .common_handler import CommonHandler
 
 
 def register_handlers(dp: Dispatcher, settings, database, homebox_service, ai_service, image_service, bot):
@@ -18,9 +19,12 @@ def register_handlers(dp: Dispatcher, settings, database, homebox_service, ai_se
     settings_handler = SettingsHandler(settings, database, homebox_service, ai_service)
     admin_handler = AdminHandler(settings, database, homebox_service)
     search_handler = SearchHandler(settings, database, homebox_service, ai_service, image_service)
+    common_handler = CommonHandler(settings, database)
     
     # Register routers
     dp.include_router(photo_handler.router)
     dp.include_router(settings_handler.router)
     dp.include_router(admin_handler.router)
     dp.include_router(search_handler.router)
+    # Include common handler last so it's lowest priority
+    dp.include_router(common_handler.router)

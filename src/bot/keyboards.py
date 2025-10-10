@@ -270,6 +270,11 @@ class KeyboardManager:
         """Create location management keyboard"""
         builder = InlineKeyboardBuilder()
         
+        # New: Create location at the very top
+        builder.row(
+            InlineKeyboardButton(text=f"🆕 {t(lang, 'locations.create_location')}", callback_data="create_location")
+        )
+        
         builder.row(
             InlineKeyboardButton(text=f"🏷️ {t(lang, 'locations.mark_locations')}", callback_data="mark_locations")
         )
@@ -282,6 +287,38 @@ class KeyboardManager:
         builder.row(
             InlineKeyboardButton(text=t(lang, 'common.back'), callback_data="back_to_settings")
         )
+        
+        return builder.as_markup()
+
+    @staticmethod
+    def parent_locations_keyboard(locations: List[Location], lang: str, page: int = 0, page_size: int = 10) -> InlineKeyboardMarkup:
+        """Create parent location selection keyboard with pagination. Includes 'no parent' option."""
+        builder = InlineKeyboardBuilder()
+        
+        # Special option: no parent
+        builder.row(
+            InlineKeyboardButton(text=t(lang, 'locations.no_parent'), callback_data="parent_none")
+        )
+        
+        start = page * page_size
+        end = min(start + page_size, len(locations))
+        for loc in locations[start:end]:
+            builder.row(
+                InlineKeyboardButton(text=f"📍 {loc.name}", callback_data=f"parent_{loc.id}")
+            )
+        
+        # Navigation
+        total_pages = (len(locations) + page_size - 1) // page_size
+        nav = []
+        if page > 0:
+            nav.append(InlineKeyboardButton(text=t(lang, 'common.previous'), callback_data=f"parent_page_{page-1}"))
+        if end < len(locations):
+            nav.append(InlineKeyboardButton(text=t(lang, 'common.next'), callback_data=f"parent_page_{page+1}"))
+        if nav:
+            builder.row(*nav)
+        
+        # Cancel/back
+        builder.row(InlineKeyboardButton(text=t(lang, 'common.back'), callback_data="cancel_create_location"))
         
         return builder.as_markup()
     
@@ -394,4 +431,18 @@ class KeyboardManager:
             InlineKeyboardButton(text=f"🔄 {t(lang, 'common.regenerate')}", callback_data="regenerate_description")
         )
         
+        return builder.as_markup()
+
+    @staticmethod
+    def create_desc_confirmation_keyboard(lang: str) -> InlineKeyboardMarkup:
+        """Create confirmation keyboard for create-location AI description preview"""
+        builder = InlineKeyboardBuilder()
+        builder.row(
+            InlineKeyboardButton(text=f"✅ {t(lang, 'common.confirm')}", callback_data="create_desc_confirm"),
+            InlineKeyboardButton(text=f"❌ {t(lang, 'locations.cancel')}", callback_data="create_desc_cancel")
+        )
+        builder.row(
+            InlineKeyboardButton(text=f"🔄 {t(lang, 'common.regenerate')}", callback_data="create_desc_regen"),
+            InlineKeyboardButton(text=f"🧠 {t(lang, 'locations.generate_with_ai')}", callback_data="create_desc_regen_with_hint")
+        )
         return builder.as_markup()

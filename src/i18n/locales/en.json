@@ -266,6 +266,7 @@
   },
   "locations": {
     "management_menu": "🏷️ **Location Management**\n\nChoose an action:",
+    "create_location": "Create Location",
     "mark_locations": "Mark Locations",
     "generate_descriptions": "Generate Descriptions",
     "view_all": "View All",
@@ -288,6 +289,21 @@
     "description_generation_cancelled": "❌ **Description Generation Cancelled**",
     "no_items_in_location": "⚠️ **No Items**\n\nLocation \"{location_name}\" has no items to analyze.",
     "description_generation_failed": "❌ **Generation Failed**\n\nFailed to generate description for location \"{location_name}\": {error}",
-    "no_marked_locations": "⚠️ **No Marked Locations**\n\nYou need locations with [TGB] marker for description generation."
+    "no_marked_locations": "⚠️ **No Marked Locations**\n\nYou need locations with [TGB] marker for description generation.",
+    "create_title": "🆕 Create New Location",
+    "enter_name": "Enter location name (required):",
+    "enter_description": "Enter location description (optional) or press Skip:",
+    "skip": "Skip",
+    "generate_with_ai": "Generate description with AI",
+    "ai_helper_hint": "Enter optional helper text for AI, e.g., 'For storing tools':",
+    "select_parent": "Select parent location (optional):",
+    "no_parent": "No parent",
+    "confirm_creation": "Confirm location creation:\n\n📍 Name: {name}\n📝 Description: {description}\n🧩 Parent: {parent}",
+    "ai_preview": "🤖 **Generated description**\n\n{description}\n\nChoose what to do next:",
+    "creating": "📦 Creating location...",
+    "created_success": "✅ Location created!",
+    "creation_failed": "❌ Failed to create location\n\n{error}",
+    "back_to_management": "⬅️ Back to Location Management",
+    "cancelled": "❌ Location creation cancelled"
   }
 }

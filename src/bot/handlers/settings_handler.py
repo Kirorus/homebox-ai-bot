@@ -7,6 +7,7 @@ import subprocess
 import os
 import sys
 import asyncio
+from typing import Any, Optional
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -1190,6 +1191,418 @@ class SettingsHandler(BaseHandler):
             except Exception as e:
                 await self.handle_error(e, "location_management", callback.from_user.id)
                 await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+
+        # =========================
+        # Create Location workflow
+        # =========================
+        @self.router.callback_query(F.data == "create_location")
+        async def create_location_start(callback: CallbackQuery, state: FSMContext):
+            """Start creating a new location (ask for name)."""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+
+                await state.update_data({
+                    'new_loc_name': None,
+                    'new_loc_desc': None,
+                    'new_loc_parent_id': None,
+                    'new_loc_parent_name': t(bot_lang, 'locations.no_parent'),
+                    'user_id_for_flow': callback.from_user.id
+                })
+
+                builder = InlineKeyboardBuilder()
+                builder.row(InlineKeyboardButton(text=t(bot_lang, 'common.back'), callback_data="back_to_location_management"))
+                builder.row(InlineKeyboardButton(text=t(bot_lang, 'common.cancel'), callback_data="cancel_create_location"))
+
+                await callback.message.edit_text(
+                    f"{t(bot_lang, 'locations.create_title')}\n\n{t(bot_lang, 'locations.enter_name')}",
+                    reply_markup=builder.as_markup(),
+                    parse_mode="Markdown"
+                )
+                # Persist the conversation anchor message to edit going forward
+                await state.update_data(flow_chat_id=callback.message.chat.id, flow_msg_id=callback.message.message_id)
+                await state.set_state(LocationStates.creating_location_name)
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "create_location_start", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+
+        @self.router.message(LocationStates.creating_location_name, F.text)
+        async def receive_location_name(message: Message, state: FSMContext):
+            """Receive and validate new location name, then prompt for description options."""
+            try:
+                user_settings = await self.get_user_settings(message.from_user.id)
+                bot_lang = user_settings.bot_lang
+
+                name = (message.text or '').strip()
+                if not name:
+                    await message.answer(t(bot_lang, 'errors.invalid_name'))
+                    return
+
+                await state.update_data(new_loc_name=name)
+
+                # Build description prompt keyboard: Generate with AI / Skip / Cancel
+                builder = InlineKeyboardBuilder()
+                builder.row(InlineKeyboardButton(text=f"🤖 {t(bot_lang, 'locations.generate_with_ai')}", callback_data="create_loc_use_ai"))
+                builder.row(InlineKeyboardButton(text=f"⏭️ {t(bot_lang, 'locations.skip')}", callback_data="create_loc_skip_desc"))
+                builder.row(InlineKeyboardButton(text=t(bot_lang, 'common.cancel'), callback_data="cancel_create_location"))
+                
+                # Edit the original bot message instead of sending a new one
+                data = await state.get_data()
+                flow_chat_id = data.get('flow_chat_id')
+                flow_msg_id = data.get('flow_msg_id')
+                try:
+                    await message.bot.edit_message_text(
+                        chat_id=flow_chat_id,
+                        message_id=flow_msg_id,
+                        text=t(bot_lang, 'locations.enter_description'),
+                        reply_markup=builder.as_markup()
+                    )
+                except Exception:
+                    # Fallback to sending a new message only if editing failed
+                    await message.answer(
+                        t(bot_lang, 'locations.enter_description'),
+                        reply_markup=builder.as_markup()
+                    )
+                await state.set_state(LocationStates.creating_location_description)
+            except Exception as e:
+                await self.handle_error(e, "receive_location_name", message.from_user.id)
+                await message.answer(t('en', 'errors.occurred'))
+
+        @self.router.message(LocationStates.creating_location_description, F.text)
+        async def receive_location_description(message: Message, state: FSMContext):
+            """Receive custom description text and move to parent selection, editing the anchored message."""
+            try:
+                user_settings = await self.get_user_settings(message.from_user.id)
+                bot_lang = user_settings.bot_lang
+                desc = (message.text or '').strip()
+                await state.update_data(new_loc_desc=desc)
+
+                # Load locations and show parent selector on anchored message
+                all_locations = await self.homebox_service.get_locations()
+                await state.update_data(parent_locations=all_locations, parent_page=0)
+                kb = self.keyboard_manager.parent_locations_keyboard(all_locations, bot_lang, 0)
+                data = await state.get_data()
+                flow_chat_id = data.get('flow_chat_id')
+                flow_msg_id = data.get('flow_msg_id')
+                if flow_chat_id and flow_msg_id:
+                    await message.bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=t(bot_lang, 'locations.select_parent'), reply_markup=kb, parse_mode="Markdown")
+                await state.set_state(LocationStates.selecting_parent_location)
+            except Exception as e:
+                await self.handle_error(e, "receive_location_description", message.from_user.id)
+                await message.answer(t('en', 'errors.occurred'))
+
+        @self.router.callback_query(F.data == "create_loc_use_ai", LocationStates.creating_location_description)
+        async def create_location_ai_prompt(callback: CallbackQuery, state: FSMContext):
+            """Ask for optional AI helper text before generating description."""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+
+                builder = InlineKeyboardBuilder()
+                builder.row(InlineKeyboardButton(text=f"⏭️ {t(bot_lang, 'locations.skip')}", callback_data="create_loc_ai_skip"))
+                builder.row(InlineKeyboardButton(text=t(bot_lang, 'common.cancel'), callback_data="cancel_create_location"))
+
+                # Edit existing flow message
+                data = await state.get_data()
+                await state.update_data(user_id_for_flow=callback.from_user.id)
+                flow_chat_id = data.get('flow_chat_id')
+                flow_msg_id = data.get('flow_msg_id')
+                if flow_chat_id and flow_msg_id:
+                    await callback.message.bot.edit_message_text(
+                        chat_id=flow_chat_id,
+                        message_id=flow_msg_id,
+                        text=t(bot_lang, 'locations.ai_helper_hint'),
+                        reply_markup=builder.as_markup()
+                    )
+                await state.set_state(LocationStates.creating_location_ai_hint)
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "create_location_ai_prompt", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+
+        @self.router.callback_query(F.data == "create_loc_ai_skip", LocationStates.creating_location_ai_hint)
+        async def create_location_ai_skip(callback: CallbackQuery, state: FSMContext):
+            """Skip AI helper text and generate description right away."""
+            # Ensure user id is available for the generator
+            await state.update_data(user_id_for_flow=callback.from_user.id)
+            await generate_description_and_prompt_parent(state, helper_text=None, bot=callback.message.bot)
+
+        @self.router.message(LocationStates.creating_location_ai_hint, F.text)
+        async def receive_ai_helper_text(message: Message, state: FSMContext):
+            """Receive helper text and generate description."""
+            try:
+                helper = (message.text or '').strip()
+                await generate_description_and_prompt_parent(state, helper_text=helper, bot=message.bot)
+            except Exception as e:
+                await self.handle_error(e, "receive_ai_helper_text", message.from_user.id)
+                await message.answer(t('en', 'errors.occurred'))
+
+        async def generate_description_and_prompt_parent(state: FSMContext, helper_text: Optional[str], bot):
+            """Helper: generate description with AI and show preview with confirmation options before parent selection."""
+            data = await state.get_data()
+            user_id = data.get('user_id_for_flow') or 0
+            user_settings = await self.get_user_settings(user_id)
+            bot_lang = user_settings.bot_lang
+            name = data.get('new_loc_name', '')
+            try:
+                gen_msg_text = f"{t(bot_lang, 'processing.ai_processing')}\n\n{t(bot_lang, 'locations.generate_with_ai')}"
+                flow_chat_id = data.get('flow_chat_id')
+                flow_msg_id = data.get('flow_msg_id')
+                if flow_chat_id and flow_msg_id:
+                    await bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=gen_msg_text)
+
+                # Build a concise prompt
+                hint_part = f" Helper: {helper_text}." if helper_text else ""
+                prompt = (
+                    f"Generate a concise (1-2 sentences) description for a storage location named '{name}'."
+                    f" The description should explain what is stored there and be practical for household organization." 
+                    f" Language: {user_settings.gen_lang or bot_lang}.{hint_part}"
+                )
+                generated = await self.ai_service.generate_text(prompt)
+                if not generated:
+                    generated = ''
+                await state.update_data(new_loc_desc=generated)
+
+                # Show AI preview with actions
+                await state.update_data(ai_generated_desc=generated)
+                preview_text = t(bot_lang, 'locations.ai_preview').format(description=generated)
+                kb = self.keyboard_manager.create_desc_confirmation_keyboard(bot_lang)
+                if flow_chat_id and flow_msg_id:
+                    await bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=preview_text, reply_markup=kb, parse_mode="Markdown")
+                await state.set_state(LocationStates.confirming_ai_description)
+            except Exception as e:
+                await self.handle_error(e, "generate_description_and_prompt_parent", user_id)
+        @self.router.callback_query(F.data == "create_desc_confirm", LocationStates.confirming_ai_description)
+        async def create_desc_confirm(callback: CallbackQuery, state: FSMContext):
+            """Accept AI description and move to parent selection."""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                data = await state.get_data()
+                # Ensure the chosen description is used
+                desc = data.get('ai_generated_desc', '')
+                await state.update_data(new_loc_desc=desc)
+
+                # Proceed to parent selection
+                all_locations = await self.homebox_service.get_locations()
+                await state.update_data(parent_locations=all_locations, parent_page=0)
+                kb = self.keyboard_manager.parent_locations_keyboard(all_locations, bot_lang, 0)
+                flow_chat_id = data.get('flow_chat_id')
+                flow_msg_id = data.get('flow_msg_id')
+                if flow_chat_id and flow_msg_id:
+                    await callback.message.bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=t(bot_lang, 'locations.select_parent'), reply_markup=kb, parse_mode="Markdown")
+                await state.set_state(LocationStates.selecting_parent_location)
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "create_desc_confirm", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+
+        @self.router.callback_query(F.data == "create_desc_regen", LocationStates.confirming_ai_description)
+        async def create_desc_regen(callback: CallbackQuery, state: FSMContext):
+            """Regenerate AI description without extra hint."""
+            await state.update_data(user_id_for_flow=callback.from_user.id)
+            await generate_description_and_prompt_parent(state, helper_text=None, bot=callback.message.bot)
+
+        @self.router.callback_query(F.data == "create_desc_regen_with_hint", LocationStates.confirming_ai_description)
+        async def create_desc_regen_with_hint(callback: CallbackQuery, state: FSMContext):
+            """Ask for helper text and then regenerate AI description."""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                builder = InlineKeyboardBuilder()
+                builder.row(InlineKeyboardButton(text=f"⏭️ {t(bot_lang, 'locations.skip')}", callback_data="create_desc_regen_hint_skip"))
+                builder.row(InlineKeyboardButton(text=t(bot_lang, 'common.cancel'), callback_data="create_desc_cancel"))
+                data = await state.get_data()
+                flow_chat_id = data.get('flow_chat_id')
+                flow_msg_id = data.get('flow_msg_id')
+                if flow_chat_id and flow_msg_id:
+                    await callback.message.bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=t(bot_lang, 'locations.ai_helper_hint'), reply_markup=builder.as_markup())
+                await state.set_state(LocationStates.creating_location_ai_hint)
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "create_desc_regen_with_hint", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+
+        @self.router.callback_query(F.data == "create_desc_regen_hint_skip", LocationStates.creating_location_ai_hint)
+        async def create_desc_regen_hint_skip(callback: CallbackQuery, state: FSMContext):
+            """Skip providing a hint and regenerate AI description."""
+            await state.update_data(user_id_for_flow=callback.from_user.id)
+            await generate_description_and_prompt_parent(state, helper_text=None, bot=callback.message.bot)
+
+        @self.router.message(LocationStates.creating_location_ai_hint, F.text)
+        async def create_desc_regen_hint_text(message: Message, state: FSMContext):
+            """Receive helper text and regenerate AI description."""
+            helper = (message.text or '').strip()
+            await generate_description_and_prompt_parent(state, helper_text=helper, bot=message.bot)
+
+        @self.router.callback_query(F.data == "create_desc_cancel", LocationStates.confirming_ai_description)
+        async def create_desc_cancel(callback: CallbackQuery, state: FSMContext):
+            """Cancel AI description preview and return to description entry options."""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                builder = InlineKeyboardBuilder()
+                builder.row(InlineKeyboardButton(text=f"🤖 {t(bot_lang, 'locations.generate_with_ai')}", callback_data="create_loc_use_ai"))
+                builder.row(InlineKeyboardButton(text=f"⏭️ {t(bot_lang, 'locations.skip')}", callback_data="create_loc_skip_desc"))
+                builder.row(InlineKeyboardButton(text=t(bot_lang, 'common.cancel'), callback_data="cancel_create_location"))
+                data = await state.get_data()
+                flow_chat_id = data.get('flow_chat_id')
+                flow_msg_id = data.get('flow_msg_id')
+                if flow_chat_id and flow_msg_id:
+                    await callback.message.bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=t(bot_lang, 'locations.enter_description'), reply_markup=builder.as_markup())
+                await state.set_state(LocationStates.creating_location_description)
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "create_desc_cancel", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+
+        @self.router.callback_query(F.data == "create_loc_skip_desc", LocationStates.creating_location_description)
+        async def skip_description_and_prompt_parent(callback: CallbackQuery, state: FSMContext):
+            """Skip description step and go to parent selection."""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+
+                await state.update_data(new_loc_desc=None)
+                all_locations = await self.homebox_service.get_locations()
+                await state.update_data(parent_locations=all_locations, parent_page=0)
+
+                kb = self.keyboard_manager.parent_locations_keyboard(all_locations, bot_lang, 0)
+                # Edit the anchored flow message
+                data = await state.get_data()
+                flow_chat_id = data.get('flow_chat_id')
+                flow_msg_id = data.get('flow_msg_id')
+                if flow_chat_id and flow_msg_id:
+                    await callback.message.bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=t(bot_lang, 'locations.select_parent'), reply_markup=kb, parse_mode="Markdown")
+                await state.set_state(LocationStates.selecting_parent_location)
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "skip_description_and_prompt_parent", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+
+        @self.router.callback_query(F.data.startswith("parent_page_"), LocationStates.selecting_parent_location)
+        async def parent_page_change(callback: CallbackQuery, state: FSMContext):
+            """Paginate parent locations list."""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                page = int(callback.data.replace("parent_page_", ""))
+                data = await state.get_data()
+                locations = data.get('parent_locations', [])
+                await state.update_data(parent_page=page)
+                kb = self.keyboard_manager.parent_locations_keyboard(locations, bot_lang, page)
+                # Edit only keyboard on the anchored message to keep content
+                data2 = await state.get_data()
+                flow_chat_id = data2.get('flow_chat_id')
+                flow_msg_id = data2.get('flow_msg_id')
+                if flow_chat_id and flow_msg_id:
+                    await callback.message.bot.edit_message_reply_markup(chat_id=flow_chat_id, message_id=flow_msg_id, reply_markup=kb)
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "parent_page_change", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+
+        @self.router.callback_query(F.data == "parent_none", LocationStates.selecting_parent_location)
+        async def parent_none_selected(callback: CallbackQuery, state: FSMContext):
+            """No parent selected; proceed to confirmation."""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                await state.update_data(new_loc_parent_id=None, new_loc_parent_name=t(bot_lang, 'locations.no_parent'))
+                await show_create_location_confirmation(callback, state)
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "parent_none_selected", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+
+        @self.router.callback_query(F.data.startswith("parent_"), LocationStates.selecting_parent_location)
+        async def parent_selected(callback: CallbackQuery, state: FSMContext):
+            """Parent location chosen; proceed to confirmation."""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+
+                parent_id = callback.data.replace("parent_", "")
+                data = await state.get_data()
+                locations = data.get('parent_locations', [])
+                parent = next((loc for loc in locations if str(getattr(loc, 'id', None)) == parent_id), None)
+                parent_name = getattr(parent, 'name', None) or t(bot_lang, 'locations.no_parent')
+                await state.update_data(new_loc_parent_id=parent_id, new_loc_parent_name=parent_name)
+                await show_create_location_confirmation(callback, state)
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "parent_selected", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+
+        async def show_create_location_confirmation(callback: CallbackQuery, state: FSMContext):
+            user_settings = await self.get_user_settings(callback.from_user.id)
+            bot_lang = user_settings.bot_lang
+            data = await state.get_data()
+            name = data.get('new_loc_name')
+            desc = data.get('new_loc_desc') or t(bot_lang, 'common.no_description')
+            parent_name = data.get('new_loc_parent_name') or t(bot_lang, 'locations.no_parent')
+
+            text = t(bot_lang, 'locations.confirm_creation').format(name=name, description=desc, parent=parent_name)
+            builder = InlineKeyboardBuilder()
+            builder.row(InlineKeyboardButton(text=t(bot_lang, 'common.confirm'), callback_data="confirm_create_location"))
+            builder.row(InlineKeyboardButton(text=t(bot_lang, 'common.cancel'), callback_data="cancel_create_location"))
+
+            # Edit the anchored flow message instead of sending a new one
+            data2 = await state.get_data()
+            flow_chat_id = data2.get('flow_chat_id')
+            flow_msg_id = data2.get('flow_msg_id')
+            if flow_chat_id and flow_msg_id:
+                await callback.message.bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=text, reply_markup=builder.as_markup(), parse_mode="Markdown")
+            await state.set_state(LocationStates.confirming_location_creation)
+
+        @self.router.callback_query(F.data == "confirm_create_location", LocationStates.confirming_location_creation)
+        async def confirm_create_location(callback: CallbackQuery, state: FSMContext):
+            """Call API to create location and return to management menu."""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                data = await state.get_data()
+                name = data.get('new_loc_name')
+                desc = data.get('new_loc_desc')
+                parent_id = data.get('new_loc_parent_id')
+
+                # Edit the anchored message to show creating state
+                data2 = await state.get_data()
+                flow_chat_id = data2.get('flow_chat_id')
+                flow_msg_id = data2.get('flow_msg_id')
+                if flow_chat_id and flow_msg_id:
+                    await callback.message.bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=t(bot_lang, 'locations.creating'))
+                created = await self.homebox_service.create_location(name=name, description=desc, parent_id=parent_id)
+                if created is None:
+                    err = self.homebox_service.last_error or 'Unknown'
+                    if flow_chat_id and flow_msg_id:
+                        await callback.message.bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=t(bot_lang, 'locations.creation_failed').format(error=escape_markdown(str(err))), parse_mode="Markdown")
+                else:
+                    # Success → Show management menu
+                    text = t(bot_lang, 'locations.created_success')
+                    keyboard = self.keyboard_manager.location_management_keyboard(bot_lang)
+                    if flow_chat_id and flow_msg_id:
+                        await callback.message.bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=text, reply_markup=keyboard, parse_mode="Markdown")
+                await state.clear()
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "confirm_create_location", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+
+        @self.router.callback_query(F.data == "cancel_create_location")
+        async def cancel_create_location(callback: CallbackQuery, state: FSMContext):
+            """Cancel create location flow and return to location management."""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                keyboard = self.keyboard_manager.location_management_keyboard(bot_lang)
+                await callback.message.edit_text(t(bot_lang, 'locations.cancelled'), reply_markup=keyboard, parse_mode="Markdown")
+                await state.clear()
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "cancel_create_location", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
         
         @self.router.callback_query(F.data == "mark_locations")
         async def start_location_marking(callback: CallbackQuery, state: FSMContext):
