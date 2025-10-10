@@ -202,38 +202,37 @@ class SettingsHandler(BaseHandler):
                 stop_event = asyncio.Event()
 
                 async def animate_progress():
-                    # Longer, more informative bar with spinner and phase labels
+                    # Shorter, faster bar with brief phase labels
                     spinner = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
                     phases = [
-                        ("Preparing data", 2),
-                        ("Fetching items", 3),
-                        ("Composing prompt", 2),
-                        ("AI generating", 10)
+                        ("Prep", 1),
+                        ("Items", 2),
+                        ("Prompt", 1),
+                        ("AI", 6)
                     ]
-                    total_ticks = sum(p[1] for p in phases)
+                    total_ticks = sum(p[1] for p in phases)  # 10
                     filled = 0
                     s_idx = 0
+                    bar_len = 14
                     while not stop_event.is_set():
                         try:
-                            # Build progress bar of length 20
-                            bar_len = 20
                             filled_cells = min(bar_len, int((filled / max(1, total_ticks)) * bar_len))
                             bar = "█" * filled_cells + "░" * (bar_len - filled_cells)
-                            # Current phase label cycles according to progress
-                            consumed = 0
-                            current_label = "Generating"
-                            for label, ticks in phases:
-                                if filled < consumed + ticks:
-                                    current_label = label
+                            # Determine current short label
+                            acc = 0
+                            label = "AI"
+                            for l, ticks in phases:
+                                if filled < acc + ticks:
+                                    label = l
                                     break
-                                consumed += ticks
+                                acc += ticks
                             spin = spinner[s_idx % len(spinner)]
                             s_idx += 1
-                            await generating_msg.edit_text(f"{base_text}\n\n{spin} [{bar}] {filled}/{total_ticks} — {current_label}")
+                            await generating_msg.edit_text(f"{base_text}\n\n{spin} [{bar}] {label}")
                             filled = (filled + 1) % (total_ticks + 1)
                         except Exception:
                             pass
-                        await asyncio.sleep(0.4)
+                        await asyncio.sleep(0.3)
 
                 anim_task = asyncio.create_task(animate_progress())
                 try:
