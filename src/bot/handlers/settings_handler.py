@@ -195,9 +195,33 @@ class SettingsHandler(BaseHandler):
                 except Exception:
                     pass
                 loc_name = getattr(selected_location, 'name', '')
-                generating_msg = await callback.message.edit_text(
-                    t(bot_lang, 'locations.generating_description').format(location_name=loc_name)
-                )
+                base_text = t(bot_lang, 'locations.generating_description').format(location_name=loc_name)
+                generating_msg = await callback.message.edit_text(base_text)
+
+                # Animated progress bar while generating
+                stop_event = asyncio.Event()
+
+                async def animate_progress():
+                    frames = [
+                        "[░░░░░]",
+                        "[█░░░░]",
+                        "[██░░░]",
+                        "[███░░]",
+                        "[████░]",
+                        "[█████]",
+                    ]
+                    idx = 0
+                    while not stop_event.is_set():
+                        try:
+                            frame = frames[idx % len(frames)]
+                            await generating_msg.edit_text(f"{base_text}\n\n{frame}")
+                            idx += 1
+                        except Exception:
+                            # Ignore edit failures (rate limits or message not modified)
+                            pass
+                        await asyncio.sleep(0.5)
+
+                anim_task = asyncio.create_task(animate_progress())
                 try:
                     items = await self.homebox_service.get_items_by_location(selected_location.id)
                     if not items:
@@ -273,13 +297,37 @@ class SettingsHandler(BaseHandler):
                     )
                     confirm_text = md_bold_to_html(confirm_raw)
                     keyboard = self.keyboard_manager.description_confirmation_keyboard(bot_lang)
-                    await generating_msg.edit_text(
-                        confirm_text,
-                        reply_markup=keyboard,
-                        parse_mode="HTML"
-                    )
+                    try:
+                        stop_event.set()
+                        await anim_task
+                    except Exception:
+                        pass
+                    try:
+                        await generating_msg.edit_text(
+                            confirm_text,
+                            reply_markup=keyboard,
+                            parse_mode="HTML"
+                        )
+                    except Exception:
+                        # Fallback without HTML if parse fails
+                        try:
+                            await generating_msg.edit_text(
+                                t(bot_lang, 'locations.confirm_update_description').format(
+                                    location_name=loc_name,
+                                    current_description=current_desc,
+                                    new_description=generated_description
+                                ),
+                                reply_markup=keyboard
+                            )
+                        except Exception:
+                            pass
                     await state.set_state(LocationStates.confirming_description_update)
                 except Exception as e:
+                    try:
+                        stop_event.set()
+                        await anim_task
+                    except Exception:
+                        pass
                     await generating_msg.edit_text(
                         t(bot_lang, 'locations.description_generation_failed').format(
                             location_name=loc_name,
