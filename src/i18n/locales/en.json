@@ -30,6 +30,12 @@
     "commands_list": "⚙️ /settings - Settings\n🔍 /search - Search items\n📦 /recent - Recent items\n📊 /stats - Statistics\n❓ /help - Help",
     "get_started": "🚀 Ready to organize? Send your first photo!"
   },
+  "menu": {
+    "search": "Search",
+    "recent": "Recent",
+    "settings": "Settings",
+    "help": "Help"
+  },
   "settings": {
     "title": "⚙️ Settings",
     "bot_lang": "Bot Language",

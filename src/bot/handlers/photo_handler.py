@@ -57,7 +57,7 @@ class PhotoHandler(BaseHandler):
                 if not await self.is_user_allowed(message.from_user.id):
                     user_settings = await self.get_user_settings(message.from_user.id)
                     bot_lang = user_settings.bot_lang
-                    await message.answer("Access denied")
+                    await message.answer(t(bot_lang, 'errors.access_denied'))
                     return
                 
                 await state.clear()
@@ -81,7 +81,11 @@ class PhotoHandler(BaseHandler):
                 
                 bot_lang = user_settings.bot_lang
                 start_message = self.create_beautiful_start_message(bot_lang)
-                await message.answer(start_message, parse_mode="Markdown")
+                await message.answer(
+                    start_message,
+                    reply_markup=self.keyboard_manager.main_menu_keyboard(bot_lang),
+                    parse_mode="Markdown"
+                )
                 await state.set_state(ItemStates.waiting_for_photo)
                 
             except Exception as e:
@@ -103,7 +107,7 @@ class PhotoHandler(BaseHandler):
                 if not await self.is_user_allowed(message.from_user.id):
                     user_settings = await self.get_user_settings(message.from_user.id)
                     bot_lang = user_settings.bot_lang
-                    await message.answer("Access denied")
+                    await message.answer(t(bot_lang, 'errors.access_denied'))
                     return
                 
                 user_settings = await self.get_user_settings(message.from_user.id)
@@ -136,7 +140,7 @@ class PhotoHandler(BaseHandler):
                         os.remove(file_path)
                     
                     await progress_msg.delete()
-                    await message.answer(f"{t(bot_lang, 'error.invalid_name')}: {error_msg}\n\n{t(bot_lang, 'error.try_again')}")
+                    await message.answer(f"{t(bot_lang, 'errors.invalid_name')}: {error_msg}\n\n{t(bot_lang, 'errors.try_again')}")
                     return
                 
                 # Get locations from HomeBox
@@ -146,7 +150,7 @@ class PhotoHandler(BaseHandler):
                         os.remove(file_path)
                     
                     await progress_msg.delete()
-                    await message.answer("Failed to get locations from HomeBox. Please try again later.")
+                    await message.answer(t(bot_lang, 'errors.occurred'))
                     await state.clear()
                     return
                 
@@ -162,9 +166,7 @@ class PhotoHandler(BaseHandler):
                         os.remove(file_path)
                     
                     await progress_msg.delete()
-                    await message.answer(
-                        t(bot_lang, 'error.no_locations')
-                    )
+                    await message.answer(t(bot_lang, 'errors.no_locations'))
                     await state.clear()
                     return
                 
@@ -252,9 +254,7 @@ class PhotoHandler(BaseHandler):
                 
                 user_settings = await self.get_user_settings(message.from_user.id)
                 bot_lang = user_settings.bot_lang
-                await message.answer(
-                    "An error occurred while processing your photo. Please try again or send another photo."
-                )
+                await message.answer(t(bot_lang, 'errors.photo_processing'))
         
         # Callback handlers for editing
         @self.router.callback_query(F.data == "edit_name", ItemStates.confirming_data)

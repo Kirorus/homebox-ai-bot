@@ -30,6 +30,12 @@
     "commands_list": "⚙️ /settings - Einstellungen\n🔍 /search - Gegenstände suchen\n📦 /recent - Neueste Gegenstände\n📊 /stats - Statistiken\n❓ /help - Hilfe",
     "get_started": "🚀 Bereit zu organisieren? Senden Sie Ihr erstes Foto!"
   },
+  "menu": {
+    "search": "Suchen",
+    "recent": "Neueste",
+    "settings": "Einstellungen",
+    "help": "Hilfe"
+  },
   "settings": {
     "title": "⚙️ Einstellungen",
     "bot_lang": "Bot-Sprache",

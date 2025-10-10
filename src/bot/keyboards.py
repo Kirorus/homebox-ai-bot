@@ -14,6 +14,22 @@ class KeyboardManager:
     """Manages bot keyboards"""
     
     @staticmethod
+    def main_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
+        """Create main menu keyboard for quick navigation"""
+        builder = InlineKeyboardBuilder()
+        # First row
+        builder.row(
+            InlineKeyboardButton(text=f"🔍 {t(lang, 'menu.search')}", callback_data="open_search"),
+            InlineKeyboardButton(text=f"📦 {t(lang, 'menu.recent')}", callback_data="open_recent")
+        )
+        # Second row
+        builder.row(
+            InlineKeyboardButton(text=f"⚙️ {t(lang, 'menu.settings')}", callback_data="open_settings"),
+            InlineKeyboardButton(text=f"❓ {t(lang, 'menu.help')}", callback_data="open_help")
+        )
+        return builder.as_markup()
+
+    @staticmethod
     def bot_lang_keyboard(current_lang: str) -> InlineKeyboardMarkup:
         """Create bot interface language selection keyboard"""
         builder = InlineKeyboardBuilder()

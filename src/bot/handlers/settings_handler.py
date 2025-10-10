@@ -50,6 +50,70 @@ class SettingsHandler(BaseHandler):
     def register_handlers(self):
         """Register settings-related handlers"""
         
+        @self.router.callback_query(F.data == "open_settings")
+        async def open_settings_callback(callback: CallbackQuery, state: FSMContext):
+            """Open settings from main menu"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                model_name = escape_html(user_settings.model)
+                settings_text = (
+                    f"⚙️ <b>{t(bot_lang, 'settings.title')}</b>\n\n"
+                    f"🤖 <b>{t(bot_lang, 'settings.bot_lang')}:</b> {user_settings.bot_lang.upper()}\n"
+                    f"📝 <b>{t(bot_lang, 'settings.gen_lang')}:</b> {user_settings.gen_lang.upper()}\n"
+                    f"🧠 <b>{t(bot_lang, 'settings.model')}:</b> <code>{model_name}</code>\n\n"
+                    f"{t(bot_lang, 'settings.what_change')}"
+                )
+                await callback.message.edit_text(
+                    settings_text,
+                    reply_markup=self.keyboard_manager.settings_main_keyboard(bot_lang),
+                    parse_mode="HTML"
+                )
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "open_settings callback", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+
+        @self.router.callback_query(F.data == "open_help")
+        async def open_help_callback(callback: CallbackQuery, state: FSMContext):
+            """Open help from main menu"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                help_text = f"""
+❓ **{t(bot_lang, 'help.title')}**
+
+**{t(bot_lang, 'help.how_to_use')}**
+1️⃣ {t(bot_lang, 'help.step1')}
+2️⃣ {t(bot_lang, 'help.step2')}
+3️⃣ {t(bot_lang, 'help.step3')}
+4️⃣ {t(bot_lang, 'help.step4')}
+
+**{t(bot_lang, 'help.features')}**
+• 🧠 {t(bot_lang, 'help.ai_analysis')}
+• 📍 {t(bot_lang, 'help.auto_location')}
+• 🔄 {t(bot_lang, 'help.reanalysis')}
+• 🌍 {t(bot_lang, 'help.multi_lang')}
+
+**{t(bot_lang, 'help.tips')}**
+• {t(bot_lang, 'help.tip1')}
+• {t(bot_lang, 'help.tip2')}
+• {t(bot_lang, 'help.tip3')}
+
+**{t(bot_lang, 'help.commands')}**
+• /start - {t(bot_lang, 'help.start_desc')}
+• /settings - {t(bot_lang, 'help.settings_desc')}
+• /stats - {t(bot_lang, 'help.stats_desc')}
+• /search - {t(bot_lang, 'help.search_desc')}
+• /recent - {t(bot_lang, 'help.recent_desc')}
+• /help - {t(bot_lang, 'help.help_desc')}
+                """.strip()
+                await callback.message.edit_text(help_text, parse_mode="Markdown")
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "open_help callback", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+
         @self.router.callback_query(F.data == "generate_location_descriptions")
         async def start_description_generation(callback: CallbackQuery, state: FSMContext):
             """Start location description generation process"""

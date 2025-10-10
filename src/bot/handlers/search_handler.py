@@ -31,6 +31,46 @@ class SearchHandler(BaseHandler):
     def register_handlers(self):
         """Register search-related handlers"""
         
+        @self.router.callback_query(F.data == "open_search")
+        async def open_search_callback(callback: CallbackQuery, state: FSMContext):
+            """Open search prompt from main menu"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                search_text = t(bot_lang, 'search.enter_query')
+                await callback.message.edit_text(
+                    search_text,
+                    reply_markup=self.keyboard_manager.search_cancel_keyboard(bot_lang)
+                )
+                await state.set_state(SearchStates.waiting_for_search_query)
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "open_search callback", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+
+        @self.router.callback_query(F.data == "open_recent")
+        async def open_recent_callback(callback: CallbackQuery, state: FSMContext):
+            """Open recent items from main menu"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                loading_msg = await callback.message.edit_text(t(bot_lang, 'search.loading_recent'))
+                items = await self.homebox_service.get_items(limit=20, offset=0)
+                if not items:
+                    try:
+                        await callback.message.edit_text(t(bot_lang, 'search.no_items'))
+                    except Exception:
+                        pass
+                    await callback.answer()
+                    return
+                await state.update_data(search_results=items, current_page=0)
+                await self.show_search_results(loading_msg, state, items, 0, bot_lang, is_recent=True)
+                await state.set_state(SearchStates.viewing_search_results)
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "open_recent callback", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'))
+
         @self.router.message(Command("search"))
         async def cmd_search(message: Message, state: FSMContext):
             """Handle /search command"""
@@ -116,6 +156,14 @@ class SearchHandler(BaseHandler):
                     try:
                         await searching_msg.edit_text(t(bot_lang, 'search.no_results'))
                     except:
+                        # If we cannot edit, remove placeholder and send fresh message
+                        try:
+                            await searching_msg.delete()
+                        except Exception:
+                            try:
+                                await searching_msg.edit_text(" ", reply_markup=None)
+                            except Exception:
+                                pass
                         await message.answer(t(bot_lang, 'search.no_results'))
                     await state.clear()
                     return
@@ -1912,7 +1960,14 @@ class SearchHandler(BaseHandler):
                             reply_markup=keyboard
                         )
                     except Exception:
-                        # Fallback to sending if edit is not possible
+                        # Fallback to sending if edit is not possible - clear current message first
+                        try:
+                            await message.delete()
+                        except Exception:
+                            try:
+                                await message.edit_text(" ", reply_markup=None)
+                            except Exception:
+                                pass
                         await message.answer(
                             f"📄 {t(lang, 'search.page_info')}: {page + 1}/{total_pages}",
                             reply_markup=keyboard
@@ -1927,6 +1982,14 @@ class SearchHandler(BaseHandler):
                             parse_mode="Markdown"
                         )
                     except Exception:
+                        # Clear the old message before sending new text
+                        try:
+                            await message.delete()
+                        except Exception:
+                            try:
+                                await message.edit_text(" ", reply_markup=None)
+                            except Exception:
+                                pass
                         await message.answer(
                             results_text,
                             reply_markup=keyboard,
