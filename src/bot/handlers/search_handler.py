@@ -2069,7 +2069,7 @@ class SearchHandler(BaseHandler):
             if current_page > 0:
                 pagination_row.append(
                     InlineKeyboardButton(
-                        text="⬅️",
+                        text=t(lang, 'common.previous'),
                         callback_data=f"search_page_{current_page - 1}"
                     )
                 )
@@ -2084,7 +2084,7 @@ class SearchHandler(BaseHandler):
             if current_page < total_pages - 1:
                 pagination_row.append(
                     InlineKeyboardButton(
-                        text="➡️",
+                        text=t(lang, 'common.next'),
                         callback_data=f"search_page_{current_page + 1}"
                     )
                 )
