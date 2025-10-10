@@ -185,10 +185,19 @@ class PhotoHandler(BaseHandler):
                     parse_mode="Markdown"
                 )
                 
-                # Find suggested location
+                # Find suggested location (enforce [TGB]-marked allowed locations only)
                 suggested_location = location_manager.find_best_match(analysis.suggested_location)
-                if not suggested_location:
-                    suggested_location = allowed_locations[0]
+                allowed_ids = {loc.id for loc in allowed_locations}
+                if (not suggested_location) or (suggested_location.id not in allowed_ids):
+                    # Try exact name within allowed
+                    lower_suggest = (analysis.suggested_location or "").strip().lower()
+                    exact_allowed = next((loc for loc in allowed_locations if loc.name.strip().lower() == lower_suggest), None)
+                    if exact_allowed:
+                        suggested_location = exact_allowed
+                    else:
+                        # Try partial match within allowed
+                        partial_allowed = next((loc for loc in allowed_locations if lower_suggest and lower_suggest in loc.name.strip().lower()), None)
+                        suggested_location = partial_allowed or allowed_locations[0]
                 
                 # Create item
                 item = Item(
@@ -737,10 +746,21 @@ class PhotoHandler(BaseHandler):
                     item.photo_path, location_manager, gen_lang, model, hint
                 )
                 
-                # Find suggested location
+                # Find suggested location (enforce [TGB]-marked allowed locations only)
                 suggested_location = location_manager.find_best_match(analysis.suggested_location)
-                if not suggested_location:
-                    suggested_location = locations[0]
+                allowed_locations = self.homebox_service.get_location_manager(locations).get_allowed_locations(
+                    self.settings.homebox.location_filter_mode,
+                    self.settings.homebox.location_marker
+                )
+                allowed_ids = {loc.id for loc in allowed_locations}
+                if (not suggested_location) or (suggested_location.id not in allowed_ids):
+                    lower_suggest = (analysis.suggested_location or "").strip().lower()
+                    exact_allowed = next((loc for loc in allowed_locations if loc.name.strip().lower() == lower_suggest), None)
+                    if exact_allowed:
+                        suggested_location = exact_allowed
+                    else:
+                        partial_allowed = next((loc for loc in allowed_locations if lower_suggest and lower_suggest in loc.name.strip().lower()), None)
+                        suggested_location = partial_allowed or (allowed_locations[0] if allowed_locations else locations[0])
                 
                 # Update item with new analysis
                 item.name = analysis.name
