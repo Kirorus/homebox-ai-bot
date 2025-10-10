@@ -67,8 +67,6 @@ CI/CD:
 ## 📖 Commands
 User: `/start`, `/settings`, `/search`, `/recent`, `/myid`
 
-Admin: `/stats`, `/cleanup`, `/checkapi`, `/testupload`
-
 ## 📂 Structure
 ```
 src/
