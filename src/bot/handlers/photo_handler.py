@@ -228,13 +228,19 @@ class PhotoHandler(BaseHandler):
                     f"✨ {t(bot_lang, 'item.what_change')}"
                 )
                 
-                await message.answer_photo(
+                result_msg = await message.answer_photo(
                     photo=photo.file_id,
                     caption=result_caption,
                     reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
                     parse_mode="Markdown"
                 )
-                
+
+                # Remember the confirmation message to edit it later during edits
+                try:
+                    await state.update_data(confirm_message_id=result_msg.message_id, confirm_chat_id=result_msg.chat.id)
+                except Exception:
+                    pass
+
                 await state.set_state(ItemStates.confirming_data)
                 await self.log_user_action("photo_analyzed", message.from_user.id, {
                     "analysis_result": analysis.__dict__,
@@ -264,6 +270,12 @@ class PhotoHandler(BaseHandler):
                 user_settings = await self.get_user_settings(callback.from_user.id)
                 bot_lang = user_settings.bot_lang
                 
+                # Remember the message id for further edits
+                try:
+                    await state.update_data(confirm_message_id=callback.message.message_id, confirm_chat_id=callback.message.chat.id)
+                except Exception:
+                    pass
+
                 await callback.message.edit_caption(
                     caption=f"✏️ **{t(bot_lang, 'edit.name_title')}**\n\n{t(bot_lang, 'edit.name_prompt')}",
                     reply_markup=self.keyboard_manager.cancel_keyboard(bot_lang, "cancel_edit"),
@@ -283,6 +295,12 @@ class PhotoHandler(BaseHandler):
                 user_settings = await self.get_user_settings(callback.from_user.id)
                 bot_lang = user_settings.bot_lang
                 
+                # Remember the message id for further edits
+                try:
+                    await state.update_data(confirm_message_id=callback.message.message_id, confirm_chat_id=callback.message.chat.id)
+                except Exception:
+                    pass
+
                 await callback.message.edit_caption(
                     caption=f"✏️ **{t(bot_lang, 'edit.description_title')}**\n\n{t(bot_lang, 'edit.description_prompt')}",
                     reply_markup=self.keyboard_manager.cancel_keyboard(bot_lang, "cancel_edit"),
@@ -351,12 +369,31 @@ class PhotoHandler(BaseHandler):
                     f"✨ {t(bot_lang, 'item.what_change')}"
                 )
                 
-                await message.answer_photo(
-                    photo=item.photo_file_id,
-                    caption=result_caption,
-                    reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
-                    parse_mode="Markdown"
-                )
+                # Try to edit previous confirmation message instead of sending a new one
+                data = await state.get_data()
+                confirm_message_id = data.get('confirm_message_id')
+                confirm_chat_id = data.get('confirm_chat_id')
+                edited_ok = False
+                if confirm_message_id and confirm_chat_id:
+                    try:
+                        await self.bot.edit_message_caption(
+                            chat_id=confirm_chat_id,
+                            message_id=confirm_message_id,
+                            caption=result_caption,
+                            reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
+                            parse_mode="Markdown"
+                        )
+                        edited_ok = True
+                    except Exception:
+                        edited_ok = False
+
+                if not edited_ok:
+                    await message.answer_photo(
+                        photo=item.photo_file_id,
+                        caption=result_caption,
+                        reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
+                        parse_mode="Markdown"
+                    )
                 
                 await state.set_state(ItemStates.confirming_data)
                 await self.log_user_action("name_edited", message.from_user.id, {"new_name": message.text})
@@ -412,12 +449,31 @@ class PhotoHandler(BaseHandler):
                     f"✨ {t(bot_lang, 'item.what_change')}"
                 )
                 
-                await message.answer_photo(
-                    photo=item.photo_file_id,
-                    caption=result_caption,
-                    reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
-                    parse_mode="Markdown"
-                )
+                # Try to edit previous confirmation message instead of sending a new one
+                data = await state.get_data()
+                confirm_message_id = data.get('confirm_message_id')
+                confirm_chat_id = data.get('confirm_chat_id')
+                edited_ok = False
+                if confirm_message_id and confirm_chat_id:
+                    try:
+                        await self.bot.edit_message_caption(
+                            chat_id=confirm_chat_id,
+                            message_id=confirm_message_id,
+                            caption=result_caption,
+                            reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
+                            parse_mode="Markdown"
+                        )
+                        edited_ok = True
+                    except Exception:
+                        edited_ok = False
+
+                if not edited_ok:
+                    await message.answer_photo(
+                        photo=item.photo_file_id,
+                        caption=result_caption,
+                        reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
+                        parse_mode="Markdown"
+                    )
                 
                 await state.set_state(ItemStates.confirming_data)
                 await self.log_user_action("description_edited", message.from_user.id, {"new_description": message.text})
