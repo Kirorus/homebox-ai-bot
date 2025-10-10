@@ -706,6 +706,11 @@ class PhotoHandler(BaseHandler):
                     reply_markup=self.keyboard_manager.cancel_keyboard(bot_lang, "cancel_reanalysis"),
                     parse_mode="Markdown"
                 )
+                # Remember the message being edited so we can update it later
+                try:
+                    await state.update_data(confirm_message_id=callback.message.message_id, confirm_chat_id=callback.message.chat.id)
+                except Exception:
+                    pass
                 await state.set_state(ItemStates.waiting_for_reanalysis_hint)
                 await callback.answer()
                 
@@ -776,7 +781,7 @@ class PhotoHandler(BaseHandler):
                     f"✨ {t(bot_lang, 'item.what_change')}"
                 )
                 
-                # Try to edit previous confirmation message instead of sending a new one
+                # Edit previous confirmation message; on failure send one new and remember it
                 data = await state.get_data()
                 confirm_message_id = data.get('confirm_message_id')
                 confirm_chat_id = data.get('confirm_chat_id')
@@ -795,62 +800,19 @@ class PhotoHandler(BaseHandler):
                         edited_ok = False
 
                 if not edited_ok:
-                    await message.answer_photo(
-                        photo=item.photo_file_id,
-                        caption=result_caption,
-                        reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
-                        parse_mode="Markdown"
-                    )
-                # Try to edit previous confirmation message instead of sending a new one
-                data = await state.get_data()
-                confirm_message_id = data.get('confirm_message_id')
-                confirm_chat_id = data.get('confirm_chat_id')
-                edited_ok = False
-                if confirm_message_id and confirm_chat_id:
                     try:
-                        await self.bot.edit_message_caption(
-                            chat_id=confirm_chat_id,
-                            message_id=confirm_message_id,
+                        sent = await message.answer_photo(
+                            photo=item.photo_file_id,
                             caption=result_caption,
                             reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
                             parse_mode="Markdown"
                         )
-                        edited_ok = True
+                        try:
+                            await state.update_data(confirm_message_id=sent.message_id, confirm_chat_id=sent.chat.id)
+                        except Exception:
+                            pass
                     except Exception:
-                        edited_ok = False
-
-                if not edited_ok:
-                    await message.answer_photo(
-                        photo=item.photo_file_id,
-                        caption=result_caption,
-                        reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
-                        parse_mode="Markdown"
-                    )
-                # Try to edit previous confirmation message instead of sending a new one
-                data = await state.get_data()
-                confirm_message_id = data.get('confirm_message_id')
-                confirm_chat_id = data.get('confirm_chat_id')
-                edited_ok = False
-                if confirm_message_id and confirm_chat_id:
-                    try:
-                        await self.bot.edit_message_caption(
-                            chat_id=confirm_chat_id,
-                            message_id=confirm_message_id,
-                            caption=result_caption,
-                            reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
-                            parse_mode="Markdown"
-                        )
-                        edited_ok = True
-                    except Exception:
-                        edited_ok = False
-
-                if not edited_ok:
-                    await message.answer_photo(
-                        photo=item.photo_file_id,
-                        caption=result_caption,
-                        reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
-                        parse_mode="Markdown"
-                    )
+                        pass
                 
                 await state.set_state(ItemStates.confirming_data)
                 await self.log_user_action("item_reanalyzed", message.from_user.id, {
