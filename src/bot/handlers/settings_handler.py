@@ -253,15 +253,30 @@ class SettingsHandler(BaseHandler):
                                    .replace('.', '\\.') \
                                    .replace('!', '\\!')
 
-                    confirm_text = t(bot_lang, 'locations.confirm_update_description').format(
-                        location_name=loc_name,
-                        current_description=current_desc,
-                        new_description=generated_description
+                    # Convert markdown bold (**) in i18n to HTML and escape dynamic values
+                    def md_bold_to_html(text: str) -> str:
+                        parts = text.split('**')
+                        if len(parts) == 1:
+                            return parts[0]
+                        out = []
+                        for i, part in enumerate(parts):
+                            if i % 2 == 1:
+                                out.append(f"<b>{part}</b>")
+                            else:
+                                out.append(part)
+                        return ''.join(out)
+
+                    confirm_raw = t(bot_lang, 'locations.confirm_update_description').format(
+                        location_name=escape_html(loc_name),
+                        current_description=escape_html(current_desc),
+                        new_description=escape_html(generated_description)
                     )
+                    confirm_text = md_bold_to_html(confirm_raw)
                     keyboard = self.keyboard_manager.description_confirmation_keyboard(bot_lang)
                     await generating_msg.edit_text(
                         confirm_text,
-                        reply_markup=keyboard
+                        reply_markup=keyboard,
+                        parse_mode="HTML"
                     )
                     await state.set_state(LocationStates.confirming_description_update)
                 except Exception as e:
