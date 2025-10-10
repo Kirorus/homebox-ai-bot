@@ -641,7 +641,7 @@ class SettingsHandler(BaseHandler):
                 
                 await callback.message.edit_text(
                     f"📝 **{t(bot_lang, 'settings.gen_lang_title')}**\n\n{t(bot_lang, 'settings.gen_lang_prompt')}",
-                    reply_markup=self.keyboard_manager.gen_lang_keyboard(user_settings.gen_lang),
+                    reply_markup=self.keyboard_manager.gen_lang_keyboard(bot_lang, user_settings.gen_lang),
                     parse_mode="Markdown"
                 )
                 await callback.answer()
@@ -749,9 +749,10 @@ class SettingsHandler(BaseHandler):
                 user_settings.gen_lang = 'ru'
                 await self.database.set_user_settings(callback.from_user.id, user_settings.to_dict())
                 
+                lang_name = t(user_settings.bot_lang, 'languages.ru')
                 await callback.message.edit_text(
-                    f"✅ **{t(user_settings.bot_lang, 'success.gen_lang_set_ru')}**\n\n{t(user_settings.bot_lang, 'settings.gen_lang_prompt')}",
-                    reply_markup=self.keyboard_manager.gen_lang_keyboard('ru'),
+                    f"✅ **{t(user_settings.bot_lang, 'success.gen_lang_set').format(lang_name=lang_name)}**\n\n{t(user_settings.bot_lang, 'settings.gen_lang_prompt')}",
+                    reply_markup=self.keyboard_manager.gen_lang_keyboard(user_settings.bot_lang, 'ru'),
                     parse_mode="Markdown"
                 )
                 await callback.answer(t(user_settings.bot_lang, 'success.language_updated'))
@@ -769,9 +770,10 @@ class SettingsHandler(BaseHandler):
                 user_settings.gen_lang = 'en'
                 await self.database.set_user_settings(callback.from_user.id, user_settings.to_dict())
                 
+                lang_name = t(user_settings.bot_lang, 'languages.en')
                 await callback.message.edit_text(
-                    f"✅ **{t(user_settings.bot_lang, 'success.gen_lang_set_en')}**\n\n{t(user_settings.bot_lang, 'settings.gen_lang_prompt')}",
-                    reply_markup=self.keyboard_manager.gen_lang_keyboard('en'),
+                    f"✅ **{t(user_settings.bot_lang, 'success.gen_lang_set').format(lang_name=lang_name)}**\n\n{t(user_settings.bot_lang, 'settings.gen_lang_prompt')}",
+                    reply_markup=self.keyboard_manager.gen_lang_keyboard(user_settings.bot_lang, 'en'),
                     parse_mode="Markdown"
                 )
                 await callback.answer(t(user_settings.bot_lang, 'success.language_updated'))
@@ -789,9 +791,10 @@ class SettingsHandler(BaseHandler):
                 user_settings.gen_lang = 'de'
                 await self.database.set_user_settings(callback.from_user.id, user_settings.to_dict())
                 
+                lang_name = t(user_settings.bot_lang, 'languages.de')
                 await callback.message.edit_text(
-                    f"✅ **{t(user_settings.bot_lang, 'success.gen_lang_set_de')}**\n\n{t(user_settings.bot_lang, 'settings.gen_lang_prompt')}",
-                    reply_markup=self.keyboard_manager.gen_lang_keyboard('de'),
+                    f"✅ **{t(user_settings.bot_lang, 'success.gen_lang_set').format(lang_name=lang_name)}**\n\n{t(user_settings.bot_lang, 'settings.gen_lang_prompt')}",
+                    reply_markup=self.keyboard_manager.gen_lang_keyboard(user_settings.bot_lang, 'de'),
                     parse_mode="Markdown"
                 )
                 await callback.answer(t(user_settings.bot_lang, 'success.language_updated'))
@@ -849,9 +852,10 @@ class SettingsHandler(BaseHandler):
                 user_settings.gen_lang = 'fr'
                 await self.database.set_user_settings(callback.from_user.id, user_settings.to_dict())
                 
+                lang_name = t(user_settings.bot_lang, 'languages.fr')
                 await callback.message.edit_text(
-                    f"✅ **{t(user_settings.bot_lang, 'success.gen_lang_set_fr')}**\n\n{t(user_settings.bot_lang, 'settings.gen_lang_prompt')}",
-                    reply_markup=self.keyboard_manager.gen_lang_keyboard('fr'),
+                    f"✅ **{t(user_settings.bot_lang, 'success.gen_lang_set').format(lang_name=lang_name)}**\n\n{t(user_settings.bot_lang, 'settings.gen_lang_prompt')}",
+                    reply_markup=self.keyboard_manager.gen_lang_keyboard(user_settings.bot_lang, 'fr'),
                     parse_mode="Markdown"
                 )
                 await callback.answer(t(user_settings.bot_lang, 'success.language_updated'))
@@ -869,9 +873,10 @@ class SettingsHandler(BaseHandler):
                 user_settings.gen_lang = 'es'
                 await self.database.set_user_settings(callback.from_user.id, user_settings.to_dict())
                 
+                lang_name = t(user_settings.bot_lang, 'languages.es')
                 await callback.message.edit_text(
-                    f"✅ **{t(user_settings.bot_lang, 'success.gen_lang_set_es')}**\n\n{t(user_settings.bot_lang, 'settings.gen_lang_prompt')}",
-                    reply_markup=self.keyboard_manager.gen_lang_keyboard('es'),
+                    f"✅ **{t(user_settings.bot_lang, 'success.gen_lang_set').format(lang_name=lang_name)}**\n\n{t(user_settings.bot_lang, 'settings.gen_lang_prompt')}",
+                    reply_markup=self.keyboard_manager.gen_lang_keyboard(user_settings.bot_lang, 'es'),
                     parse_mode="Markdown"
                 )
                 await callback.answer(t(user_settings.bot_lang, 'success.language_updated'))
@@ -881,12 +886,12 @@ class SettingsHandler(BaseHandler):
                 await self.handle_error(e, "set_gen_lang_es", callback.from_user.id)
                 await callback.answer(t('en', 'errors.occurred'), show_alert=True)
         
-        @self.router.callback_query(F.data.startswith("model_"))
+        @self.router.callback_query(F.data.startswith("select_model_"))
         async def set_model_callback(callback: CallbackQuery, state: FSMContext):
             """Set AI model"""
             try:
                 # Extract model name from callback data
-                model_name = callback.data.split("_", 1)[1]
+                model_name = callback.data.split("_", 2)[2]
                 
                 # Validate model
                 if model_name not in self.settings.ai.available_models:
@@ -950,7 +955,7 @@ class SettingsHandler(BaseHandler):
         
         @self.router.callback_query(F.data == "quick_stats")
         async def quick_stats_callback(callback: CallbackQuery, state: FSMContext):
-            """Show detailed statistics"""
+            """Show quick statistics with toggle to detailed and back"""
             try:
                 user_settings = await self.get_user_settings(callback.from_user.id)
                 bot_lang = user_settings.bot_lang
@@ -959,20 +964,49 @@ class SettingsHandler(BaseHandler):
                 bot_stats = await self.database.get_bot_stats()
                 user_stats = await self.database.get_user_stats(callback.from_user.id)
                 
-                # Create detailed stats message
-                stats_text = self.create_detailed_stats_message(
+                # Quick stats
+                stats_text = self.create_quick_stats_message(
                     bot_lang, bot_stats, user_stats, user_settings.to_dict()
                 )
-                
+
+                # Keyboard: toggle to detailed + back to settings
+                builder = InlineKeyboardBuilder()
+                builder.row(InlineKeyboardButton(text=t(bot_lang, 'stats.show_detailed'), callback_data="detailed_stats"))
+                builder.row(InlineKeyboardButton(text=t(bot_lang, 'common.back'), callback_data="back_to_settings"))
+
                 await callback.message.edit_text(
                     stats_text,
-                    reply_markup=self.keyboard_manager.settings_main_keyboard(bot_lang),
+                    reply_markup=builder.as_markup(),
                     parse_mode="Markdown"
                 )
                 await callback.answer()
                 
             except Exception as e:
                 await self.handle_error(e, "quick_stats", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+
+        @self.router.callback_query(F.data == "detailed_stats")
+        async def detailed_stats_callback(callback: CallbackQuery, state: FSMContext):
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                bot_stats = await self.database.get_bot_stats()
+                user_stats = await self.database.get_user_stats(callback.from_user.id)
+                stats_text = self.create_detailed_stats_message(
+                    bot_lang, bot_stats, user_stats, user_settings.to_dict()
+                )
+                # Keyboard: toggle back to quick + back to settings
+                builder = InlineKeyboardBuilder()
+                builder.row(InlineKeyboardButton(text=t(bot_lang, 'stats.show_quick'), callback_data="quick_stats"))
+                builder.row(InlineKeyboardButton(text=t(bot_lang, 'common.back'), callback_data="back_to_settings"))
+                await callback.message.edit_text(
+                    stats_text,
+                    reply_markup=builder.as_markup(),
+                    parse_mode="Markdown"
+                )
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "detailed_stats", callback.from_user.id)
                 await callback.answer(t('en', 'errors.occurred'), show_alert=True)
         
         @self.router.callback_query(F.data == "quick_restart")
@@ -1260,7 +1294,8 @@ class SettingsHandler(BaseHandler):
                 all_locations = data['all_locations']
                 selected_locations = data['selected_locations']
                 
-                # Apply changes
+                # Apply changes with progress
+                status_msg = await callback.message.edit_text(t(bot_lang, 'locations.applying_markers'))
                 updated_count = 0
                 errors = []
                 

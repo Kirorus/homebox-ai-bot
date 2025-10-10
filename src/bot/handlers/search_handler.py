@@ -667,12 +667,20 @@ class SearchHandler(BaseHandler):
                 
                 new_location_id = location_mapping[location_index]
                 
-                # Show moving message in-place
+                # Show moving message + progress
                 try:
                     await callback.message.edit_text(t(bot_lang, 'search.moving_item'))
                     moving_msg = callback.message
                 except Exception:
                     moving_msg = await callback.message.answer(t(bot_lang, 'search.moving_item'))
+                move_progress = AnimatedProgress(
+                    moving_msg,
+                    base_text=t(bot_lang, 'search.moving_item'),
+                    bar_length=12,
+                    phases=[('API', 6), ('Confirm', 2)],
+                    interval_sec=0.25,
+                )
+                await move_progress.start()
                 
                 # Update item location
                 success = await self.homebox_service.update_item_location(item_id, new_location_id)
@@ -696,12 +704,14 @@ class SearchHandler(BaseHandler):
                     )
                     
                     try:
+                        await move_progress.stop()
                         await moving_msg.edit_text(
                             success_text,
                             reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
                             parse_mode="Markdown"
                         )
                     except Exception:
+                        await move_progress.stop()
                         await callback.message.answer(
                             success_text,
                             reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
@@ -718,12 +728,14 @@ class SearchHandler(BaseHandler):
                     )
                     
                     try:
+                        await move_progress.stop()
                         await moving_msg.edit_text(
                             error_text,
                             reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
                             parse_mode="Markdown"
                         )
                     except Exception:
+                        await move_progress.stop()
                         await callback.message.answer(
                             error_text,
                             reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
@@ -912,7 +924,7 @@ class SearchHandler(BaseHandler):
                 try:
                     await callback.message.edit_text(
                         reanalyze_text,
-                        reply_markup=None,
+                        reply_markup=self.keyboard_manager.reanalysis_prompt_keyboard(bot_lang),
                         parse_mode="Markdown"
                     )
                     prompt_msg_id = callback.message.message_id
@@ -920,7 +932,7 @@ class SearchHandler(BaseHandler):
                 except Exception as edit_error:
                     msg = await callback.message.answer(
                         reanalyze_text,
-                        reply_markup=None,
+                        reply_markup=self.keyboard_manager.reanalysis_prompt_keyboard(bot_lang),
                         parse_mode="Markdown"
                     )
                     prompt_msg_id = msg.message_id
@@ -932,6 +944,33 @@ class SearchHandler(BaseHandler):
                 
             except Exception as e:
                 await self.handle_error(e, "start_reanalyze_item", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+
+        @self.router.callback_query(F.data == "cancel_reanalysis", SearchStates.waiting_for_reanalysis_hint)
+        async def cancel_reanalysis_callback(callback: CallbackQuery, state: FSMContext):
+            """Cancel reanalysis and return to item details"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                data = await state.get_data()
+                item_id = data.get('reanalyzing_item_id')
+                if not item_id:
+                    await callback.answer(t(bot_lang, 'search.item_not_found'), show_alert=True)
+                    return
+                item = await self.homebox_service.get_item_by_id(item_id)
+                if not item:
+                    await callback.answer(t(bot_lang, 'search.item_not_found'), show_alert=True)
+                    return
+                details_text = self.format_item_details(item, bot_lang)
+                await callback.message.edit_text(
+                    details_text,
+                    reply_markup=self.keyboard_manager.item_details_keyboard(bot_lang, item_id),
+                    parse_mode="Markdown"
+                )
+                await state.set_state(SearchStates.viewing_item_details)
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "cancel_reanalysis", callback.from_user.id)
                 await callback.answer(t('en', 'errors.occurred'), show_alert=True)
         
         @self.router.callback_query(F.data.startswith("delete_item_"))
@@ -1030,6 +1069,153 @@ class SearchHandler(BaseHandler):
                 await callback.answer()
             except Exception as e:
                 await self.handle_error(e, "reject_reanalysis_apply", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
+
+        @self.router.callback_query(F.data == "reanalyze_no_hint", SearchStates.waiting_for_reanalysis_hint)
+        async def reanalyze_no_hint_callback(callback: CallbackQuery, state: FSMContext):
+            """Run reanalysis without user-provided hint and update review UI in-place"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                data = await state.get_data()
+                item_id = data.get('reanalyzing_item_id', '')
+                current_item = data.get('current_item', {})
+                if not item_id or not current_item:
+                    await callback.answer(t(bot_lang, 'search.item_not_found'), show_alert=True)
+                    return
+                gen_lang = user_settings.gen_lang
+                hint = ""
+
+                # Progress: edit prompt if possible
+                prompt_id = data.get('reanalyze_prompt_message_id')
+                prompt_chat = data.get('reanalyze_prompt_chat_id')
+                processing_text = t(bot_lang, 'reanalysis.processing')
+                target_chat_id = callback.message.chat.id
+                target_message_id = None
+                if prompt_id and prompt_chat == callback.message.chat.id:
+                    try:
+                        await callback.message.bot.edit_message_text(chat_id=prompt_chat, message_id=prompt_id, text=processing_text)
+                        target_chat_id = prompt_chat
+                        target_message_id = prompt_id
+                    except Exception:
+                        pass
+                if target_message_id is None:
+                    tmp_msg = await callback.message.edit_text(processing_text)
+                    target_chat_id = tmp_msg.chat.id
+                    target_message_id = tmp_msg.message_id
+
+                async def edit_target(text: str, reply_markup=None, parse_mode: str | None = None):
+                    try:
+                        await callback.message.bot.edit_message_text(
+                            chat_id=target_chat_id,
+                            message_id=target_message_id,
+                            text=text,
+                            reply_markup=reply_markup,
+                            parse_mode=parse_mode
+                        )
+                    except Exception:
+                        await callback.message.answer(text, reply_markup=reply_markup, parse_mode=parse_mode)
+
+                def build_progress_bar(current: int, total: int, width: int = 10) -> str:
+                    if total <= 0:
+                        total = 1
+                    filled = int(width * max(0, min(current, total)) / total)
+                    return "" + ("█" * filled) + ("░" * (width - filled))
+
+                async def show_progress(current: int, total: int, label_key: str):
+                    percent = int(100 * max(0, min(current, total)) / total)
+                    bar = build_progress_bar(current, total)
+                    label = t(bot_lang, label_key)
+                    await edit_target(f"{t(bot_lang, 'reanalysis.processing')}\n\n[{bar}] {percent}%\n{label}")
+
+                # Locations
+                await show_progress(1, 4, 'reanalysis.step_prepare')
+                all_locations = await self.homebox_service.get_locations()
+                if not all_locations:
+                    await edit_target(t(bot_lang, 'errors.no_locations'))
+                    await callback.answer()
+                    return
+                location_manager = self.homebox_service.get_location_manager(all_locations)
+                allowed_locations = location_manager.get_allowed_locations(
+                    self.settings.homebox.location_filter_mode,
+                    self.settings.homebox.location_marker
+                )
+
+                image_id = current_item.get('imageId', '')
+                if not image_id:
+                    await edit_target(t(bot_lang, 'search.no_image_for_reanalysis'))
+                    await callback.answer()
+                    return
+                await show_progress(2, 4, 'reanalysis.step_download')
+                image_path = await self.homebox_service.download_item_image(item_id, image_id)
+                if not image_path:
+                    await edit_target(t(bot_lang, 'search.image_download_failed'))
+                    await callback.answer()
+                    return
+
+                try:
+                    await show_progress(3, 4, 'reanalysis.step_analyze')
+                    analysis = await self.ai_service.analyze_image(
+                        image_path=image_path,
+                        location_manager=location_manager,
+                        lang=gen_lang,
+                        model=user_settings.model,
+                        caption=hint
+                    )
+                    suggested_location = None
+                    for loc in allowed_locations:
+                        if loc.name == analysis.suggested_location:
+                            suggested_location = loc
+                            break
+                    if not suggested_location:
+                        suggested_location = allowed_locations[0] if allowed_locations else None
+                    if not suggested_location:
+                        await edit_target(t(bot_lang, 'errors.no_locations'))
+                        await callback.answer()
+                        return
+                    await show_progress(4, 4, 'reanalysis.step_update')
+                    update_data = {
+                        'name': analysis.name,
+                        'description': analysis.description,
+                        'location_id': suggested_location.id
+                    }
+                    success = await self.homebox_service.update_item(item_id, update_data)
+                    if success:
+                        review_text = t(bot_lang, 'search.reanalysis_successful').format(
+                            hint=t(bot_lang, 'reanalysis.no_hint'),
+                            new_name=analysis.name,
+                            new_description=analysis.description,
+                            new_location=suggested_location.name
+                        )
+                        await edit_target(
+                            review_text,
+                            reply_markup=self.keyboard_manager.reanalysis_confirmation_keyboard(bot_lang, item_id),
+                            parse_mode="Markdown"
+                        )
+                        await state.set_state(SearchStates.viewing_item_details)
+                        await state.update_data(
+                            proposed_update={
+                                'name': analysis.name,
+                                'description': analysis.description,
+                                'location_id': suggested_location.id
+                            },
+                            reanalyzing_item_id=item_id
+                        )
+                    else:
+                        error_text = t(bot_lang, 'search.update_failed').format(
+                            error=self.homebox_service.last_error or 'Unknown error'
+                        )
+                        await edit_target(error_text)
+                finally:
+                    try:
+                        import os
+                        if image_path and os.path.exists(image_path):
+                            os.remove(image_path)
+                    except Exception:
+                        pass
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "reanalyze_no_hint_callback", callback.from_user.id)
                 await callback.answer(t('en', 'errors.occurred'), show_alert=True)
         
         @self.router.callback_query(F.data.startswith("confirm_delete_"))

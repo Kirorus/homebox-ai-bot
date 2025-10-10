@@ -49,14 +49,14 @@ class KeyboardManager:
         return builder.as_markup()
     
     @staticmethod
-    def gen_lang_keyboard(current_lang: str) -> InlineKeyboardMarkup:
-        """Create generation language selection keyboard"""
+    def gen_lang_keyboard(bot_lang: str, current_gen_lang: str) -> InlineKeyboardMarkup:
+        """Create generation language selection keyboard with UI in bot_lang and current selection marked"""
         builder = InlineKeyboardBuilder()
-        ru_label = t(current_lang, 'languages.ru') + (" ✓" if current_lang == 'ru' else "")
-        en_label = t(current_lang, 'languages.en') + (" ✓" if current_lang == 'en' else "")
-        de_label = t(current_lang, 'languages.de') + (" ✓" if current_lang == 'de' else "")
-        fr_label = t(current_lang, 'languages.fr') + (" ✓" if current_lang == 'fr' else "")
-        es_label = t(current_lang, 'languages.es') + (" ✓" if current_lang == 'es' else "")
+        ru_label = t(bot_lang, 'languages.ru') + (" ✓" if current_gen_lang == 'ru' else "")
+        en_label = t(bot_lang, 'languages.en') + (" ✓" if current_gen_lang == 'en' else "")
+        de_label = t(bot_lang, 'languages.de') + (" ✓" if current_gen_lang == 'de' else "")
+        fr_label = t(bot_lang, 'languages.fr') + (" ✓" if current_gen_lang == 'fr' else "")
+        es_label = t(bot_lang, 'languages.es') + (" ✓" if current_gen_lang == 'es' else "")
         builder.row(InlineKeyboardButton(text=ru_label, callback_data="gen_lang_ru"))
         builder.row(InlineKeyboardButton(text=en_label, callback_data="gen_lang_en"))
         builder.row(InlineKeyboardButton(text=de_label, callback_data="gen_lang_de"))
@@ -64,7 +64,7 @@ class KeyboardManager:
         builder.row(InlineKeyboardButton(text=es_label, callback_data="gen_lang_es"))
         
         # Back button
-        builder.row(InlineKeyboardButton(text=t(current_lang, 'common.back'), callback_data="back_to_settings"))
+        builder.row(InlineKeyboardButton(text=t(bot_lang, 'common.back'), callback_data="back_to_settings"))
         return builder.as_markup()
     
     @staticmethod
@@ -175,7 +175,7 @@ class KeyboardManager:
         
         for model in available_models[start:end]:
             label = ("✓ " if model == current_model else "") + model
-            builder.row(InlineKeyboardButton(text=label, callback_data=f"model_{model}"))
+            builder.row(InlineKeyboardButton(text=label, callback_data=f"select_model_{model}"))
         
         # Navigation
         nav = []

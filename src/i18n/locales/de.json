@@ -142,15 +142,13 @@
     "bot_lang_set_de": "Bot-Sprache eingestellt: Deutsch",
     "bot_lang_set_fr": "Langue du bot définie : Français",
     "bot_lang_set_es": "Idioma del bot establecido: Español",
-    "gen_lang_set_ru": "Язык генерации установлен: Русский",
-    "gen_lang_set_en": "Generation language set: English",
-    "gen_lang_set_de": "Generierungssprache eingestellt: Deutsch",
-    "gen_lang_set_fr": "Langue de génération définie : Français",
-    "gen_lang_set_es": "Idioma de generación establecido: Español",
+    "gen_lang_set": "Generierungssprache eingestellt: {lang_name}",
     "model_set": "Modell festgelegt"
   },
   "stats": {
     "title": "📊 Bot-Statistiken",
+    "show_detailed": "Details anzeigen",
+    "show_quick": "Kurz anzeigen",
     "users": "👥 Registrierte Benutzer",
     "items_processed": "📦 Verarbeitete Gegenstände",
     "total_requests": "🔄 Gesamtanträge",

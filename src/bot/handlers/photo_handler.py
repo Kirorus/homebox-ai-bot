@@ -114,11 +114,16 @@ class PhotoHandler(BaseHandler):
                 user_settings = await self.get_user_settings(message.from_user.id)
                 bot_lang = user_settings.bot_lang
                 
-                # Send initial loading indicator with progress
-                progress_msg = await message.answer(
-                    self.create_progress_message(bot_lang, 1, 5, t(bot_lang, 'processing.photo')),
-                    parse_mode="Markdown"
+                # Initial loading + Animated progress across steps
+                progress_msg = await message.answer(t(bot_lang, 'processing.photo'))
+                photo_progress = AnimatedProgress(
+                    progress_msg,
+                    base_text=t(bot_lang, 'processing.photo'),
+                    bar_length=16,
+                    phases=[('Download', 2), ('Analyze', 6), ('Locate', 3), ('Prepare', 3)],
+                    interval_sec=0.3,
                 )
+                await photo_progress.start()
                 
                 # Get photo in maximum quality
                 photo = message.photo[-1]
@@ -129,10 +134,7 @@ class PhotoHandler(BaseHandler):
                 await self.bot.download_file(file.file_path, file_path)
                 
                 # Update progress - AI analysis
-                await progress_msg.edit_text(
-                    self.create_progress_message(bot_lang, 2, 5, t(bot_lang, 'processing.analyzing')),
-                    parse_mode="Markdown"
-                )
+                # (Progress animation continues)
                 
                 # Validate image
                 is_valid, error_msg = self.image_service.validate_image(file_path)
@@ -183,10 +185,7 @@ class PhotoHandler(BaseHandler):
                 )
                 
                 # Update progress - Finding location
-                await progress_msg.edit_text(
-                    self.create_progress_message(bot_lang, 3, 5, t(bot_lang, 'processing.finding_location')),
-                    parse_mode="Markdown"
-                )
+                # (Progress animation continues)
                 
                 # Find suggested location (enforce [TGB]-marked allowed locations only)
                 suggested_location = allowed_location_manager.find_best_match(analysis.suggested_location)
@@ -217,15 +216,16 @@ class PhotoHandler(BaseHandler):
                 await state.update_data(item=item, locations=allowed_locations)
                 
                 # Update progress - Item ready
-                await progress_msg.edit_text(
-                    self.create_progress_message(bot_lang, 4, 5, t(bot_lang, 'processing.creating')),
-                    parse_mode="Markdown"
-                )
+                # (Progress animation continues)
                 
                 # Small delay for better UX
                 await asyncio.sleep(0.5)
                 
-                # Remove progress message
+                # Stop and remove progress
+                try:
+                    await photo_progress.stop()
+                except Exception:
+                    pass
                 try:
                     await progress_msg.delete()
                 except Exception:

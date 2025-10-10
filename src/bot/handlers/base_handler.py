@@ -154,12 +154,64 @@ class BaseHandler(ABC):
             result += f"\n\n**{t(lang, 'common.suggestion')}:**\n{suggestion}"
         
         return result
+
+    async def send_or_edit(self, origin: Message | CallbackQuery, text: str, reply_markup=None, parse_mode: str | None = None):
+        """Prefer editing the current message, fall back to sending a new one."""
+        try:
+            if isinstance(origin, CallbackQuery):
+                await origin.message.edit_text(text, reply_markup=reply_markup, parse_mode=parse_mode)
+                return origin.message
+            else:
+                await origin.edit_text(text, reply_markup=reply_markup, parse_mode=parse_mode)
+                return origin
+        except Exception:
+            try:
+                if isinstance(origin, CallbackQuery):
+                    return await origin.message.answer(text, reply_markup=reply_markup, parse_mode=parse_mode)
+                else:
+                    return await origin.answer(text, reply_markup=reply_markup, parse_mode=parse_mode)
+            except Exception:
+                logger.exception("Failed to send_or_edit message")
+                return None
+
+    async def try_delete(self, obj: Message | CallbackQuery):
+        """Attempt to delete a message; ignore failures."""
+        try:
+            if isinstance(obj, CallbackQuery):
+                await obj.message.delete()
+            else:
+                await obj.delete()
+        except Exception:
+            pass
     
     def create_detailed_stats_message(self, lang: str, bot_stats: dict, user_stats: dict, user_settings: dict) -> str:
         """Create detailed statistics message"""
         import os
         import psutil
         from datetime import datetime
+        
+        def escape_markdown(text: str) -> str:
+            if not isinstance(text, str):
+                text = str(text)
+            return text.replace('\\', '\\\\') \
+                       .replace('_', '\\_') \
+                       .replace('*', '\\*') \
+                       .replace('[', '\\[') \
+                       .replace(']', '\\]') \
+                       .replace('(', '\\(') \
+                       .replace(')', '\\)') \
+                       .replace('~', '\\~') \
+                       .replace('`', '\\`') \
+                       .replace('>', '\\>') \
+                       .replace('#', '\\#') \
+                       .replace('+', '\\+') \
+                       .replace('-', '\\-') \
+                       .replace('=', '\\=') \
+                       .replace('|', '\\|') \
+                       .replace('{', '\\{') \
+                       .replace('}', '\\}') \
+                       .replace('.', '\\.') \
+                       .replace('!', '\\!')
         
         # Format uptime
         uptime = bot_stats.get('start_time', 'Unknown')
@@ -233,36 +285,74 @@ class BaseHandler(ABC):
                 model_items.append(f"`{model}`: {count}")
             model_dist_text = "\n".join(model_items)
         
-        return f"""
-{t(lang, 'stats.title')}
+        model_name = escape_markdown(user_settings.get('model', 'Unknown'))
+        return (
+            f"{t(lang, 'stats.title')}\n\n"
+            f"**{t(lang, 'stats.user_activity')}**\n"
+            f"{t(lang, 'stats.photos_analyzed')}: {user_stats.get('photos_analyzed', 0)}\n"
+            f"{t(lang, 'stats.reanalyses')}: {user_stats.get('reanalyses', 0)}\n"
+            f"{t(lang, 'stats.last_activity')}: {last_activity}\n"
+            f"{t(lang, 'stats.account_created')}: {account_created}\n\n"
+            f"**{t(lang, 'stats.current_settings')}**\n"
+            f"{t(lang, 'stats.bot_language')}: {user_settings.get('bot_lang', 'Unknown').upper()}\n"
+            f"{t(lang, 'stats.gen_language')}: {user_settings.get('gen_lang', 'Unknown').upper()}\n"
+            f"{t(lang, 'stats.ai_model')}: `{model_name}`\n\n"
+            f"**{t(lang, 'stats.users')}**: {bot_stats.get('users_registered', 0)}\n"
+            f"**{t(lang, 'stats.items_processed')}**: {bot_stats.get('items_processed', 0)}\n"
+            f"**{t(lang, 'stats.total_requests')}**: {bot_stats.get('total_requests', 0)}\n"
+            f"**{t(lang, 'stats.uptime')}**: {uptime}\n\n"
+            f"**{t(lang, 'stats.system_info')}**\n"
+            f"{t(lang, 'stats.database_size')}: {db_size}\n"
+            f"{t(lang, 'stats.memory_usage')}: {memory_usage}\n"
+            f"{t(lang, 'stats.status')}: {t(lang, 'stats.online')}\n\n"
+            f"**Language Distribution:**\n"
+            f"{lang_dist_text if lang_dist_text else 'No data'}\n\n"
+            f"**Model Distribution:**\n"
+            f"{model_dist_text if model_dist_text else 'No data'}"
+        )
 
-**{t(lang, 'stats.user_activity')}**
-{t(lang, 'stats.photos_analyzed')}: {user_stats.get('photos_analyzed', 0)}
-{t(lang, 'stats.reanalyses')}: {user_stats.get('reanalyses', 0)}
-{t(lang, 'stats.last_activity')}: {last_activity}
-{t(lang, 'stats.account_created')}: {account_created}
+    def create_quick_stats_message(self, lang: str, bot_stats: dict, user_stats: dict, user_settings: dict) -> str:
+        """Create a compact statistics message focusing on essentials"""
+        from datetime import datetime
+        # Simple aggregates with fallbacks
+        photos = user_stats.get('photos_analyzed', 0)
+        rean = user_stats.get('reanalyses', 0)
+        users = bot_stats.get('users_registered', 0)
+        items = bot_stats.get('items_processed', 0)
+        model = user_settings.get('model', 'Unknown')
+        # escape model for markdown inline code
+        def escape_md(text: str) -> str:
+            if not isinstance(text, str):
+                text = str(text)
+            return text.replace('`', '\\`').replace('_', '\\_').replace('*', '\\*')
+        model_md = escape_md(model)
+        # Uptime brief
+        uptime = bot_stats.get('start_time')
+        if uptime:
+            try:
+                start = datetime.fromisoformat(uptime)
+                delta = datetime.now() - start
+                days = delta.days
+                hours = (delta.seconds // 3600)
+                uptime_brief = f"{days}d {hours}h"
+            except Exception:
+                uptime_brief = t(lang, 'stats.unknown') if 'stats.unknown' in self._safe_keys(lang) else 'Unknown'
+        else:
+            uptime_brief = t(lang, 'stats.unknown') if 'stats.unknown' in self._safe_keys(lang) else 'Unknown'
+        return (
+            f"**{t(lang, 'stats.title')}**\n\n"
+            f"👤 {t(lang, 'stats.photos_analyzed')}: {photos} | {t(lang, 'stats.reanalyses')}: {rean}\n"
+            f"🧠 {t(lang, 'stats.ai_model')}: `{model_md}` | ⏰ {t(lang, 'stats.uptime')}: {uptime_brief}\n"
+            f"👥 {t(lang, 'stats.users')}: {users} | 📦 {t(lang, 'stats.items_processed')}: {items}"
+        )
 
-**{t(lang, 'stats.current_settings')}**
-{t(lang, 'stats.bot_language')}: {user_settings.get('bot_lang', 'Unknown').upper()}
-{t(lang, 'stats.gen_language')}: {user_settings.get('gen_lang', 'Unknown').upper()}
-{t(lang, 'stats.ai_model')}: `{user_settings.get('model', 'Unknown')}`
-
-**{t(lang, 'stats.users')}**: {bot_stats.get('users_registered', 0)}
-**{t(lang, 'stats.items_processed')}**: {bot_stats.get('items_processed', 0)}
-**{t(lang, 'stats.total_requests')}**: {bot_stats.get('total_requests', 0)}
-**{t(lang, 'stats.uptime')}**: {uptime}
-
-**{t(lang, 'stats.system_info')}**
-{t(lang, 'stats.database_size')}: {db_size}
-{t(lang, 'stats.memory_usage')}: {memory_usage}
-{t(lang, 'stats.status')}: {t(lang, 'stats.online')}
-
-**Language Distribution:**
-{lang_dist_text if lang_dist_text else "No data"}
-
-**Model Distribution:**
-{model_dist_text if model_dist_text else "No data"}
-        """.strip()
+    def _safe_keys(self, lang: str) -> set:
+        """Internal helper to avoid KeyError if i18n misses; assumes i18n manager can expose keys; fallback empty."""
+        try:
+            # i18n manager may not expose keys; return empty to avoid dependency
+            return set()
+        except Exception:
+            return set()
     
     def register_handlers(self):
         """Register handlers - to be implemented by subclasses"""
