@@ -677,7 +677,7 @@ class HomeBoxService:
             return None
     
     @retry_async(max_attempts=3, delay=2.0, exceptions=(aiohttp.ClientError, asyncio.TimeoutError))
-    async def get_items_by_location(self, location_id: str) -> List[Item]:
+    async def get_items_by_location(self, location_id: str) -> List[Dict]:
         """Get items from specific location"""
         try:
             session = await self._get_session()
@@ -711,25 +711,36 @@ class HomeBoxService:
                     
                     try:
                         data = await response.json()
-                        items_data = data.get('data', [])
-                        
+                        # Support multiple API response shapes
+                        if isinstance(data, dict):
+                            items_data = data.get('items') or data.get('data') or []
+                        elif isinstance(data, list):
+                            items_data = data
+                        else:
+                            items_data = []
+
                         if not items_data:
                             break
-                        
-                        # Filter items by location
+
+                        # Filter items by location (support both 'locationId' and nested 'location.id')
+                        def extract_loc_id(d: Dict[str, Any]) -> str:
+                            loc = d.get('location')
+                            if isinstance(loc, dict) and 'id' in loc:
+                                return str(loc.get('id'))
+                            return str(d.get('locationId', ''))
+
                         location_items = [
-                            Item.from_dict(item_data) 
-                            for item_data in items_data 
-                            if item_data.get('locationId') == location_id
+                            item_data for item_data in items_data
+                            if extract_loc_id(item_data) == str(location_id)
                         ]
                         all_items.extend(location_items)
-                        
+
                         # Check if there are more pages
                         if len(items_data) < page_size:
                             break
-                        
+
                         page += 1
-                        
+
                     except Exception as e:
                         logger.error(f"Failed to parse items data: {e}")
                         break

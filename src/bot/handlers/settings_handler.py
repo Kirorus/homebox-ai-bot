@@ -1385,9 +1385,8 @@ class SettingsHandler(BaseHandler):
                     pass
                 
                 try:
-                    # Get items in this location
+                    # Get items in this location (supports different API shapes)
                     items = await self.homebox_service.get_items_by_location(selected_location.id)
-                    
                     if not items:
                         await generating_msg.edit_text(
                             t(bot_lang, 'locations.no_items_in_location').format(location_name=selected_location.name),
@@ -1396,7 +1395,8 @@ class SettingsHandler(BaseHandler):
                         return
                     
                     # Generate description using AI
-                    item_names = [item.name for item in items[:10]]  # Limit to first 10 items
+                    # items may be dicts already
+                    item_names = [ (item.get('name') if isinstance(item, dict) else getattr(item, 'name', '')) for item in items[:10] ]  # Limit to first 10
                     item_list = ", ".join(item_names)
                     
                     prompt = f"""Based on the location name "{selected_location.name}" and the items stored there: {item_list}, generate a brief, descriptive text (2-3 sentences) that describes what this location is used for and what kind of items are typically stored there. The description should be practical and helpful for organizing purposes."""
