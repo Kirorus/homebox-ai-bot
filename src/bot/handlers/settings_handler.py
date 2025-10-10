@@ -1256,13 +1256,15 @@ class SettingsHandler(BaseHandler):
                         chat_id=flow_chat_id,
                         message_id=flow_msg_id,
                         text=t(bot_lang, 'locations.enter_description'),
-                        reply_markup=builder.as_markup()
+                        reply_markup=builder.as_markup(),
+                        parse_mode="Markdown"
                     )
                 except Exception:
                     # Fallback to sending a new message only if editing failed
                     await message.answer(
                         t(bot_lang, 'locations.enter_description'),
-                        reply_markup=builder.as_markup()
+                        reply_markup=builder.as_markup(),
+                        parse_mode="Markdown"
                     )
                 await state.set_state(LocationStates.creating_location_description)
             except Exception as e:
@@ -1313,7 +1315,8 @@ class SettingsHandler(BaseHandler):
                         chat_id=flow_chat_id,
                         message_id=flow_msg_id,
                         text=t(bot_lang, 'locations.ai_helper_hint'),
-                        reply_markup=builder.as_markup()
+                        reply_markup=builder.as_markup(),
+                        parse_mode="Markdown"
                     )
                 await state.set_state(LocationStates.creating_location_ai_hint)
                 await callback.answer()
@@ -1417,7 +1420,7 @@ class SettingsHandler(BaseHandler):
                 flow_chat_id = data.get('flow_chat_id')
                 flow_msg_id = data.get('flow_msg_id')
                 if flow_chat_id and flow_msg_id:
-                    await callback.message.bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=t(bot_lang, 'locations.ai_helper_hint'), reply_markup=builder.as_markup())
+                    await callback.message.bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=t(bot_lang, 'locations.ai_helper_hint'), reply_markup=builder.as_markup(), parse_mode="Markdown")
                 await state.set_state(LocationStates.creating_location_ai_hint)
                 await callback.answer()
             except Exception as e:
@@ -1450,7 +1453,7 @@ class SettingsHandler(BaseHandler):
                 flow_chat_id = data.get('flow_chat_id')
                 flow_msg_id = data.get('flow_msg_id')
                 if flow_chat_id and flow_msg_id:
-                    await callback.message.bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=t(bot_lang, 'locations.enter_description'), reply_markup=builder.as_markup())
+                    await callback.message.bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=t(bot_lang, 'locations.enter_description'), reply_markup=builder.as_markup(), parse_mode="Markdown")
                 await state.set_state(LocationStates.creating_location_description)
                 await callback.answer()
             except Exception as e:
@@ -1572,7 +1575,7 @@ class SettingsHandler(BaseHandler):
                 flow_chat_id = data2.get('flow_chat_id')
                 flow_msg_id = data2.get('flow_msg_id')
                 if flow_chat_id and flow_msg_id:
-                    await callback.message.bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=t(bot_lang, 'locations.creating'))
+                    await callback.message.bot.edit_message_text(chat_id=flow_chat_id, message_id=flow_msg_id, text=t(bot_lang, 'locations.creating'), parse_mode="Markdown")
                 created = await self.homebox_service.create_location(name=name, description=desc, parent_id=parent_id)
                 if created is None:
                     err = self.homebox_service.last_error or 'Unknown'

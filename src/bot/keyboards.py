@@ -439,10 +439,10 @@ class KeyboardManager:
         builder = InlineKeyboardBuilder()
         builder.row(
             InlineKeyboardButton(text=f"✅ {t(lang, 'common.confirm')}", callback_data="create_desc_confirm"),
-            InlineKeyboardButton(text=f"❌ {t(lang, 'locations.cancel')}", callback_data="create_desc_cancel")
+            InlineKeyboardButton(text=f"❌ {t(lang, 'common.cancel')}", callback_data="create_desc_cancel")
         )
         builder.row(
             InlineKeyboardButton(text=f"🔄 {t(lang, 'common.regenerate')}", callback_data="create_desc_regen"),
-            InlineKeyboardButton(text=f"🧠 {t(lang, 'locations.generate_with_ai')}", callback_data="create_desc_regen_with_hint")
+            InlineKeyboardButton(text=f"💡 {t(lang, 'locations.generate_with_ai')}", callback_data="create_desc_regen_with_hint")
         )
         return builder.as_markup()
