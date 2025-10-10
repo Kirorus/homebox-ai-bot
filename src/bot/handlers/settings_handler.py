@@ -1163,7 +1163,7 @@ class SettingsHandler(BaseHandler):
             await self.handle_error(e, "show_locations_page", callback.from_user.id)
             await callback.answer(t('en', 'errors.occurred'))
         
-        @self.router.callback_query(F.data.startswith("generate_desc_"), LocationStates.selecting_locations_for_description)
+        @self.router.callback_query(F.data.startswith("generate_desc_"))
         async def generate_location_description(callback: CallbackQuery, state: FSMContext):
             """Generate description for selected location"""
             logger.info(f"generate_location_description handler called with data: {callback.data}")
@@ -1190,6 +1190,10 @@ class SettingsHandler(BaseHandler):
                 generating_msg = await callback.message.edit_text(
                     t(bot_lang, 'locations.generating_description').format(location_name=selected_location.name)
                 )
+                try:
+                    await callback.answer()
+                except Exception:
+                    pass
                 
                 try:
                     # Get items in this location
@@ -1258,7 +1262,10 @@ class SettingsHandler(BaseHandler):
                 
             except Exception as e:
                 await self.handle_error(e, "generate_location_description", callback.from_user.id)
-                await callback.answer(t('en', 'errors.occurred'))
+                try:
+                    await callback.answer(t('en', 'errors.occurred'))
+                except Exception:
+                    pass
         
         @self.router.callback_query(F.data == "confirm_description_update", LocationStates.confirming_description_update)
         async def confirm_description_update(callback: CallbackQuery, state: FSMContext):
@@ -1342,7 +1349,7 @@ class SettingsHandler(BaseHandler):
                 await self.handle_error(e, "regenerate_description", callback.from_user.id)
                 await callback.answer(t('en', 'errors.occurred'))
         
-        @self.router.callback_query(F.data == "cancel_description_generation", LocationStates.selecting_locations_for_description)
+        @self.router.callback_query(F.data == "cancel_description_generation")
         async def cancel_description_generation(callback: CallbackQuery, state: FSMContext):
             """Cancel description generation process"""
             try:
