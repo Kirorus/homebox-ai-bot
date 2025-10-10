@@ -276,3 +276,17 @@ class AIService:
                 description=desc,
                 suggested_location=location_manager.locations[0].name if location_manager.locations else "Unknown"
             )
+
+    async def generate_text(self, prompt: str) -> Optional[str]:
+        """Generate plain text (used for location description)."""
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.settings.default_model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=300
+            )
+            text = response.choices[0].message.content.strip()
+            return text
+        except Exception as e:
+            logger.error(f"Text generation failed: {e}")
+            return None

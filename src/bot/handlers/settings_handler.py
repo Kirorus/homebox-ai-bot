@@ -42,9 +42,10 @@ def escape_html(text: str) -> str:
 class SettingsHandler(BaseHandler):
     """Handles settings-related commands"""
     
-    def __init__(self, settings, database, homebox_service):
+    def __init__(self, settings, database, homebox_service, ai_service=None):
         super().__init__(settings, database)
         self.homebox_service = homebox_service
+        self.ai_service = ai_service
         self.keyboard_manager = KeyboardManager()
         self.register_handlers()
     

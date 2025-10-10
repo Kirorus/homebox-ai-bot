@@ -15,7 +15,7 @@ def register_handlers(dp: Dispatcher, settings, database, homebox_service, ai_se
     
     # Initialize handlers
     photo_handler = PhotoHandler(settings, database, homebox_service, ai_service, image_service, bot)
-    settings_handler = SettingsHandler(settings, database, homebox_service)
+    settings_handler = SettingsHandler(settings, database, homebox_service, ai_service)
     admin_handler = AdminHandler(settings, database, homebox_service)
     search_handler = SearchHandler(settings, database, homebox_service, ai_service, image_service)
     
