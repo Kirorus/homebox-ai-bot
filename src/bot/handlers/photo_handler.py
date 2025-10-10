@@ -154,12 +154,14 @@ class PhotoHandler(BaseHandler):
                     await state.clear()
                     return
                 
-                # Create location manager
-                location_manager = self.homebox_service.get_location_manager(locations)
-                allowed_locations = location_manager.get_allowed_locations(
+                # Create location managers
+                all_location_manager = self.homebox_service.get_location_manager(locations)
+                allowed_locations = all_location_manager.get_allowed_locations(
                     self.settings.homebox.location_filter_mode,
                     self.settings.homebox.location_marker
                 )
+                # Use only allowed locations for AI prompt/suggestion
+                allowed_location_manager = self.homebox_service.get_location_manager(allowed_locations)
                 
                 if not allowed_locations:
                     if os.path.exists(file_path):
@@ -176,7 +178,7 @@ class PhotoHandler(BaseHandler):
                 caption = message.caption if message.caption else None
                 
                 analysis = await self.ai_service.analyze_image(
-                    file_path, location_manager, gen_lang, model, caption
+                    file_path, allowed_location_manager, gen_lang, model, caption
                 )
                 
                 # Update progress - Finding location
@@ -186,7 +188,7 @@ class PhotoHandler(BaseHandler):
                 )
                 
                 # Find suggested location (enforce [TGB]-marked allowed locations only)
-                suggested_location = location_manager.find_best_match(analysis.suggested_location)
+                suggested_location = allowed_location_manager.find_best_match(analysis.suggested_location)
                 allowed_ids = {loc.id for loc in allowed_locations}
                 if (not suggested_location) or (suggested_location.id not in allowed_ids):
                     # Try exact name within allowed
@@ -734,8 +736,8 @@ class PhotoHandler(BaseHandler):
                     parse_mode="Markdown"
                 )
                 
-                # Create location manager
-                location_manager = self.homebox_service.get_location_manager(locations)
+                # Create allowed-only location manager (locations from state are already filtered)
+                allowed_location_manager = self.homebox_service.get_location_manager(locations)
                 
                 # Re-analyze with hint
                 model = user_settings.model
@@ -743,15 +745,12 @@ class PhotoHandler(BaseHandler):
                 hint = message.text.strip()
                 
                 analysis = await self.ai_service.analyze_image(
-                    item.photo_path, location_manager, gen_lang, model, hint
+                    item.photo_path, allowed_location_manager, gen_lang, model, hint
                 )
                 
-                # Find suggested location (enforce [TGB]-marked allowed locations only)
-                suggested_location = location_manager.find_best_match(analysis.suggested_location)
-                allowed_locations = self.homebox_service.get_location_manager(locations).get_allowed_locations(
-                    self.settings.homebox.location_filter_mode,
-                    self.settings.homebox.location_marker
-                )
+                # Find suggested location within allowed-only manager
+                suggested_location = allowed_location_manager.find_best_match(analysis.suggested_location)
+                allowed_locations = locations
                 allowed_ids = {loc.id for loc in allowed_locations}
                 if (not suggested_location) or (suggested_location.id not in allowed_ids):
                     lower_suggest = (analysis.suggested_location or "").strip().lower()
