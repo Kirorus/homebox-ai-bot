@@ -266,7 +266,7 @@ class PhotoHandler(BaseHandler):
                 
                 await callback.message.edit_caption(
                     caption=f"✏️ **{t(bot_lang, 'edit.name_title')}**\n\n{t(bot_lang, 'edit.name_prompt')}",
-                    reply_markup=None,
+                    reply_markup=self.keyboard_manager.cancel_keyboard(bot_lang, "cancel_edit"),
                     parse_mode="Markdown"
                 )
                 await state.set_state(ItemStates.editing_name)
@@ -285,7 +285,7 @@ class PhotoHandler(BaseHandler):
                 
                 await callback.message.edit_caption(
                     caption=f"✏️ **{t(bot_lang, 'edit.description_title')}**\n\n{t(bot_lang, 'edit.description_prompt')}",
-                    reply_markup=None,
+                    reply_markup=self.keyboard_manager.cancel_keyboard(bot_lang, "cancel_edit"),
                     parse_mode="Markdown"
                 )
                 await state.set_state(ItemStates.editing_description)
@@ -364,6 +364,24 @@ class PhotoHandler(BaseHandler):
             except Exception as e:
                 await self.handle_error(e, "name_editing", message.from_user.id)
                 await message.answer("An error occurred. Please try again.")
+
+        @self.router.callback_query(F.data == "cancel_edit", StateFilter(ItemStates.editing_name) | StateFilter(ItemStates.editing_description))
+        async def cancel_edit_callback(callback: CallbackQuery, state: FSMContext):
+            """Cancel edit (name/description) and delete the prompt message"""
+            try:
+                # Do not delete temp file here; still in editing, just close prompt
+                await state.set_state(ItemStates.confirming_data)
+                try:
+                    await callback.message.delete()
+                except Exception:
+                    try:
+                        await callback.message.edit_caption(caption=" ", reply_markup=None)
+                    except Exception:
+                        pass
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "cancel_edit", callback.from_user.id)
+                await callback.answer("Error occurred", show_alert=True)
         
         @self.router.message(ItemStates.editing_description, F.text)
         async def handle_description_edit(message: Message, state: FSMContext):
@@ -464,6 +482,23 @@ class PhotoHandler(BaseHandler):
                 
             except Exception as e:
                 await self.handle_error(e, "location_selection", callback.from_user.id)
+                await callback.answer("Error occurred", show_alert=True)
+
+        @self.router.callback_query(F.data == "cancel_location", ItemStates.selecting_location)
+        async def cancel_location_callback(callback: CallbackQuery, state: FSMContext):
+            """Cancel location selection and delete the message"""
+            try:
+                await state.set_state(ItemStates.confirming_data)
+                try:
+                    await callback.message.delete()
+                except Exception:
+                    try:
+                        await callback.message.edit_caption(caption=" ", reply_markup=None)
+                    except Exception:
+                        pass
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "cancel_location", callback.from_user.id)
                 await callback.answer("Error occurred", show_alert=True)
         
         @self.router.callback_query(F.data == "back_to_confirm", ItemStates.selecting_location)
@@ -592,7 +627,7 @@ class PhotoHandler(BaseHandler):
                 
                 await callback.message.edit_caption(
                     caption=f"🔄 **{t(bot_lang, 'reanalysis.title')}**\n\n{t(bot_lang, 'reanalysis.prompt')}\n\n💡 *{t(bot_lang, 'reanalysis.hint_placeholder')}*",
-                    reply_markup=None,
+                    reply_markup=self.keyboard_manager.cancel_keyboard(bot_lang, "cancel_reanalysis"),
                     parse_mode="Markdown"
                 )
                 await state.set_state(ItemStates.waiting_for_reanalysis_hint)
@@ -682,6 +717,23 @@ class PhotoHandler(BaseHandler):
             except Exception as e:
                 await self.handle_error(e, "reanalysis_hint", message.from_user.id)
                 await message.answer("An error occurred during re-analysis. Please try again.")
+
+        @self.router.callback_query(F.data == "cancel_reanalysis", ItemStates.waiting_for_reanalysis_hint)
+        async def cancel_reanalysis_callback(callback: CallbackQuery, state: FSMContext):
+            """Cancel reanalysis input and delete the prompt message"""
+            try:
+                await state.set_state(ItemStates.confirming_data)
+                try:
+                    await callback.message.delete()
+                except Exception:
+                    try:
+                        await callback.message.edit_caption(caption=" ", reply_markup=None)
+                    except Exception:
+                        pass
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "cancel_reanalysis", callback.from_user.id)
+                await callback.answer("Error occurred", show_alert=True)
         
         @self.router.callback_query(F.data == "cancel", ItemStates.confirming_data)
         async def cancel_item_callback(callback: CallbackQuery, state: FSMContext):

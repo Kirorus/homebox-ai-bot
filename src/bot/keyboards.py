@@ -124,6 +124,13 @@ class KeyboardManager:
         )
         
         return builder.as_markup()
+
+    @staticmethod
+    def cancel_keyboard(bot_lang: str, callback: str = "cancel_edit") -> InlineKeyboardMarkup:
+        """Create a simple keyboard with a single Cancel button"""
+        builder = InlineKeyboardBuilder()
+        builder.row(InlineKeyboardButton(text=f"❌ {t(bot_lang, 'buttons.cancel')}", callback_data=callback))
+        return builder.as_markup()
     
     @staticmethod
     def locations_keyboard(locations: List[Location], bot_lang: str) -> InlineKeyboardMarkup:
@@ -139,9 +146,10 @@ class KeyboardManager:
                 )
             )
         
-        # Back button
+        # Back and Cancel buttons
         builder.row(
-            InlineKeyboardButton(text=t(bot_lang, 'common.back'), callback_data="back_to_confirm")
+            InlineKeyboardButton(text=t(bot_lang, 'common.back'), callback_data="back_to_confirm"),
+            InlineKeyboardButton(text=f"❌ {t(bot_lang, 'buttons.cancel')}", callback_data="cancel_location")
         )
         
         return builder.as_markup()
