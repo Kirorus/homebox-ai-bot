@@ -703,14 +703,19 @@ class PhotoHandler(BaseHandler):
                 
                 # Clear state
                 await state.clear()
-                
-                await callback.message.edit_caption(
-                    caption=f"❌ **{t(bot_lang, 'item.cancelled')}**\n\n{t(bot_lang, 'item.cancelled_desc')}",
-                    reply_markup=None,
-                    parse_mode="Markdown"
-                )
-                
-                await callback.answer("Cancelled")
+
+                # Delete the confirmation message entirely for cleaner UX
+                try:
+                    await callback.message.delete()
+                except Exception:
+                    # Fallback: remove keyboard and clear caption silently
+                    try:
+                        await callback.message.edit_caption(caption=" ", reply_markup=None)
+                    except Exception:
+                        pass
+
+                # Answer callback without alert
+                await callback.answer()
                 await self.log_user_action("item_cancelled", callback.from_user.id)
                 
             except Exception as e:
