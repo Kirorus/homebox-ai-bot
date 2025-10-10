@@ -402,6 +402,16 @@ class PhotoHandler(BaseHandler):
                 await self.handle_error(e, "name_editing", message.from_user.id)
                 await message.answer("An error occurred. Please try again.")
 
+        @self.router.message(ItemStates.editing_name)
+        async def handle_name_edit_nontext(message: Message, state: FSMContext):
+            """Fallback for non-text input during name editing"""
+            try:
+                user_settings = await self.get_user_settings(message.from_user.id)
+                bot_lang = user_settings.bot_lang
+                await message.answer(f"{t(bot_lang, 'errors.invalid_name')}\n\n{t(bot_lang, 'edit.name_prompt')}")
+            except Exception as e:
+                await self.handle_error(e, "name_editing_nontext", message.from_user.id)
+        
         @self.router.callback_query(F.data == "cancel_edit", StateFilter(ItemStates.editing_name, ItemStates.editing_description))
         async def cancel_edit_callback(callback: CallbackQuery, state: FSMContext):
             """Cancel edit (name/description) and delete the prompt message"""
@@ -481,6 +491,16 @@ class PhotoHandler(BaseHandler):
             except Exception as e:
                 await self.handle_error(e, "description_editing", message.from_user.id)
                 await message.answer("An error occurred. Please try again.")
+
+        @self.router.message(ItemStates.editing_description)
+        async def handle_description_edit_nontext(message: Message, state: FSMContext):
+            """Fallback for non-text input during description editing"""
+            try:
+                user_settings = await self.get_user_settings(message.from_user.id)
+                bot_lang = user_settings.bot_lang
+                await message.answer(f"{t(bot_lang, 'errors.invalid_description')}\n\n{t(bot_lang, 'edit.description_prompt')}")
+            except Exception as e:
+                await self.handle_error(e, "description_editing_nontext", message.from_user.id)
         
         @self.router.callback_query(F.data.startswith("location_"), ItemStates.selecting_location)
         async def handle_location_selection(callback: CallbackQuery, state: FSMContext):
@@ -756,12 +776,81 @@ class PhotoHandler(BaseHandler):
                     f"✨ {t(bot_lang, 'item.what_change')}"
                 )
                 
-                await message.answer_photo(
-                    photo=item.photo_file_id,
-                    caption=result_caption,
-                    reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
-                    parse_mode="Markdown"
-                )
+                # Try to edit previous confirmation message instead of sending a new one
+                data = await state.get_data()
+                confirm_message_id = data.get('confirm_message_id')
+                confirm_chat_id = data.get('confirm_chat_id')
+                edited_ok = False
+                if confirm_message_id and confirm_chat_id:
+                    try:
+                        await self.bot.edit_message_caption(
+                            chat_id=confirm_chat_id,
+                            message_id=confirm_message_id,
+                            caption=result_caption,
+                            reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
+                            parse_mode="Markdown"
+                        )
+                        edited_ok = True
+                    except Exception:
+                        edited_ok = False
+
+                if not edited_ok:
+                    await message.answer_photo(
+                        photo=item.photo_file_id,
+                        caption=result_caption,
+                        reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
+                        parse_mode="Markdown"
+                    )
+                # Try to edit previous confirmation message instead of sending a new one
+                data = await state.get_data()
+                confirm_message_id = data.get('confirm_message_id')
+                confirm_chat_id = data.get('confirm_chat_id')
+                edited_ok = False
+                if confirm_message_id and confirm_chat_id:
+                    try:
+                        await self.bot.edit_message_caption(
+                            chat_id=confirm_chat_id,
+                            message_id=confirm_message_id,
+                            caption=result_caption,
+                            reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
+                            parse_mode="Markdown"
+                        )
+                        edited_ok = True
+                    except Exception:
+                        edited_ok = False
+
+                if not edited_ok:
+                    await message.answer_photo(
+                        photo=item.photo_file_id,
+                        caption=result_caption,
+                        reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
+                        parse_mode="Markdown"
+                    )
+                # Try to edit previous confirmation message instead of sending a new one
+                data = await state.get_data()
+                confirm_message_id = data.get('confirm_message_id')
+                confirm_chat_id = data.get('confirm_chat_id')
+                edited_ok = False
+                if confirm_message_id and confirm_chat_id:
+                    try:
+                        await self.bot.edit_message_caption(
+                            chat_id=confirm_chat_id,
+                            message_id=confirm_message_id,
+                            caption=result_caption,
+                            reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
+                            parse_mode="Markdown"
+                        )
+                        edited_ok = True
+                    except Exception:
+                        edited_ok = False
+
+                if not edited_ok:
+                    await message.answer_photo(
+                        photo=item.photo_file_id,
+                        caption=result_caption,
+                        reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
+                        parse_mode="Markdown"
+                    )
                 
                 await state.set_state(ItemStates.confirming_data)
                 await self.log_user_action("item_reanalyzed", message.from_user.id, {
@@ -774,6 +863,16 @@ class PhotoHandler(BaseHandler):
                 await self.handle_error(e, "reanalysis_hint", message.from_user.id)
                 await message.answer("An error occurred during re-analysis. Please try again.")
 
+        @self.router.message(ItemStates.waiting_for_reanalysis_hint)
+        async def handle_reanalysis_hint_nontext(message: Message, state: FSMContext):
+            """Fallback for non-text input during reanalysis hint"""
+            try:
+                user_settings = await self.get_user_settings(message.from_user.id)
+                bot_lang = user_settings.bot_lang
+                await message.answer(f"{t(bot_lang, 'reanalysis.prompt')}\n\n💡 *{t(bot_lang, 'reanalysis.hint_placeholder')}*", parse_mode="Markdown")
+            except Exception as e:
+                await self.handle_error(e, "reanalysis_hint_nontext", message.from_user.id)
+        
         @self.router.callback_query(F.data == "cancel_reanalysis", ItemStates.waiting_for_reanalysis_hint)
         async def cancel_reanalysis_callback(callback: CallbackQuery, state: FSMContext):
             """Cancel reanalysis input and delete the prompt message"""
