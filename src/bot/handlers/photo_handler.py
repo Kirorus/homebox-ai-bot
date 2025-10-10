@@ -365,7 +365,7 @@ class PhotoHandler(BaseHandler):
                 await self.handle_error(e, "name_editing", message.from_user.id)
                 await message.answer("An error occurred. Please try again.")
 
-        @self.router.callback_query(F.data == "cancel_edit", StateFilter(ItemStates.editing_name) | StateFilter(ItemStates.editing_description))
+        @self.router.callback_query(F.data == "cancel_edit", StateFilter(ItemStates.editing_name, ItemStates.editing_description))
         async def cancel_edit_callback(callback: CallbackQuery, state: FSMContext):
             """Cancel edit (name/description) and delete the prompt message"""
             try:
