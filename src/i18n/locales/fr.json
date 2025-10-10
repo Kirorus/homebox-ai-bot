@@ -142,8 +142,9 @@
     "bot_lang_set_en": "Bot language set: English",
     "bot_lang_set_de": "Bot-Sprache eingestellt: Deutsch",
     "bot_lang_set_fr": "Langue du bot définie : Français",
+    "bot_lang_set_es": "Langue du bot définie : Espagnol",
     "gen_lang_set": "Langue de génération définie : {lang_name}",
-    "model_set": "Modèle défini",
+    "model_set": "Modèle défini"
   },
   "stats": {
     "title": "📊 Statistiques du bot",
