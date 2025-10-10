@@ -185,7 +185,7 @@ class BaseHandler(ABC):
             pass
     
     def create_detailed_stats_message(self, lang: str, bot_stats: dict, user_stats: dict, user_settings: dict) -> str:
-        """Create detailed statistics message"""
+        """Create detailed statistics message with improved formatting and more information"""
         import os
         import psutil
         from datetime import datetime
@@ -224,7 +224,7 @@ class BaseHandler(ABC):
                 minutes, _ = divmod(remainder, 60)
                 uptime = f"{days}d {hours}h {minutes}m"
             except:
-                uptime = "Unknown"
+                uptime = t(lang, 'stats.unknown')
         
         # Format last activity
         last_activity = user_stats.get('last_activity', 'Unknown')
@@ -241,7 +241,7 @@ class BaseHandler(ABC):
                     minutes = last_activity_delta.seconds // 60
                     last_activity = f"{minutes} minutes ago"
             except:
-                last_activity = "Unknown"
+                last_activity = t(lang, 'stats.unknown')
         
         # Format account created
         account_created = user_stats.get('account_created', 'Unknown')
@@ -250,82 +250,152 @@ class BaseHandler(ABC):
                 created_dt = datetime.fromisoformat(account_created)
                 account_created = created_dt.strftime("%Y-%m-%d")
             except:
-                account_created = "Unknown"
+                account_created = t(lang, 'stats.unknown')
         
         # Get system info
         try:
             process = psutil.Process()
             memory_usage = f"{process.memory_info().rss / 1024 / 1024:.1f} MB"
         except:
-            memory_usage = "Unknown"
+            memory_usage = t(lang, 'stats.unknown')
         
         try:
             db_size = os.path.getsize("../data/bot_data.db") / 1024 / 1024
             db_size = f"{db_size:.1f} MB"
         except:
-            db_size = "Unknown"
+            db_size = t(lang, 'stats.unknown')
+        
+        # Calculate additional metrics
+        total_users = int(bot_stats.get('users_registered', 0))
+        total_requests = int(bot_stats.get('total_requests', 0))
+        total_items = int(bot_stats.get('items_processed', 0))
+        active_24h = int(bot_stats.get('active_users_24h', 0))
+        active_7d = int(bot_stats.get('active_users_7d', 0))
+        
+        # Calculate averages
+        avg_requests_per_user = total_requests / total_users if total_users > 0 else 0
+        avg_items_per_user = total_items / total_users if total_users > 0 else 0
         
         # Language distribution
         lang_dist = bot_stats.get('language_distribution', {})
-        lang_dist_text = ""
+        most_popular_lang = ""
         if lang_dist:
             lang_names = {'ru': '🇷🇺 RU', 'en': '🇺🇸 EN', 'de': '🇩🇪 DE', 'fr': '🇫🇷 FR', 'es': '🇪🇸 ES'}
-            lang_items = []
-            for lang_code, count in sorted(lang_dist.items(), key=lambda x: x[1], reverse=True):
+            sorted_langs = sorted(lang_dist.items(), key=lambda x: x[1], reverse=True)
+            if sorted_langs:
+                lang_code, count = sorted_langs[0]
                 lang_name = lang_names.get(lang_code, lang_code.upper())
-                lang_items.append(f"{lang_name}: {count}")
-            lang_dist_text = "\n".join(lang_items)
+                most_popular_lang = f"{lang_name} ({count})"
         
         # Model distribution
         model_dist = bot_stats.get('model_distribution', {})
-        model_dist_text = ""
+        most_popular_model = ""
         if model_dist:
-            model_items = []
-            for model, count in sorted(model_dist.items(), key=lambda x: x[1], reverse=True):
-                model_items.append(f"`{model}`: {count}")
-            model_dist_text = "\n".join(model_items)
+            sorted_models = sorted(model_dist.items(), key=lambda x: x[1], reverse=True)
+            if sorted_models:
+                model_name, count = sorted_models[0]
+                most_popular_model = f"`{model_name}` ({count})"
         
-        model_name = escape_markdown(user_settings.get('model', 'Unknown'))
+        # Format model name for user
+        model_name = escape_markdown(user_settings.get('model', t(lang, 'stats.unknown')))
+        
+        # Create the improved statistics message
         return (
-            f"{t(lang, 'stats.title')}\n\n"
-            f"**{t(lang, 'stats.user_activity')}**\n"
-            f"{t(lang, 'stats.photos_analyzed')}: {user_stats.get('photos_analyzed', 0)}\n"
-            f"{t(lang, 'stats.reanalyses')}: {user_stats.get('reanalyses', 0)}\n"
-            f"{t(lang, 'stats.last_activity')}: {last_activity}\n"
-            f"{t(lang, 'stats.account_created')}: {account_created}\n\n"
-            f"**{t(lang, 'stats.current_settings')}**\n"
-            f"{t(lang, 'stats.bot_language')}: {user_settings.get('bot_lang', 'Unknown').upper()}\n"
-            f"{t(lang, 'stats.gen_language')}: {user_settings.get('gen_lang', 'Unknown').upper()}\n"
-            f"{t(lang, 'stats.ai_model')}: `{model_name}`\n\n"
-            f"**{t(lang, 'stats.users')}**: {bot_stats.get('users_registered', 0)}\n"
-            f"**{t(lang, 'stats.items_processed')}**: {bot_stats.get('items_processed', 0)}\n"
-            f"**{t(lang, 'stats.total_requests')}**: {bot_stats.get('total_requests', 0)}\n"
-            f"**{t(lang, 'stats.uptime')}**: {uptime}\n\n"
-            f"**{t(lang, 'stats.system_info')}**\n"
-            f"{t(lang, 'stats.database_size')}: {db_size}\n"
-            f"{t(lang, 'stats.memory_usage')}: {memory_usage}\n"
-            f"{t(lang, 'stats.status')}: {t(lang, 'stats.online')}\n\n"
-            f"**Language Distribution:**\n"
-            f"{lang_dist_text if lang_dist_text else 'No data'}\n\n"
-            f"**Model Distribution:**\n"
-            f"{model_dist_text if model_dist_text else 'No data'}"
+            f"🎯 **{t(lang, 'stats.title')}**\n"
+            f"{'=' * 25}\n\n"
+            
+            f"👤 **{t(lang, 'stats.user_activity')}**\n"
+            f"├ {t(lang, 'stats.photos_analyzed')}: `{user_stats.get('photos_analyzed', 0)}`\n"
+            f"├ {t(lang, 'stats.reanalyses')}: `{user_stats.get('reanalyses', 0)}`\n"
+            f"├ {t(lang, 'stats.last_activity')}: `{last_activity}`\n"
+            f"└ {t(lang, 'stats.account_created')}: `{account_created}`\n\n"
+            
+            f"⚙️ **{t(lang, 'stats.current_settings')}**\n"
+            f"├ {t(lang, 'stats.bot_language')}: `{user_settings.get('bot_lang', 'Unknown').upper()}`\n"
+            f"├ {t(lang, 'stats.gen_language')}: `{user_settings.get('gen_lang', 'Unknown').upper()}`\n"
+            f"└ {t(lang, 'stats.ai_model')}: `{model_name}`\n\n"
+            
+            f"📊 **Общая статистика**\n"
+            f"├ {t(lang, 'stats.users')}: `{total_users}`\n"
+            f"├ {t(lang, 'stats.total_requests')}: `{total_requests}`\n"
+            f"├ {t(lang, 'stats.items_processed')}: `{total_items}`\n"
+            f"├ {t(lang, 'stats.active_users_24h')}: `{active_24h}`\n"
+            f"├ {t(lang, 'stats.active_users_7d')}: `{active_7d}`\n"
+            f"├ {t(lang, 'stats.avg_requests_per_user')}: `{avg_requests_per_user:.1f}`\n"
+            f"└ {t(lang, 'stats.avg_items_per_user')}: `{avg_items_per_user:.1f}`\n\n"
+            
+            f"🌍 **Популярность**\n"
+            f"├ {t(lang, 'stats.most_popular_lang')}: `{most_popular_lang if most_popular_lang else t(lang, 'stats.unknown')}`\n"
+            f"└ {t(lang, 'stats.most_popular_model')}: `{most_popular_model if most_popular_model else t(lang, 'stats.unknown')}`\n\n"
+            
+            f"🖥️ **{t(lang, 'stats.system_info')}**\n"
+            f"├ {t(lang, 'stats.uptime')}: `{uptime}`\n"
+            f"├ {t(lang, 'stats.database_size')}: `{db_size}`\n"
+            f"├ {t(lang, 'stats.memory_usage')}: `{memory_usage}`\n"
+            f"└ {t(lang, 'stats.status')}: `{t(lang, 'stats.online')}`\n\n"
+            
+            f"📈 **Детальная статистика языков:**\n"
+            f"{self._format_language_distribution(lang_dist, lang)}\n\n"
+            
+            f"🤖 **Детальная статистика моделей:**\n"
+            f"{self._format_model_distribution(model_dist)}"
         )
+    
+    def _format_language_distribution(self, lang_dist: dict, lang: str) -> str:
+        """Format language distribution with visual bars"""
+        if not lang_dist:
+            return f"`{t(lang, 'stats.unknown')}`"
+        
+        lang_names = {'ru': '🇷🇺 RU', 'en': '🇺🇸 EN', 'de': '🇩🇪 DE', 'fr': '🇫🇷 FR', 'es': '🇪🇸 ES'}
+        total_users = sum(int(count) for count in lang_dist.values())
+        
+        formatted_items = []
+        for lang_code, count in sorted(lang_dist.items(), key=lambda x: int(x[1]), reverse=True):
+            lang_name = lang_names.get(lang_code, lang_code.upper())
+            count_int = int(count)
+            percentage = (count_int / total_users * 100) if total_users > 0 else 0
+            bar_length = int(percentage / 5)  # Each character represents 5%
+            bar = "█" * bar_length + "░" * (20 - bar_length)
+            formatted_items.append(f"├ {lang_name}: `{count_int}` ({percentage:.1f}%) {bar}")
+        
+        return "\n".join(formatted_items)
+    
+    def _format_model_distribution(self, model_dist: dict) -> str:
+        """Format model distribution with visual bars"""
+        if not model_dist:
+            return f"`{t('en', 'stats.unknown')}`"
+        
+        total_users = sum(int(count) for count in model_dist.values())
+        
+        formatted_items = []
+        for model, count in sorted(model_dist.items(), key=lambda x: int(x[1]), reverse=True):
+            count_int = int(count)
+            percentage = (count_int / total_users * 100) if total_users > 0 else 0
+            bar_length = int(percentage / 5)  # Each character represents 5%
+            bar = "█" * bar_length + "░" * (20 - bar_length)
+            formatted_items.append(f"├ `{model}`: `{count_int}` ({percentage:.1f}%) {bar}")
+        
+        return "\n".join(formatted_items)
 
     def create_quick_stats_message(self, lang: str, bot_stats: dict, user_stats: dict, user_settings: dict) -> str:
-        """Create a compact statistics message focusing on essentials"""
+        """Create a compact statistics message focusing on essentials with improved formatting"""
         from datetime import datetime
+        
         # Simple aggregates with fallbacks
-        photos = user_stats.get('photos_analyzed', 0)
-        rean = user_stats.get('reanalyses', 0)
-        users = bot_stats.get('users_registered', 0)
-        items = bot_stats.get('items_processed', 0)
+        photos = int(user_stats.get('photos_analyzed', 0))
+        rean = int(user_stats.get('reanalyses', 0))
+        users = int(bot_stats.get('users_registered', 0))
+        items = int(bot_stats.get('items_processed', 0))
+        active_24h = int(bot_stats.get('active_users_24h', 0))
         model = user_settings.get('model', 'Unknown')
-        # escape model for markdown inline code
+        
+        # Escape model for markdown inline code
         def escape_md(text: str) -> str:
             if not isinstance(text, str):
                 text = str(text)
             return text.replace('`', '\\`').replace('_', '\\_').replace('*', '\\*')
         model_md = escape_md(model)
+        
         # Uptime brief
         uptime = bot_stats.get('start_time')
         if uptime:
@@ -336,14 +406,22 @@ class BaseHandler(ABC):
                 hours = (delta.seconds // 3600)
                 uptime_brief = f"{days}d {hours}h"
             except Exception:
-                uptime_brief = t(lang, 'stats.unknown') if 'stats.unknown' in self._safe_keys(lang) else 'Unknown'
+                uptime_brief = t(lang, 'stats.unknown')
         else:
-            uptime_brief = t(lang, 'stats.unknown') if 'stats.unknown' in self._safe_keys(lang) else 'Unknown'
+            uptime_brief = t(lang, 'stats.unknown')
+        
         return (
-            f"**{t(lang, 'stats.title')}**\n\n"
-            f"👤 {t(lang, 'stats.photos_analyzed')}: {photos} | {t(lang, 'stats.reanalyses')}: {rean}\n"
-            f"🧠 {t(lang, 'stats.ai_model')}: `{model_md}` | ⏰ {t(lang, 'stats.uptime')}: {uptime_brief}\n"
-            f"👥 {t(lang, 'stats.users')}: {users} | 📦 {t(lang, 'stats.items_processed')}: {items}"
+            f"⚡ **{t(lang, 'stats.title')}**\n"
+            f"{'─' * 20}\n\n"
+            f"👤 **{t(lang, 'stats.user_activity')}**\n"
+            f"├ {t(lang, 'stats.photos_analyzed')}: `{photos}`\n"
+            f"└ {t(lang, 'stats.reanalyses')}: `{rean}`\n\n"
+            f"🌐 **Общая статистика**\n"
+            f"├ {t(lang, 'stats.users')}: `{users}`\n"
+            f"├ {t(lang, 'stats.items_processed')}: `{items}`\n"
+            f"├ {t(lang, 'stats.active_users_24h')}: `{active_24h}`\n"
+            f"└ {t(lang, 'stats.uptime')}: `{uptime_brief}`\n\n"
+            f"⚙️ **{t(lang, 'stats.ai_model')}**: `{model_md}`"
         )
 
     def _safe_keys(self, lang: str) -> set:
