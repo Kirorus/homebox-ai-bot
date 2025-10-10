@@ -1379,25 +1379,26 @@ class SettingsHandler(BaseHandler):
                 data = await state.get_data()
                 all_locations = data['all_locations']
                 
-                # Find selected location
-                selected_location = None
-                for loc in all_locations:
-                    if str(loc.id) == location_id:
-                        selected_location = loc
-                        break
+                # Find selected location (support Location or dict)
+                def _loc_id(loc):
+                    return str(getattr(loc, 'id', loc.get('id') if isinstance(loc, dict) else ''))
+                selected_location = next((loc for loc in all_locations if _loc_id(loc) == location_id), None)
+                # Normalize to Location object if dict
+                if isinstance(selected_location, dict):
+                    selected_location = Location.from_dict(selected_location)
                 
                 if not selected_location:
                     await callback.answer(t(bot_lang, 'errors.location_not_found'), show_alert=True)
                     return
                 
                 # Show generating message
-                generating_msg = await callback.message.edit_text(
-                    t(bot_lang, 'locations.generating_description').format(location_name=selected_location.name)
-                )
                 try:
                     await callback.answer()
                 except Exception:
                     pass
+                generating_msg = await callback.message.edit_text(
+                    t(bot_lang, 'locations.generating_description').format(location_name=selected_location.name)
+                )
                 
                 try:
                     # Get items in this location (supports different API shapes)
