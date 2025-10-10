@@ -24,6 +24,7 @@ from services.homebox_service import HomeBoxService
 from utils.validators import InputValidator
 from bot.keyboards import KeyboardManager
 from i18n.i18n_manager import t
+from utils.progress import AnimatedProgress
 
 logger = logging.getLogger(__name__)
 
@@ -730,11 +731,16 @@ class PhotoHandler(BaseHandler):
                     await message.answer("Error: No item data found", show_alert=True)
                     return
                 
-                # Show processing message
-                progress_msg = await message.answer(
-                    f"🔄 **{t(bot_lang, 'reanalysis.processing')}**",
-                    parse_mode="Markdown"
+                # Show processing message + start progress animation
+                progress_msg = await message.answer(f"🔄 {t(bot_lang, 'reanalysis.processing')}")
+                progress = AnimatedProgress(
+                    progress_msg,
+                    base_text=f"🔄 {t(bot_lang, 'reanalysis.processing')}",
+                    bar_length=14,
+                    phases=[("Prep", 1), ("Context", 2), ("AI", 7)],
+                    interval_sec=0.3,
                 )
+                await progress.start()
                 
                 # Create allowed-only location manager (locations from state are already filtered)
                 allowed_location_manager = self.homebox_service.get_location_manager(locations)
@@ -770,7 +776,11 @@ class PhotoHandler(BaseHandler):
                 
                 await state.update_data(item=item)
                 
-                # Remove progress message
+                # Stop and remove progress message
+                try:
+                    await progress.stop()
+                except Exception:
+                    pass
                 try:
                     await progress_msg.delete()
                 except Exception:

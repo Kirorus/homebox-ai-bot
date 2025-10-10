@@ -13,6 +13,7 @@ from .base_handler import BaseHandler
 from bot.states import SearchStates, LocationStates, ItemStates
 from bot.keyboards import KeyboardManager
 from i18n.i18n_manager import t
+from utils.progress import AnimatedProgress
 
 logger = logging.getLogger(__name__)
 
@@ -144,8 +145,17 @@ class SearchHandler(BaseHandler):
                 except Exception:
                     pass
 
-                # Show searching message (we will try to edit this in-place)
-                searching_msg = await message.answer(t(bot_lang, 'search.searching'))
+                # Show searching message (we will try to edit this in-place) + animated progress
+                base_text = t(bot_lang, 'search.searching')
+                searching_msg = await message.answer(base_text)
+                progress = AnimatedProgress(
+                    searching_msg,
+                    base_text=base_text,
+                    bar_length=12,
+                    phases=[("Query", 1), ("API", 5), ("Render", 2)],
+                    interval_sec=0.25,
+                )
+                await progress.start()
                 
                 # Search items
                 logger.info(f"Searching for query: '{query}'")
@@ -154,6 +164,7 @@ class SearchHandler(BaseHandler):
                 
                 if not items:
                     try:
+                        await progress.stop()
                         await searching_msg.edit_text(t(bot_lang, 'search.no_results'))
                     except:
                         # If we cannot edit, remove placeholder and send fresh message
@@ -174,6 +185,7 @@ class SearchHandler(BaseHandler):
                 # Show search results
                 try:
                     # Prefer editing the placeholder message instead of sending a new one
+                    await progress.stop()
                     await self.show_search_results(searching_msg, state, items, 0, bot_lang)
                     await state.set_state(SearchStates.viewing_search_results)
                 except Exception as e:
