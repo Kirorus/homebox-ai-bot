@@ -45,13 +45,17 @@ class Location:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Location':
         """Create from dictionary"""
+        # Determine parent_id from multiple possible API shapes
+        parent_id_val = data.get('parent_id') or data.get('parentId')
+        if not parent_id_val and isinstance(data.get('parent'), dict):
+            parent_id_val = str(data['parent'].get('id') or data['parent'].get('parentId') or '') or None
         return cls(
             id=data['id'],
             name=data['name'],
             description=data.get('description'),
             is_allowed=data.get('is_allowed', False),
-            # Support both snake_case and camelCase from API responses
-            parent_id=data.get('parent_id') or data.get('parentId'),
+            # Support both snake_case, camelCase, or nested object from API responses
+            parent_id=parent_id_val,
             level=data.get('level', 0)
         )
     

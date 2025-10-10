@@ -559,11 +559,13 @@ class HomeBoxService:
                 return False
             
             # Prepare update data - merge current data with updates
+            # IMPORTANT: do NOT include parentId if it's empty/None, to avoid resetting parent on the server
             update_data = {
                 'name': current_location.name,
-                'description': current_location.description or '',
-                'parentId': current_location.parent_id
+                'description': current_location.description or ''
             }
+            if current_location.parent_id:
+                update_data['parentId'] = current_location.parent_id
             
             # Apply updates
             for key, value in updates.items():
@@ -572,6 +574,7 @@ class HomeBoxService:
                 elif key == 'name':
                     update_data['name'] = value
                 elif key == 'parent_id':
+                    # Only include if explicitly provided (used to change parent)
                     update_data['parentId'] = value
             
             async with session.put(
