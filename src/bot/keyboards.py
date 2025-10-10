@@ -146,10 +146,9 @@ class KeyboardManager:
                 )
             )
         
-        # Back and Cancel buttons
+        # Back button only (no cancel during location edit)
         builder.row(
-            InlineKeyboardButton(text=t(bot_lang, 'common.back'), callback_data="back_to_confirm"),
-            InlineKeyboardButton(text=f"❌ {t(bot_lang, 'buttons.cancel')}", callback_data="cancel_location")
+            InlineKeyboardButton(text=t(bot_lang, 'common.back'), callback_data="back_to_confirm")
         )
         
         return builder.as_markup()

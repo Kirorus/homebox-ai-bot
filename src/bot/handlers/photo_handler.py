@@ -560,22 +560,7 @@ class PhotoHandler(BaseHandler):
                 await self.handle_error(e, "location_selection", callback.from_user.id)
                 await callback.answer("Error occurred", show_alert=True)
 
-        @self.router.callback_query(F.data == "cancel_location", ItemStates.selecting_location)
-        async def cancel_location_callback(callback: CallbackQuery, state: FSMContext):
-            """Cancel location selection and delete the message"""
-            try:
-                await state.set_state(ItemStates.confirming_data)
-                try:
-                    await callback.message.delete()
-                except Exception:
-                    try:
-                        await callback.message.edit_caption(caption=" ", reply_markup=None)
-                    except Exception:
-                        pass
-                await callback.answer()
-            except Exception as e:
-                await self.handle_error(e, "cancel_location", callback.from_user.id)
-                await callback.answer("Error occurred", show_alert=True)
+        # Removed explicit cancel_location handler to keep only "back" during location edit
         
         @self.router.callback_query(F.data == "back_to_confirm", ItemStates.selecting_location)
         async def back_to_confirm_callback(callback: CallbackQuery, state: FSMContext):
