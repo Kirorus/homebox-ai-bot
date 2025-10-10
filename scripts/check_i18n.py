@@ -1,4 +1,97 @@
 #!/usr/bin/env python3
+"""
+Simple i18n key consistency checker.
+
+This script compares JSON locale files in `src/i18n/locales/` and ensures that
+all languages contain the same set of keys (recursively), using `en.json` as
+the source of truth when present.
+
+Exit code:
+- 0: OK (all keys are in sync)
+- 1: Mismatch detected (missing or extra keys)
+- 2: Configuration/IO error
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+from typing import Dict, Any, Set, List
+
+
+def load_json(file_path: Path) -> Dict[str, Any]:
+    try:
+        with file_path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            raise ValueError(f"Locale file is not a JSON object: {file_path}")
+        return data
+    except Exception as exc:
+        print(f"❌ Failed to read locale file {file_path}: {exc}")
+        sys.exit(2)
+
+
+def flatten_keys(obj: Any, prefix: str = "") -> Set[str]:
+    keys: Set[str] = set()
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            path = f"{prefix}.{k}" if prefix else k
+            keys |= flatten_keys(v, path)
+    else:
+        keys.add(prefix)
+    return keys
+
+
+def main() -> int:
+    locales_dir = Path("src/i18n/locales").resolve()
+    if not locales_dir.exists() or not locales_dir.is_dir():
+        print(f"❌ Locales directory not found: {locales_dir}")
+        return 2
+
+    locale_files: List[Path] = sorted(locales_dir.glob("*.json"))
+    if not locale_files:
+        print(f"❌ No locale files found in: {locales_dir}")
+        return 2
+
+    # Prefer English as the base when available
+    base_file = next((p for p in locale_files if p.name == "en.json"), locale_files[0])
+    base_data = load_json(base_file)
+    base_keys = flatten_keys(base_data)
+
+    print(f"🔎 Base locale: {base_file.name} ({len(base_keys)} keys)")
+
+    ok = True
+    for lf in locale_files:
+        if lf == base_file:
+            continue
+        data = load_json(lf)
+        keys = flatten_keys(data)
+
+        missing = sorted(base_keys - keys)
+        extra = sorted(keys - base_keys)
+
+        if not missing and not extra:
+            print(f"✅ {lf.name}: OK ({len(keys)} keys)")
+            continue
+
+        ok = False
+        if missing:
+            print(f"❌ {lf.name}: missing {len(missing)} keys compared to {base_file.name}:")
+            for k in missing:
+                print(f"   - {k}")
+        if extra:
+            print(f"⚠️  {lf.name}: has {len(extra)} extra keys not present in {base_file.name}:")
+            for k in extra:
+                print(f"   + {k}")
+
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+#!/usr/bin/env python3
 import argparse
 import json
 import sys
