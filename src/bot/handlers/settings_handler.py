@@ -196,15 +196,13 @@ class SettingsHandler(BaseHandler):
                     pass
                 loc_name = getattr(selected_location, 'name', '')
                 generating_msg = await callback.message.edit_text(
-                    t(bot_lang, 'locations.generating_description').format(location_name=escape_markdown(loc_name)),
-                    parse_mode="MarkdownV2"
+                    t(bot_lang, 'locations.generating_description').format(location_name=loc_name)
                 )
                 try:
                     items = await self.homebox_service.get_items_by_location(selected_location.id)
                     if not items:
                         await generating_msg.edit_text(
-                            t(bot_lang, 'locations.no_items_in_location').format(location_name=escape_markdown(loc_name)),
-                            parse_mode="MarkdownV2"
+                            t(bot_lang, 'locations.no_items_in_location').format(location_name=loc_name)
                         )
                         return
                     # items might be dicts
@@ -219,10 +217,9 @@ class SettingsHandler(BaseHandler):
                     if not generated_description:
                         await generating_msg.edit_text(
                             t(bot_lang, 'locations.description_generation_failed').format(
-                                location_name=escape_markdown(loc_name),
-                                error=escape_markdown("AI service unavailable")
-                            ),
-                            parse_mode="MarkdownV2"
+                                location_name=loc_name,
+                                error="AI service unavailable"
+                            )
                         )
                         return
                     await state.update_data({
@@ -257,24 +254,22 @@ class SettingsHandler(BaseHandler):
                                    .replace('!', '\\!')
 
                     confirm_text = t(bot_lang, 'locations.confirm_update_description').format(
-                        location_name=escape_md_v2(loc_name),
-                        current_description=escape_md_v2(current_desc),
-                        new_description=escape_md_v2(generated_description)
+                        location_name=loc_name,
+                        current_description=current_desc,
+                        new_description=generated_description
                     )
                     keyboard = self.keyboard_manager.description_confirmation_keyboard(bot_lang)
                     await generating_msg.edit_text(
                         confirm_text,
-                        reply_markup=keyboard,
-                        parse_mode="MarkdownV2"
+                        reply_markup=keyboard
                     )
                     await state.set_state(LocationStates.confirming_description_update)
                 except Exception as e:
                     await generating_msg.edit_text(
                         t(bot_lang, 'locations.description_generation_failed').format(
-                            location_name=escape_markdown(loc_name),
-                            error=escape_markdown(str(e))
-                        ),
-                        parse_mode="MarkdownV2"
+                            location_name=loc_name,
+                            error=str(e)
+                        )
                     )
             except Exception as e:
                 await self.handle_error(e, "generate_location_description_cb", callback.from_user.id)
