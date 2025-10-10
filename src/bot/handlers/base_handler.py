@@ -315,7 +315,7 @@ class BaseHandler(ABC):
             f"├ {t(lang, 'stats.gen_language')}: `{user_settings.get('gen_lang', 'Unknown').upper()}`\n"
             f"└ {t(lang, 'stats.ai_model')}: `{model_name}`\n\n"
             
-            f"📊 **Общая статистика**\n"
+            f"📊 **General Statistics**\n"
             f"├ {t(lang, 'stats.users')}: `{total_users}`\n"
             f"├ {t(lang, 'stats.total_requests')}: `{total_requests}`\n"
             f"├ {t(lang, 'stats.items_processed')}: `{total_items}`\n"
@@ -324,7 +324,7 @@ class BaseHandler(ABC):
             f"├ {t(lang, 'stats.avg_requests_per_user')}: `{avg_requests_per_user:.1f}`\n"
             f"└ {t(lang, 'stats.avg_items_per_user')}: `{avg_items_per_user:.1f}`\n\n"
             
-            f"🌍 **Популярность**\n"
+            f"🌍 **Popularity**\n"
             f"├ {t(lang, 'stats.most_popular_lang')}: `{most_popular_lang if most_popular_lang else t(lang, 'stats.unknown')}`\n"
             f"└ {t(lang, 'stats.most_popular_model')}: `{most_popular_model if most_popular_model else t(lang, 'stats.unknown')}`\n\n"
             
@@ -334,10 +334,10 @@ class BaseHandler(ABC):
             f"├ {t(lang, 'stats.memory_usage')}: `{memory_usage}`\n"
             f"└ {t(lang, 'stats.status')}: `{t(lang, 'stats.online')}`\n\n"
             
-            f"📈 **Детальная статистика языков:**\n"
+            f"📈 **Detailed Language Statistics:**\n"
             f"{self._format_language_distribution(lang_dist, lang)}\n\n"
             
-            f"🤖 **Детальная статистика моделей:**\n"
+            f"🤖 **Detailed Model Statistics:**\n"
             f"{self._format_model_distribution(model_dist)}"
         )
     
@@ -416,7 +416,7 @@ class BaseHandler(ABC):
             f"👤 **{t(lang, 'stats.user_activity')}**\n"
             f"├ {t(lang, 'stats.photos_analyzed')}: `{photos}`\n"
             f"└ {t(lang, 'stats.reanalyses')}: `{rean}`\n\n"
-            f"🌐 **Общая статистика**\n"
+            f"🌐 **General Statistics**\n"
             f"├ {t(lang, 'stats.users')}: `{users}`\n"
             f"├ {t(lang, 'stats.items_processed')}: `{items}`\n"
             f"├ {t(lang, 'stats.active_users_24h')}: `{active_24h}`\n"
