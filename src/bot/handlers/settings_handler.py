@@ -197,14 +197,14 @@ class SettingsHandler(BaseHandler):
                 loc_name = getattr(selected_location, 'name', '')
                 generating_msg = await callback.message.edit_text(
                     t(bot_lang, 'locations.generating_description').format(location_name=escape_markdown(loc_name)),
-                    parse_mode="Markdown"
+                    parse_mode="MarkdownV2"
                 )
                 try:
                     items = await self.homebox_service.get_items_by_location(selected_location.id)
                     if not items:
                         await generating_msg.edit_text(
                             t(bot_lang, 'locations.no_items_in_location').format(location_name=escape_markdown(loc_name)),
-                            parse_mode="Markdown"
+                            parse_mode="MarkdownV2"
                         )
                         return
                     # items might be dicts
@@ -222,7 +222,7 @@ class SettingsHandler(BaseHandler):
                                 location_name=escape_markdown(loc_name),
                                 error=escape_markdown("AI service unavailable")
                             ),
-                            parse_mode="Markdown"
+                            parse_mode="MarkdownV2"
                         )
                         return
                     await state.update_data({
@@ -232,16 +232,40 @@ class SettingsHandler(BaseHandler):
                     current_desc = getattr(selected_location, 'description', None) or t(bot_lang, 'common.no_description')
                     if '[TGB]' in current_desc:
                         current_desc = current_desc.replace('[TGB]', '').strip()
+                    # For MarkdownV2 we need stricter escaping
+                    def escape_md_v2(text: str) -> str:
+                        if not text:
+                            return text
+                        return text.replace('\\', '\\\\') \
+                                   .replace('_', '\\_') \
+                                   .replace('*', '\\*') \
+                                   .replace('[', '\\[') \
+                                   .replace(']', '\\]') \
+                                   .replace('(', '\\(') \
+                                   .replace(')', '\\)') \
+                                   .replace('~', '\\~') \
+                                   .replace('`', '\\`') \
+                                   .replace('>', '\\>') \
+                                   .replace('#', '\\#') \
+                                   .replace('+', '\\+') \
+                                   .replace('-', '\\-') \
+                                   .replace('=', '\\=') \
+                                   .replace('|', '\\|') \
+                                   .replace('{', '\\{') \
+                                   .replace('}', '\\}') \
+                                   .replace('.', '\\.') \
+                                   .replace('!', '\\!')
+
                     confirm_text = t(bot_lang, 'locations.confirm_update_description').format(
-                        location_name=escape_markdown(loc_name),
-                        current_description=escape_markdown(current_desc),
-                        new_description=escape_markdown(generated_description)
+                        location_name=escape_md_v2(loc_name),
+                        current_description=escape_md_v2(current_desc),
+                        new_description=escape_md_v2(generated_description)
                     )
                     keyboard = self.keyboard_manager.description_confirmation_keyboard(bot_lang)
                     await generating_msg.edit_text(
                         confirm_text,
                         reply_markup=keyboard,
-                        parse_mode="Markdown"
+                        parse_mode="MarkdownV2"
                     )
                     await state.set_state(LocationStates.confirming_description_update)
                 except Exception as e:
@@ -250,7 +274,7 @@ class SettingsHandler(BaseHandler):
                             location_name=escape_markdown(loc_name),
                             error=escape_markdown(str(e))
                         ),
-                        parse_mode="Markdown"
+                        parse_mode="MarkdownV2"
                     )
             except Exception as e:
                 await self.handle_error(e, "generate_location_description_cb", callback.from_user.id)
