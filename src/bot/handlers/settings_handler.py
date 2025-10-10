@@ -193,21 +193,23 @@ class SettingsHandler(BaseHandler):
                     await callback.answer()
                 except Exception:
                     pass
+                loc_name = getattr(selected_location, 'name', '')
                 generating_msg = await callback.message.edit_text(
-                    t(bot_lang, 'locations.generating_description').format(location_name=selected_location.name)
+                    t(bot_lang, 'locations.generating_description').format(location_name=loc_name)
                 )
                 try:
                     items = await self.homebox_service.get_items_by_location(selected_location.id)
                     if not items:
                         await generating_msg.edit_text(
-                            t(bot_lang, 'locations.no_items_in_location').format(location_name=selected_location.name),
+                            t(bot_lang, 'locations.no_items_in_location').format(location_name=loc_name),
                             parse_mode="Markdown"
                         )
                         return
-                    item_names = [item.name for item in items[:10]]
+                    # items might be dicts
+                    item_names = [(it.get('name') if isinstance(it, dict) else getattr(it, 'name', '')) for it in items[:10]]
                     item_list = ", ".join(item_names)
                     prompt = (
-                        f"Based on the location name \"{selected_location.name}\" and the items stored there: {item_list}, "
+                        f"Based on the location name \"{loc_name}\" and the items stored there: {item_list}, "
                         f"generate a brief, descriptive text (2-3 sentences) that describes what this location is used for "
                         f"and what kind of items are typically stored there. The description should be practical and helpful for organizing purposes."
                     )
@@ -215,7 +217,7 @@ class SettingsHandler(BaseHandler):
                     if not generated_description:
                         await generating_msg.edit_text(
                             t(bot_lang, 'locations.description_generation_failed').format(
-                                location_name=selected_location.name,
+                                location_name=loc_name,
                                 error="AI service unavailable"
                             ),
                             parse_mode="Markdown"
@@ -225,11 +227,11 @@ class SettingsHandler(BaseHandler):
                         'selected_location': selected_location,
                         'generated_description': generated_description
                     })
-                    current_desc = selected_location.description or t(bot_lang, 'common.no_description')
+                    current_desc = getattr(selected_location, 'description', None) or t(bot_lang, 'common.no_description')
                     if '[TGB]' in current_desc:
                         current_desc = current_desc.replace('[TGB]', '').strip()
                     confirm_text = t(bot_lang, 'locations.confirm_update_description').format(
-                        location_name=selected_location.name,
+                        location_name=loc_name,
                         current_description=current_desc,
                         new_description=generated_description
                     )
@@ -243,7 +245,7 @@ class SettingsHandler(BaseHandler):
                 except Exception as e:
                     await generating_msg.edit_text(
                         t(bot_lang, 'locations.description_generation_failed').format(
-                            location_name=selected_location.name,
+                            location_name=loc_name,
                             error=str(e)
                         ),
                         parse_mode="Markdown"
