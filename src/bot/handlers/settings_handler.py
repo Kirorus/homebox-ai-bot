@@ -15,6 +15,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from .base_handler import BaseHandler
 from models.user import UserSettings
+from models.location import Location
 from bot.keyboards import KeyboardManager
 from bot.states import LocationStates
 from i18n.i18n_manager import t
@@ -170,7 +171,17 @@ class SettingsHandler(BaseHandler):
                 location_id = callback.data.replace("generate_desc_", "")
                 data = await state.get_data()
                 all_locations = data.get('all_locations') or []
-                selected_location = next((loc for loc in all_locations if str(loc.id) == location_id), None)
+                # all_locations may contain Location objects or dicts
+                def get_loc_id(loc):
+                    try:
+                        return str(loc.id)
+                    except AttributeError:
+                        return str(loc.get('id')) if isinstance(loc, dict) else ''
+
+                selected_location = next((loc for loc in all_locations if get_loc_id(loc) == location_id), None)
+                # Normalize to Location object
+                if isinstance(selected_location, dict):
+                    selected_location = Location.from_dict(selected_location)
                 if not selected_location:
                     try:
                         await callback.answer(t(bot_lang, 'errors.location_not_found'), show_alert=True)
@@ -251,6 +262,8 @@ class SettingsHandler(BaseHandler):
                 bot_lang = user_settings.bot_lang
                 data = await state.get_data()
                 selected_location = data.get('selected_location')
+                if isinstance(selected_location, dict):
+                    selected_location = Location.from_dict(selected_location)
                 generated_description = data.get('generated_description')
                 if not selected_location or not generated_description:
                     try:
@@ -310,6 +323,8 @@ class SettingsHandler(BaseHandler):
             try:
                 data = await state.get_data()
                 selected_location = data.get('selected_location')
+                if isinstance(selected_location, dict):
+                    selected_location = Location.from_dict(selected_location)
                 if not selected_location:
                     try:
                         await callback.answer(t('en', 'errors.occurred'))
