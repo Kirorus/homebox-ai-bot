@@ -159,6 +159,195 @@ class SettingsHandler(BaseHandler):
                 await self.handle_error(e, "start_description_generation", callback.from_user.id)
                 await callback.answer(t('en', 'errors.occurred'))
         
+        # Handlers for location description generation (registered at init, not nested)
+        @self.router.callback_query(F.data.startswith("generate_desc_"))
+        async def generate_location_description_cb(callback: CallbackQuery, state: FSMContext):
+            """Generate description for selected location (robust registration)"""
+            logger.info(f"generate_location_description (robust) with data: {callback.data}")
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                location_id = callback.data.replace("generate_desc_", "")
+                data = await state.get_data()
+                all_locations = data.get('all_locations') or []
+                selected_location = next((loc for loc in all_locations if str(loc.id) == location_id), None)
+                if not selected_location:
+                    try:
+                        await callback.answer(t(bot_lang, 'errors.location_not_found'), show_alert=True)
+                    except Exception:
+                        pass
+                    return
+                # Show generating message and stop spinner
+                try:
+                    await callback.answer()
+                except Exception:
+                    pass
+                generating_msg = await callback.message.edit_text(
+                    t(bot_lang, 'locations.generating_description').format(location_name=selected_location.name)
+                )
+                try:
+                    items = await self.homebox_service.get_items_by_location(selected_location.id)
+                    if not items:
+                        await generating_msg.edit_text(
+                            t(bot_lang, 'locations.no_items_in_location').format(location_name=selected_location.name),
+                            parse_mode="Markdown"
+                        )
+                        return
+                    item_names = [item.name for item in items[:10]]
+                    item_list = ", ".join(item_names)
+                    prompt = (
+                        f"Based on the location name \"{selected_location.name}\" and the items stored there: {item_list}, "
+                        f"generate a brief, descriptive text (2-3 sentences) that describes what this location is used for "
+                        f"and what kind of items are typically stored there. The description should be practical and helpful for organizing purposes."
+                    )
+                    generated_description = await self.ai_service.generate_text(prompt)
+                    if not generated_description:
+                        await generating_msg.edit_text(
+                            t(bot_lang, 'locations.description_generation_failed').format(
+                                location_name=selected_location.name,
+                                error="AI service unavailable"
+                            ),
+                            parse_mode="Markdown"
+                        )
+                        return
+                    await state.update_data({
+                        'selected_location': selected_location,
+                        'generated_description': generated_description
+                    })
+                    current_desc = selected_location.description or t(bot_lang, 'common.no_description')
+                    if '[TGB]' in current_desc:
+                        current_desc = current_desc.replace('[TGB]', '').strip()
+                    confirm_text = t(bot_lang, 'locations.confirm_update_description').format(
+                        location_name=selected_location.name,
+                        current_description=current_desc,
+                        new_description=generated_description
+                    )
+                    keyboard = self.keyboard_manager.description_confirmation_keyboard(bot_lang)
+                    await generating_msg.edit_text(
+                        confirm_text,
+                        reply_markup=keyboard,
+                        parse_mode="Markdown"
+                    )
+                    await state.set_state(LocationStates.confirming_description_update)
+                except Exception as e:
+                    await generating_msg.edit_text(
+                        t(bot_lang, 'locations.description_generation_failed').format(
+                            location_name=selected_location.name,
+                            error=str(e)
+                        ),
+                        parse_mode="Markdown"
+                    )
+            except Exception as e:
+                await self.handle_error(e, "generate_location_description_cb", callback.from_user.id)
+                try:
+                    await callback.answer(t('en', 'errors.occurred'))
+                except Exception:
+                    pass
+
+        @self.router.callback_query(F.data == "confirm_description_update")
+        async def confirm_description_update_cb(callback: CallbackQuery, state: FSMContext):
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                data = await state.get_data()
+                selected_location = data.get('selected_location')
+                generated_description = data.get('generated_description')
+                if not selected_location or not generated_description:
+                    try:
+                        await callback.answer(t('en', 'errors.occurred'))
+                    except Exception:
+                        pass
+                    return
+                current_desc = selected_location.description or ''
+                new_description = f"{generated_description} [TGB]" if '[TGB]' in current_desc else generated_description
+                success = await self.homebox_service.update_location(selected_location.id, {
+                    'description': new_description
+                })
+                result_text = (
+                    t(bot_lang, 'locations.description_updated').format(location_name=selected_location.name)
+                    if success else
+                    t(bot_lang, 'locations.description_generation_failed').format(location_name=selected_location.name, error="Failed to update location")
+                )
+                keyboard = self.keyboard_manager.location_management_keyboard(bot_lang)
+                await callback.message.edit_text(result_text, reply_markup=keyboard, parse_mode="Markdown")
+                await state.clear()
+                try:
+                    await callback.answer()
+                except Exception:
+                    pass
+            except Exception as e:
+                await self.handle_error(e, "confirm_description_update_cb", callback.from_user.id)
+                try:
+                    await callback.answer(t('en', 'errors.occurred'))
+                except Exception:
+                    pass
+
+        @self.router.callback_query(F.data == "reject_description_update")
+        async def reject_description_update_cb(callback: CallbackQuery, state: FSMContext):
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                keyboard = self.keyboard_manager.location_management_keyboard(bot_lang)
+                await callback.message.edit_text(
+                    t(bot_lang, 'locations.description_generation_cancelled'),
+                    reply_markup=keyboard,
+                    parse_mode="Markdown"
+                )
+                await state.clear()
+                try:
+                    await callback.answer()
+                except Exception:
+                    pass
+            except Exception as e:
+                await self.handle_error(e, "reject_description_update_cb", callback.from_user.id)
+                try:
+                    await callback.answer(t('en', 'errors.occurred'))
+                except Exception:
+                    pass
+
+        @self.router.callback_query(F.data == "regenerate_description")
+        async def regenerate_description_cb(callback: CallbackQuery, state: FSMContext):
+            try:
+                data = await state.get_data()
+                selected_location = data.get('selected_location')
+                if not selected_location:
+                    try:
+                        await callback.answer(t('en', 'errors.occurred'))
+                    except Exception:
+                        pass
+                    return
+                # Reuse generation logic
+                callback.data = f"generate_desc_{selected_location.id}"
+                await generate_location_description_cb(callback, state)
+            except Exception as e:
+                await self.handle_error(e, "regenerate_description_cb", callback.from_user.id)
+                try:
+                    await callback.answer(t('en', 'errors.occurred'))
+                except Exception:
+                    pass
+
+        @self.router.callback_query(F.data == "cancel_description_generation")
+        async def cancel_description_generation_cb(callback: CallbackQuery, state: FSMContext):
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                keyboard = self.keyboard_manager.location_management_keyboard(bot_lang)
+                await callback.message.edit_text(
+                    t(bot_lang, 'locations.description_generation_cancelled'),
+                    reply_markup=keyboard,
+                    parse_mode="Markdown"
+                )
+                await state.clear()
+                try:
+                    await callback.answer()
+                except Exception:
+                    pass
+            except Exception as e:
+                await self.handle_error(e, "cancel_description_generation_cb", callback.from_user.id)
+                try:
+                    await callback.answer(t('en', 'errors.occurred'))
+                except Exception:
+                    pass
         
         @self.router.message(Command("settings"))
         async def cmd_settings(message: Message, state: FSMContext):
