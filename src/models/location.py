@@ -50,7 +50,8 @@ class Location:
             name=data['name'],
             description=data.get('description'),
             is_allowed=data.get('is_allowed', False),
-            parent_id=data.get('parent_id'),
+            # Support both snake_case and camelCase from API responses
+            parent_id=data.get('parent_id') or data.get('parentId'),
             level=data.get('level', 0)
         )
     
