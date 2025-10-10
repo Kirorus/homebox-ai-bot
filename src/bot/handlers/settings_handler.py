@@ -1396,8 +1396,9 @@ class SettingsHandler(BaseHandler):
                     await callback.answer()
                 except Exception:
                     pass
+                loc_name = getattr(selected_location, 'name', selected_location.get('name') if isinstance(selected_location, dict) else '')
                 generating_msg = await callback.message.edit_text(
-                    t(bot_lang, 'locations.generating_description').format(location_name=selected_location.name)
+                    t(bot_lang, 'locations.generating_description').format(location_name=loc_name)
                 )
                 
                 try:
@@ -1405,7 +1406,7 @@ class SettingsHandler(BaseHandler):
                     items = await self.homebox_service.get_items_by_location(selected_location.id)
                     if not items:
                         await generating_msg.edit_text(
-                            t(bot_lang, 'locations.no_items_in_location').format(location_name=selected_location.name),
+                            t(bot_lang, 'locations.no_items_in_location').format(location_name=loc_name),
                             parse_mode="Markdown"
                         )
                         return
@@ -1415,14 +1416,14 @@ class SettingsHandler(BaseHandler):
                     item_names = [ (item.get('name') if isinstance(item, dict) else getattr(item, 'name', '')) for item in items[:10] ]  # Limit to first 10
                     item_list = ", ".join(item_names)
                     
-                    prompt = f"""Based on the location name "{selected_location.name}" and the items stored there: {item_list}, generate a brief, descriptive text (2-3 sentences) that describes what this location is used for and what kind of items are typically stored there. The description should be practical and helpful for organizing purposes."""
+                    prompt = f"""Based on the location name "{loc_name}" and the items stored there: {item_list}, generate a brief, descriptive text (2-3 sentences) that describes what this location is used for and what kind of items are typically stored there. The description should be practical and helpful for organizing purposes."""
                     
                     generated_description = await self.ai_service.generate_text(prompt)
                     
                     if not generated_description:
                         await generating_msg.edit_text(
                             t(bot_lang, 'locations.description_generation_failed').format(
-                                location_name=selected_location.name,
+                                location_name=loc_name,
                                 error="AI service unavailable"
                             ),
                             parse_mode="Markdown"
@@ -1436,12 +1437,14 @@ class SettingsHandler(BaseHandler):
                     })
                     
                     # Show confirmation dialog
-                    current_desc = selected_location.description or t(bot_lang, 'common.no_description')
+                    current_desc = getattr(selected_location, 'description', None)
+                    if not current_desc:
+                        current_desc = t(bot_lang, 'common.no_description')
                     if '[TGB]' in current_desc:
                         current_desc = current_desc.replace('[TGB]', '').strip()
                     
                     confirm_text = t(bot_lang, 'locations.confirm_update_description').format(
-                        location_name=selected_location.name,
+                        location_name=loc_name,
                         current_description=current_desc,
                         new_description=generated_description
                     )
@@ -1459,7 +1462,7 @@ class SettingsHandler(BaseHandler):
                 except Exception as e:
                     await generating_msg.edit_text(
                         t(bot_lang, 'locations.description_generation_failed').format(
-                            location_name=selected_location.name,
+                            location_name=loc_name,
                             error=str(e)
                         ),
                         parse_mode="Markdown"
