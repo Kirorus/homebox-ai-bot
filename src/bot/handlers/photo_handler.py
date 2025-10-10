@@ -844,8 +844,43 @@ class PhotoHandler(BaseHandler):
                 allowed_location_manager = self.homebox_service.get_location_manager(locations)
                 model = user_settings.model
                 gen_lang = user_settings.gen_lang
+
+                # Build internal hint to encourage alternative suggestions (localized)
+                prev_name = item.name or ""
+                prev_desc = item.description or ""
+                if gen_lang == 'en':
+                    internal_hint = (
+                        f"User disliked the previous name/description. Previous name: '{prev_name}'. "
+                        f"Previous description: '{prev_desc}'. Provide improved alternatives: a different, more specific name (<=50 chars) "
+                        f"and a rewritten description (<=200 chars) with new details. Do not repeat the previous text."
+                    )
+                elif gen_lang == 'de':
+                    internal_hint = (
+                        f"Dem Nutzer gefielen der frühere Name/Beschreibung nicht. Früherer Name: '{prev_name}'. "
+                        f"Frühere Beschreibung: '{prev_desc}'. Schlage bessere Alternativen vor: einen anderen, spezifischeren Namen (<=50 Zeichen) "
+                        f"und eine neu formulierte Beschreibung (<=200 Zeichen) mit neuen Details. Wiederhole den vorherigen Text nicht."
+                    )
+                elif gen_lang == 'fr':
+                    internal_hint = (
+                        f"L'utilisateur n'a pas aimé le nom/la description précédents. Nom précédent : '{prev_name}'. "
+                        f"Description précédente : '{prev_desc}'. Propose des alternatives améliorées : un nom différent, plus précis (<=50 caractères) "
+                        f"et une description réécrite (<=200 caractères) avec de nouveaux détails. Ne répète pas le texte précédent."
+                    )
+                elif gen_lang == 'es':
+                    internal_hint = (
+                        f"Al usuario no le gustaron el nombre/la descripción anteriores. Nombre anterior: '{prev_name}'. "
+                        f"Descripción anterior: '{prev_desc}'. Propón alternativas mejores: un nombre diferente y más específico (<=50 caracteres) "
+                        f"y una descripción reescrita (<=200 caracteres) con nuevos detalles. No repitas el texto anterior."
+                    )
+                else:  # ru and fallback
+                    internal_hint = (
+                        f"Пользователю не понравились предыдущие название/описание. Предыдущее название: '{prev_name}'. "
+                        f"Предыдущее описание: '{prev_desc}'. Предложи лучшие альтернативы: другое, более точное название (<=50 символов) "
+                        f"и переписанное описание (<=200 символов) с новыми деталями. Не повторяй прошлый текст."
+                    )
+
                 analysis = await self.ai_service.analyze_image(
-                    item.photo_path, allowed_location_manager, gen_lang, model, None
+                    item.photo_path, allowed_location_manager, gen_lang, model, internal_hint
                 )
                 # Update item fields
                 item.name = analysis.name
