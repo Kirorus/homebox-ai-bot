@@ -131,6 +131,18 @@ class KeyboardManager:
         builder = InlineKeyboardBuilder()
         builder.row(InlineKeyboardButton(text=f"❌ {t(bot_lang, 'buttons.cancel')}", callback_data=callback))
         return builder.as_markup()
+
+    @staticmethod
+    def reanalysis_prompt_keyboard(bot_lang: str) -> InlineKeyboardMarkup:
+        """Keyboard for reanalysis prompt: no-hint and cancel"""
+        builder = InlineKeyboardBuilder()
+        builder.row(
+            InlineKeyboardButton(text=f"🔄 {t(bot_lang, 'reanalysis.no_hint')}", callback_data="reanalyze_no_hint")
+        )
+        builder.row(
+            InlineKeyboardButton(text=f"❌ {t(bot_lang, 'buttons.cancel')}", callback_data="cancel_reanalysis")
+        )
+        return builder.as_markup()
     
     @staticmethod
     def locations_keyboard(locations: List[Location], bot_lang: str) -> InlineKeyboardMarkup:

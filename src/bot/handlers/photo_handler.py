@@ -699,7 +699,7 @@ class PhotoHandler(BaseHandler):
                 
                 await callback.message.edit_caption(
                     caption=f"🔄 **{t(bot_lang, 'reanalysis.title')}**\n\n{t(bot_lang, 'reanalysis.prompt')}\n\n💡 *{t(bot_lang, 'reanalysis.hint_placeholder')}*",
-                    reply_markup=self.keyboard_manager.cancel_keyboard(bot_lang, "cancel_reanalysis"),
+                    reply_markup=self.keyboard_manager.reanalysis_prompt_keyboard(bot_lang),
                     parse_mode="Markdown"
                 )
                 # Remember the message being edited so we can update it later
@@ -828,6 +828,80 @@ class PhotoHandler(BaseHandler):
             except Exception as e:
                 await self.handle_error(e, "reanalysis_hint", message.from_user.id)
                 await message.answer("An error occurred during re-analysis. Please try again.")
+
+        @self.router.callback_query(F.data == "reanalyze_no_hint", ItemStates.waiting_for_reanalysis_hint)
+        async def reanalyze_no_hint_callback(callback: CallbackQuery, state: FSMContext):
+            """Run reanalysis without user hint and return to confirmation UI"""
+            try:
+                user_settings = await self.get_user_settings(callback.from_user.id)
+                bot_lang = user_settings.bot_lang
+                data = await state.get_data()
+                item = data.get('item')
+                locations = data.get('locations', [])
+                if not item or not locations:
+                    await callback.answer(t('en', 'errors.no_item_data'), show_alert=True)
+                    return
+                allowed_location_manager = self.homebox_service.get_location_manager(locations)
+                model = user_settings.model
+                gen_lang = user_settings.gen_lang
+                analysis = await self.ai_service.analyze_image(
+                    item.photo_path, allowed_location_manager, gen_lang, model, None
+                )
+                # Update item fields
+                item.name = analysis.name
+                item.description = analysis.description
+                # Suggest location within allowed
+                suggested_location = allowed_location_manager.find_best_match(analysis.suggested_location)
+                if suggested_location:
+                    item.location_id = suggested_location.id
+                    item.location_name = suggested_location.name
+                item.analysis = analysis
+                await state.update_data(item=item)
+
+                # Build updated caption
+                result_caption = (
+                    f"**{t(bot_lang, 'item.analysis_complete')}**\n\n"
+                    f"📝 **{t(bot_lang, 'item.name')}:** `{item.name}`\n"
+                    f"📋 **{t(bot_lang, 'item.description')}:** `{item.description}`\n"
+                    f"📦 **{t(bot_lang, 'item.location')}:** `{item.location_name}`\n\n"
+                    f"✨ {t(bot_lang, 'item.what_change')}"
+                )
+                # Edit confirmation message
+                data = await state.get_data()
+                confirm_message_id = data.get('confirm_message_id')
+                confirm_chat_id = data.get('confirm_chat_id')
+                edited_ok = False
+                if confirm_message_id and confirm_chat_id:
+                    try:
+                        await callback.message.bot.edit_message_caption(
+                            chat_id=confirm_chat_id,
+                            message_id=confirm_message_id,
+                            caption=result_caption,
+                            reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
+                            parse_mode="Markdown"
+                        )
+                        edited_ok = True
+                    except Exception:
+                        edited_ok = False
+                if not edited_ok:
+                    try:
+                        await callback.message.edit_caption(
+                            caption=result_caption,
+                            reply_markup=self.keyboard_manager.confirmation_keyboard(bot_lang),
+                            parse_mode="Markdown"
+                        )
+                        try:
+                            await state.update_data(confirm_message_id=callback.message.message_id, confirm_chat_id=callback.message.chat.id)
+                        except Exception:
+                            pass
+                    except Exception:
+                        pass
+
+                await state.set_state(ItemStates.confirming_data)
+                await callback.answer()
+            except Exception as e:
+                await self.handle_error(e, "reanalyze_no_hint", callback.from_user.id)
+                await callback.answer(t('en', 'errors.occurred'), show_alert=True)
 
         @self.router.message(ItemStates.waiting_for_reanalysis_hint)
         async def handle_reanalysis_hint_nontext(message: Message, state: FSMContext):

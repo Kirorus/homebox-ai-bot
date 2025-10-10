@@ -86,6 +86,7 @@
     "title": "Re-analyze Item",
     "prompt": "Send additional information to help improve the analysis:",
     "hint_placeholder": "e.g., 'This is a vintage camera from the 1980s' or 'It's made of wood and metal'",
+    "no_hint": "Re-analyze without hint",
     "processing": "Re-analyzing with your hint...",
     "success": "Analysis updated with your hint!",
     "step_prepare": "Preparing context and locations...",
