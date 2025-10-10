@@ -10,7 +10,7 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKe
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from .base_handler import BaseHandler
-from bot.states import SearchStates, LocationStates
+from bot.states import SearchStates, LocationStates, ItemStates
 from bot.keyboards import KeyboardManager
 from i18n.i18n_manager import t
 
@@ -187,6 +187,72 @@ class SearchHandler(BaseHandler):
                 
             except Exception as e:
                 await self.handle_error(e, "search query", message.from_user.id)
+                await message.answer(t('en', 'errors.occurred'))
+
+        @self.router.message(F.text)
+        async def handle_global_text_search(message: Message, state: FSMContext):
+            """Treat any plain text as a search query, unless user is in an edit/reanalysis input state."""
+            try:
+                # Skip if user is in states that expect text for a different purpose
+                current_state = await state.get_state()
+                blocked_states = {
+                    ItemStates.editing_name.state,
+                    ItemStates.editing_description.state,
+                    ItemStates.selecting_location.state,
+                    ItemStates.waiting_for_reanalysis_hint.state,
+                    SearchStates.waiting_for_search_query.state,
+                    SearchStates.editing_item_name.state,
+                    SearchStates.editing_item_description.state,
+                    SearchStates.waiting_for_reanalysis_hint.state,
+                }
+                if current_state in blocked_states:
+                    return
+
+                # Authorization
+                if not await self.is_user_allowed(message.from_user.id):
+                    await message.answer(t('en', 'errors.access_denied'))
+                    return
+
+                user_settings = await self.get_user_settings(message.from_user.id)
+                bot_lang = user_settings.bot_lang
+
+                query = (message.text or '').strip()
+                if not query:
+                    await message.answer(t(bot_lang, 'search.empty_query'))
+                    return
+
+                # Show placeholder and perform search
+                searching_msg = await message.answer(t(bot_lang, 'search.searching'))
+                try:
+                    items = await self.homebox_service.search_items(query, limit=20)
+                except Exception as e:
+                    await self.handle_error(e, "global_text_search", message.from_user.id)
+                    try:
+                        await searching_msg.edit_text(t('en', 'errors.occurred'))
+                    except Exception:
+                        pass
+                    return
+
+                if not items:
+                    try:
+                        await searching_msg.edit_text(t(bot_lang, 'search.no_results'))
+                    except Exception:
+                        try:
+                            await searching_msg.delete()
+                        except Exception:
+                            try:
+                                await searching_msg.edit_text(" ")
+                            except Exception:
+                                pass
+                        await message.answer(t(bot_lang, 'search.no_results'))
+                    await state.clear()
+                    return
+
+                await state.update_data(search_results=items, current_page=0)
+                await self.show_search_results(searching_msg, state, items, 0, bot_lang)
+                await state.set_state(SearchStates.viewing_search_results)
+            except Exception as e:
+                await self.handle_error(e, "handle_global_text_search", message.from_user.id)
                 await message.answer(t('en', 'errors.occurred'))
         
         

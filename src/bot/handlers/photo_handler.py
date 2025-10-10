@@ -92,7 +92,7 @@ class PhotoHandler(BaseHandler):
                 await self.handle_error(e, "start command handler", message.from_user.id)
                 await message.answer("An error occurred. Please try again.")
         
-        @self.router.message(ItemStates.waiting_for_photo, F.photo)
+        @self.router.message(F.photo)
         async def handle_photo(message: Message, state: FSMContext):
             """Handle photo upload"""
             try:
