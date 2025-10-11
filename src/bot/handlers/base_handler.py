@@ -260,7 +260,8 @@ class BaseHandler(ABC):
             memory_usage = t(lang, 'stats.unknown')
         
         try:
-            db_size = os.path.getsize("../data/bot_data.db") / 1024 / 1024
+            # Use actual database path from the service for accuracy
+            db_size = os.path.getsize(self.database.db_path) / 1024 / 1024
             db_size = f"{db_size:.1f} MB"
         except:
             db_size = t(lang, 'stats.unknown')

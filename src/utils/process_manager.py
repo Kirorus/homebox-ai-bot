@@ -63,6 +63,8 @@ sleep 2
 cd {os.getcwd()}
 source .venv/bin/activate
 cd src
+# Ensure logs directory exists and write logs and pid at project root
+mkdir -p ../logs
 nohup python main.py > ../logs/bot.log 2>&1 &
 echo $! > ../bot.pid
 

@@ -32,6 +32,7 @@ sleep 2
 cd /home/kiroru/dev/homebox-ai-bot
 source .venv/bin/activate
 cd src
+mkdir -p ../logs
 nohup python main.py > ../logs/bot.log 2>&1 &
 echo $! > ../bot.pid
 

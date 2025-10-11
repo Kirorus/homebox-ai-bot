@@ -20,12 +20,19 @@ from services.ai_service import AIService
 from services.image_service import ImageService
 from bot.handlers import register_handlers
 
-# Configure logging
+# Resolve app base directory and ensure standard dirs exist
+BASE_DIR = Path(__file__).resolve().parent.parent  # /app
+LOGS_DIR = BASE_DIR / 'logs'
+DATA_DIR = BASE_DIR / 'data'
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+# Configure logging to write to /app/logs/bot.log and stdout
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('../logs/bot.log', encoding='utf-8'),
+        logging.FileHandler(str(LOGS_DIR / 'bot.log'), encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -42,7 +49,7 @@ class HomeBoxAIBot:
         self.dp = Dispatcher(storage=MemoryStorage())
         
         # Initialize services
-        self.database = DatabaseService("../data/bot_data.db")  # Database in data directory
+        self.database = DatabaseService(str(DATA_DIR / "bot_data.db"))  # Database in data directory
         self.homebox_service = HomeBoxService(self.settings.homebox)
         self.ai_service = AIService(self.settings.ai)
         self.image_service = ImageService()
