@@ -3,7 +3,7 @@ version: '3.8'
 services:
   homebox-ai-bot:
     image: kirorus/homebox-ai-bot:latest
-    pull_policy: always
+    pull_policy: never
     container_name: homebox-ai-bot
     restart: unless-stopped
     environment:

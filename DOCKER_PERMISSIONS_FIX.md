@@ -22,8 +22,8 @@ sudo chown -R $(id -u):$(id -g) logs data temp
 sudo chmod -R 755 logs data temp
 sudo chmod 644 logs/bot.log 2>/dev/null || true
 
-# 3. Пересобрать образ
-sudo docker build -t kirorus/homebox-ai-bot:latest .
+# 3. Пересобрать образ (важно: с --no-cache)
+sudo docker build --no-cache -t kirorus/homebox-ai-bot:latest .
 
 # 4. Запустить контейнеры
 sudo docker compose up -d
