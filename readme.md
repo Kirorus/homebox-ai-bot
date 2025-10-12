@@ -65,7 +65,19 @@ CI/CD:
 - Multi-arch build (linux/amd64, linux/arm64) with security scan
 
 ## 📖 Commands
-User: `/start`, `/settings`, `/search`, `/recent`, `/myid`
+User commands:
+- `/start` - Start the bot and show main menu
+- `/settings` - Configure bot settings
+- `/search` - Search for items in HomeBox
+- `/recent` - Show recently added items
+- `/myid` - Get your Telegram user ID
+
+Bot workflow:
+1. Send a photo of an item
+2. Bot analyzes the image using AI
+3. Bot suggests name, description, and storage location
+4. Confirm or edit the suggestions
+5. Item is automatically added to HomeBox
 
 ## 📂 Structure
 ```
@@ -76,6 +88,45 @@ src/
   config/         # Settings loading/validation
   utils/          # Helpers
   main.py         # Entry point
+```
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Bot not responding:**
+- Check if bot token is correct in `.env`
+- Verify HomeBox URL and credentials
+- Check logs: `docker-compose logs -f homebox-ai-bot`
+
+**AI not working:**
+- Verify OpenAI API key and base URL
+- Check if API provider is accessible
+- Ensure sufficient API credits
+
+**Permission denied errors:**
+- Check file permissions for `data/`, `logs/`, `temp/` directories
+- Ensure Docker volumes are properly mounted
+
+**Database issues:**
+- Check if SQLite database is accessible
+- Verify database file permissions
+
+### Development
+
+**Running tests:**
+```bash
+make test                    # Run all tests
+make test unit              # Run unit tests only
+make test integration       # Run integration tests only
+make coverage               # Generate coverage report
+```
+
+**Code quality:**
+```bash
+make format                 # Format code with black
+make lint                   # Lint with flake8
+make check                  # Run tests and i18n checks
 ```
 
 ## 📝 License
