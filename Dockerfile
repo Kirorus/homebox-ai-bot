@@ -28,7 +28,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Create non-root user for security
-RUN useradd --create-home --shell /bin/bash app
+RUN useradd --create-home --shell /bin/bash --uid 1000 app
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/data /app/logs /app/temp \
