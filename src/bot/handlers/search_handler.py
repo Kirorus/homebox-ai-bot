@@ -2190,9 +2190,23 @@ class SearchHandler(BaseHandler):
                     except Exception:
                         image_path = None
                     if image_path:
+                        # Try to overlay numeric badge matching the item's index in the page
+                        try:
+                            index_number = start_idx + i + 1
+                            badged_path = self.image_service.overlay_number_badge(image_path, number=index_number)
+                        except Exception:
+                            badged_path = None
+
+                        # Prefer badged image if available; fall back to original
+                        final_path = badged_path or image_path
+
+                        # Track temp files for cleanup (both original and badged if created)
                         temp_files.append(image_path)
+                        if badged_path:
+                            temp_files.append(badged_path)
+
                         media_group.append(InputMediaPhoto(
-                            media=FSInputFile(image_path),
+                            media=FSInputFile(final_path),
                             caption=f"**{start_idx + i + 1}.** {item_name}\n📍 {location_name}\n📝 {item_description}",
                             parse_mode="Markdown"
                         ))

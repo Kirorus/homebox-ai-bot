@@ -247,6 +247,104 @@ class ImageService:
             logger.error(f"Failed to add diagonal watermark: {e}")
             return None
     
+    def overlay_number_badge(self, image_path: str, number: int, max_dim: int = 1280) -> Optional[str]:
+        """
+        Overlay a circular number badge in the top-left corner of the image.
+        Returns path to the new image with badge, or None on failure.
+        """
+        try:
+            with Image.open(image_path).convert("RGBA") as base:
+                width, height = base.size
+                # Downscale large images for consistent badge proportions
+                if max(width, height) > max_dim:
+                    if width >= height:
+                        new_w = max_dim
+                        new_h = int(height * (max_dim / width))
+                    else:
+                        new_h = max_dim
+                        new_w = int(width * (max_dim / height))
+                    base = base.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                    width, height = base.size
+
+                overlay = Image.new("RGBA", (width, height), (255, 255, 255, 0))
+                draw = ImageDraw.Draw(overlay)
+
+                # Badge size relative to min dimension
+                min_dim = min(width, height)
+                badge_radius = max(18, int(min_dim * 0.065))
+                stroke = max(2, int(badge_radius * 0.12))
+                padding = max(6, int(badge_radius * 0.4))
+
+                cx = padding + badge_radius
+                cy = padding + badge_radius
+
+                # Draw badge circle with white stroke for visibility
+                draw.ellipse(
+                    (cx - badge_radius, cy - badge_radius, cx + badge_radius, cy + badge_radius),
+                    fill=(30, 144, 255, 225),  # DodgerBlue
+                )
+                # Stroke
+                draw.ellipse(
+                    (cx - badge_radius - stroke, cy - badge_radius - stroke, cx + badge_radius + stroke, cy + badge_radius + stroke),
+                    outline=(255, 255, 255, 240), width=stroke
+                )
+
+                # Load font
+                num_text = str(number)
+                env_font = os.getenv("WATERMARK_FONT")
+                project_dir = Path(__file__).resolve().parents[2]
+                bundled_bold = project_dir / 'assets' / 'fonts' / 'NotoSans-Bold.ttf'
+                font_paths = [
+                    str(bundled_bold) if bundled_bold.exists() else None,
+                    env_font if env_font else None,
+                    "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf",
+                    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+                    "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+                    "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf",
+                    "/usr/share/fonts/truetype/roboto/hinted/Roboto-Bold.ttf",
+                ]
+                def load_font(size: int) -> Optional[ImageFont.FreeTypeFont]:
+                    for fp in font_paths:
+                        if not fp:
+                            continue
+                        try:
+                            return ImageFont.truetype(fp, size)
+                        except Exception:
+                            continue
+                    return None
+
+                # Fit font to badge
+                font_size = max(10, int(badge_radius * 1.25))
+                font = load_font(font_size) or ImageFont.load_default()
+
+                # Adjust size so text fits inside circle
+                for _ in range(6):
+                    bbox = draw.textbbox((0, 0), num_text, font=font)
+                    text_w = bbox[2] - bbox[0]
+                    text_h = bbox[3] - bbox[1]
+                    if text_w <= badge_radius * 1.8 and text_h <= badge_radius * 1.6:
+                        break
+                    font_size = max(8, int(font_size * 0.9))
+                    new_font = load_font(font_size)
+                    if new_font is None:
+                        break
+                    font = new_font
+
+                # Draw number centered with subtle shadow
+                tx = cx - text_w // 2
+                ty = cy - text_h // 2
+                shadow_offset = max(1, int(badge_radius * 0.08))
+                draw.text((tx + shadow_offset, ty + shadow_offset), num_text, font=font, fill=(0, 0, 0, 120))
+                draw.text((tx, ty), num_text, font=font, fill=(255, 255, 255, 255))
+
+                result = Image.alpha_composite(base, overlay)
+                output_path = self.file_manager.get_temp_file_path('badge', '.jpg')
+                result.convert("RGB").save(output_path, "JPEG", quality=85, optimize=True)
+                return output_path
+        except Exception as e:
+            logger.error(f"Failed to overlay number badge: {e}")
+            return None
+    
     def get_image_info(self, image_path: str) -> dict:
         """Get image information"""
         try:
