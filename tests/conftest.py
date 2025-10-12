@@ -11,9 +11,11 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 from typing import AsyncGenerator, Generator
 
-# Add src to path for imports
+# Add src to path for imports (if not already in PYTHONPATH)
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+src_path = str(Path(__file__).parent.parent / "src")
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
 
 from config.settings import Settings, BotSettings, AISettings, HomeBoxSettings
 from services.database_service import DatabaseService

@@ -24,7 +24,7 @@ jobs:
       TELEGRAM_BOT_TOKEN: dummy-token
       OPENAI_API_KEY: dummy-api-key
       HOMEBOX_URL: http://localhost
-      HOMEBOX_USERNAME: dummy
+      HOMEBOX_USER: dummy
       HOMEBOX_PASSWORD: dummy
       HOMEBOX_TOKEN: dummy
       PYTHONUNBUFFERED: "1"
