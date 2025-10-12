@@ -32,48 +32,48 @@ class DatabaseService:
         try:
             logger.info(f"Initializing database at: {self.db_path}")
             async with aiosqlite.connect(self.db_path) as db:
-            # Users table
-            await db.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    user_id INTEGER PRIMARY KEY,
-                    username TEXT,
-                    first_name TEXT,
-                    last_name TEXT,
-                    is_active BOOLEAN DEFAULT 1,
-                    created_at TEXT,
-                    last_activity TEXT
-                )
-            """)
-            
-            # User settings table
-            await db.execute("""
-                CREATE TABLE IF NOT EXISTS user_settings (
-                    user_id INTEGER PRIMARY KEY,
-                    bot_lang TEXT DEFAULT 'ru',
-                    gen_lang TEXT DEFAULT 'ru',
-                    model TEXT DEFAULT 'gpt-4o',
-                    created_at TEXT,
-                    last_activity TEXT,
-                    FOREIGN KEY (user_id) REFERENCES users (user_id)
-                )
-            """)
-            
-            # Bot stats table
-            await db.execute("""
-                CREATE TABLE IF NOT EXISTS bot_stats (
-                    key TEXT PRIMARY KEY,
-                    value TEXT,
-                    updated_at TEXT
-                )
-            """)
-            
-            # Initialize bot stats if empty
-            await db.execute("""
-                INSERT OR IGNORE INTO bot_stats (key, value, updated_at) 
-                VALUES ('start_time', ?, ?)
-            """, (datetime.now().isoformat(), datetime.now().isoformat()))
-            
-            await db.commit()
+                # Users table
+                await db.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        user_id INTEGER PRIMARY KEY,
+                        username TEXT,
+                        first_name TEXT,
+                        last_name TEXT,
+                        is_active BOOLEAN DEFAULT 1,
+                        created_at TEXT,
+                        last_activity TEXT
+                    )
+                """)
+                
+                # User settings table
+                await db.execute("""
+                    CREATE TABLE IF NOT EXISTS user_settings (
+                        user_id INTEGER PRIMARY KEY,
+                        bot_lang TEXT DEFAULT 'ru',
+                        gen_lang TEXT DEFAULT 'ru',
+                        model TEXT DEFAULT 'gpt-4o',
+                        created_at TEXT,
+                        last_activity TEXT,
+                        FOREIGN KEY (user_id) REFERENCES users (user_id)
+                    )
+                """)
+                
+                # Bot stats table
+                await db.execute("""
+                    CREATE TABLE IF NOT EXISTS bot_stats (
+                        key TEXT PRIMARY KEY,
+                        value TEXT,
+                        updated_at TEXT
+                    )
+                """)
+                
+                # Initialize bot stats if empty
+                await db.execute("""
+                    INSERT OR IGNORE INTO bot_stats (key, value, updated_at) 
+                    VALUES ('start_time', ?, ?)
+                """, (datetime.now().isoformat(), datetime.now().isoformat()))
+                
+                await db.commit()
             logger.info("Database initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize database: {e}")
