@@ -3,7 +3,6 @@ services:
     image: kirorus/homebox-ai-bot:latest
     container_name: homebox-ai-bot
     restart: unless-stopped
-    user: "1000:1000"  # Run as non-root user
     environment:
       # Telegram Bot Configuration
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
