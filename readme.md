@@ -15,6 +15,7 @@ Smart Telegram bot that uses AI vision to add items to your HomeBox inventory fr
 ### 1) Docker (recommended)
 ```bash
 cp env.example .env
+./init-volumes.sh          # Initialize volume directories
 docker-compose up -d
 
 # Logs
