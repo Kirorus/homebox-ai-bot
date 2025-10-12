@@ -2193,7 +2193,8 @@ class SearchHandler(BaseHandler):
                         temp_files.append(image_path)
                         media_group.append(InputMediaPhoto(
                             media=FSInputFile(image_path),
-                            caption=f"**{start_idx + i + 1}.** {item_name}\n📍 {location_name}\n📝 {item_description}"
+                            caption=f"**{start_idx + i + 1}.** {item_name}\n📍 {location_name}\n📝 {item_description}",
+                            parse_mode="Markdown"
                         ))
             
             # Add pagination info
