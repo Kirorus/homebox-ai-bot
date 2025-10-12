@@ -9,7 +9,7 @@ import os
 import re
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
-from typing import AsyncGenerator, Generator
+from typing import Generator
 
 # Add src to path for imports (if not already in PYTHONPATH)
 import sys
@@ -33,7 +33,7 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
 
 
 @pytest.fixture
-async def temp_db() -> AsyncGenerator[str, None]:
+def temp_db() -> Generator[str, None, None]:
     """Create a temporary database file for testing."""
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
         db_path = tmp.name
