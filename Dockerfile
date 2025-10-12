@@ -22,18 +22,19 @@ RUN pip install --no-cache-dir --upgrade pip \
 COPY src/ ./src/
 COPY env.example .env
 
-# Create necessary directories with proper permissions
-RUN mkdir -p /app/data /app/logs /app/temp \
-    && chmod 755 /app/data /app/logs /app/temp
-
 # Set environment variables
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Create non-root user for security
-RUN useradd --create-home --shell /bin/bash app \
-    && chown -R app:app /app
+RUN useradd --create-home --shell /bin/bash app
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/data /app/logs /app/temp \
+    && chown -R app:app /app \
+    && chmod 755 /app/data /app/logs /app/temp
+
 USER app
 
 # Health check
