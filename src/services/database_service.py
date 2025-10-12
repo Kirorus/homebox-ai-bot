@@ -17,13 +17,9 @@ class DatabaseService:
     
     def __init__(self, db_path: str = "bot_data.db"):
         self.db_path = db_path
-        # Ensure directory exists and is writable
+        # Ensure directory exists
         db_dir = Path(db_path).parent
         db_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Check if we can write to the directory
-        if not os.access(db_dir, os.W_OK):
-            raise PermissionError(f"Cannot write to database directory: {db_dir}")
         
         logger.info(f"Database will be created at: {self.db_path}")
     
@@ -78,7 +74,6 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"Failed to initialize database: {e}")
             logger.error(f"Database path: {self.db_path}")
-            logger.error(f"Directory permissions: {os.access(Path(self.db_path).parent, os.W_OK)}")
             raise
     
     async def close(self):
