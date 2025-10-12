@@ -21,7 +21,7 @@ chmod 644 logs/bot.log 2>/dev/null || true
 
 # Build new image with correct user
 echo "Building new Docker image..."
-docker build -t kirorus/homebox-ai-bot:latest .
+docker build --no-cache -t kirorus/homebox-ai-bot:latest .
 
 # Start containers
 echo "Starting containers..."

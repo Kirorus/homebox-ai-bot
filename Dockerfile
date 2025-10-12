@@ -31,7 +31,8 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
 # Create user for security with specific UID/GID
-RUN useradd --create-home --shell /bin/bash --uid 1000 --gid 1000 bot && \
+RUN groupadd --gid 1000 bot && \
+    useradd --create-home --shell /bin/bash --uid 1000 --gid 1000 bot && \
     chown -R bot:bot /app
 USER bot
 
