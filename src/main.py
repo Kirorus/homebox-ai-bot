@@ -3,6 +3,7 @@ Main application entry point
 """
 
 import asyncio
+import os
 import logging
 import sys
 from pathlib import Path
@@ -27,14 +28,21 @@ DATA_DIR = BASE_DIR / 'data'
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-# Configure logging to write to /app/logs/bot.log and stdout
+# Configure logging (stdout by default; optional file logging)
+log_to_file = os.getenv('LOG_TO_FILE', 'false').lower() in ('1', 'true', 'yes')
+
+handlers = [logging.StreamHandler()]
+if log_to_file:
+    try:
+        handlers.insert(0, logging.FileHandler(str(LOGS_DIR / 'bot.log'), encoding='utf-8'))
+    except Exception:
+        # If file logging fails (e.g., permission on mounted volume), continue with stdout only
+        pass
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(str(LOGS_DIR / 'bot.log'), encoding='utf-8'),
-        logging.StreamHandler()
-    ]
+    handlers=handlers
 )
 
 logger = logging.getLogger(__name__)
