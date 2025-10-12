@@ -30,8 +30,8 @@ ENV PYTHONUNBUFFERED=1
 # Expose port (if needed for health check)
 EXPOSE 8000
 
-# Create user for security
-RUN useradd --create-home --shell /bin/bash bot && \
+# Create user for security with specific UID/GID
+RUN useradd --create-home --shell /bin/bash --uid 1000 --gid 1000 bot && \
     chown -R bot:bot /app
 USER bot
 
