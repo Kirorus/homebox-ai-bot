@@ -23,7 +23,11 @@ docker-compose logs -f homebox-ai-bot
 
 ### 2) Local run
 ```bash
-python -m venv venv && source venv/bin/activate
+# Using Make (recommended)
+make venv env run
+
+# Or manually
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp env.example .env
 python src/main.py
@@ -55,9 +59,9 @@ Notes:
 
 Run via compose:
 ```bash
-./scripts/docker-deploy.sh           # up -d
-./scripts/docker-deploy.sh --logs    # follow logs
-./scripts/docker-deploy.sh --down    # stop & remove
+make compose-up                       # start services
+make compose-down                     # stop services
+docker-compose logs -f homebox-ai-bot # follow logs
 ```
 
 CI/CD:
@@ -117,8 +121,6 @@ src/
 **Running tests:**
 ```bash
 make test                    # Run all tests
-make test unit              # Run unit tests only
-make test integration       # Run integration tests only
 make coverage               # Generate coverage report
 ```
 
@@ -127,6 +129,20 @@ make coverage               # Generate coverage report
 make format                 # Format code with black
 make lint                   # Lint with flake8
 make check                  # Run tests and i18n checks
+```
+
+**Local development:**
+```bash
+make venv env run           # Setup and start bot
+make stop                   # Stop bot
+make restart                # Restart bot
+```
+
+**Docker development:**
+```bash
+make docker-build          # Build image
+make compose-up            # Start with docker-compose
+make compose-down          # Stop services
 ```
 
 ## 📝 License

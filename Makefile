@@ -21,14 +21,16 @@ venv: ## Create virtual environment and install dependencies
 env: ## Create .env from env.example if not exists
 	@test -f .env || (test -f env.example && cp env.example .env && echo ".env created" || echo "env.example not found; skipped")
 
-run: venv ## Start the bot via existing script
-	@./start_bot.sh
+run: venv ## Start the bot locally
+	@echo "🤖 Starting HomeBox AI Bot..."
+	@cd src && $(PYTHON) main.py
 
-stop: ## Stop running bot via existing script
-	@./stop_bot.sh || true
+stop: ## Stop running bot processes
+	@echo "🛑 Stopping HomeBox AI Bot..."
+	@pkill -f "python.*main.py" || echo "No bot processes found"
 
-restart: ## Restart bot (uses src/restart_bot.sh if present)
-	@if [ -f src/restart_bot.sh ]; then bash src/restart_bot.sh; else $(MAKE) stop && $(MAKE) run; fi
+restart: ## Restart bot
+	@$(MAKE) stop && sleep 2 && $(MAKE) run
 
 test: venv ## Run tests
 	@./run_tests.sh
@@ -39,11 +41,13 @@ coverage: venv ## Run tests with coverage (if supported by run_tests.sh)
 i18n-check: venv ## Validate i18n keys/files
 	@$(PYTHON) scripts/check_i18n.py
 
-docker-build: ## Build docker image via script
-	@bash scripts/docker-build.sh
+docker-build: ## Build docker image
+	@echo "🐳 Building Docker image..."
+	@docker build -t homebox-ai-bot:latest .
 
-docker-deploy: ## Deploy docker image via script
-	@bash scripts/docker-deploy.sh
+docker-deploy: ## Deploy using docker-compose
+	@echo "🚀 Deploying with docker-compose..."
+	@$(MAKE) compose-up
 
 compose-up: ## Start services via docker compose
 	@if docker compose version >/dev/null 2>&1; then docker compose up -d; else docker-compose up -d; fi
