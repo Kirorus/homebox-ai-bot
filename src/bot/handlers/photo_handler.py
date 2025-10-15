@@ -5,6 +5,7 @@ Photo handling logic
 import asyncio
 import logging
 import os
+from pathlib import Path
 from datetime import datetime
 from typing import Optional
 
@@ -128,9 +129,12 @@ class PhotoHandler(BaseHandler):
                 # Get photo in maximum quality
                 photo = message.photo[-1]
                 
-                # Download photo
+                # Download photo (ensure absolute temp dir exists inside the container)
+                temp_dir = Path(__file__).resolve().parents[3] / 'temp'  # /app/temp
+                temp_dir.mkdir(parents=True, exist_ok=True)
+
                 file = await self.bot.get_file(photo.file_id)
-                file_path = f"../temp/temp_{message.from_user.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                file_path = str(temp_dir / f"temp_{message.from_user.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
                 await self.bot.download_file(file.file_path, file_path)
                 
                 # Update progress - AI analysis
@@ -263,12 +267,17 @@ class PhotoHandler(BaseHandler):
                 await self.handle_error(e, "photo handling", message.from_user.id)
                 
                 # Clean up temporary files on error
-                temp_files = [f for f in os.listdir('../temp') if f.startswith(f'temp_{message.from_user.id}_')]
-                for temp_file in temp_files:
-                    try:
-                        os.remove(f'../temp/{temp_file}')
-                    except Exception:
-                        pass
+                try:
+                    temp_dir = Path(__file__).resolve().parents[3] / 'temp'
+                    if temp_dir.exists():
+                        temp_files = [f for f in os.listdir(str(temp_dir)) if f.startswith(f'temp_{message.from_user.id}_')]
+                        for temp_file in temp_files:
+                            try:
+                                os.remove(str(temp_dir / temp_file))
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
                 
                 user_settings = await self.get_user_settings(message.from_user.id)
                 bot_lang = user_settings.bot_lang

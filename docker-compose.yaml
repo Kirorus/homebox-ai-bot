@@ -28,6 +28,7 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
       - ./temp:/app/temp
+      - ./temp:/temp
     healthcheck:
       test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
       interval: 30s
